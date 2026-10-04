@@ -28,7 +28,9 @@ jobs:
           } > ~/.config/rclone/rclone.conf
 
       - name: Показать папки внутри «Монтаж!»
-        run: rclone lsd montazh:
+        run: |
+          rclone lsd montazh:
 
       - name: Посчитать файлы в «Сырые!»
-        run: rclone lsf "montazh:Сырые!" --files-only | wc -l
+        run: |
+          rclone lsf "montazh:Сырые!" --files-only | wc -l
