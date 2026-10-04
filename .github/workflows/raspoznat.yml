@@ -37,7 +37,7 @@ jobs:
             files=$(jq -cn --arg f "$ONE" '[$f]')
           else
             # видео в «Сырые!» и подпапках; папки «…опубликован…» пропускаем; чужие вставки (VID_, «из тел») — тоже
-            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only \
+            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only --max-size 3G \
               | grep -iE '\.(mp4|mov|m4v|mkv)$' | grep -viE 'опубликован' | grep -viE '(^|/)(VID_|из тел)' || true)
             done_work=$(rclone lsf montazh:работа --dirs-only 2>/dev/null | sed 's:/$::' || true)
             ready=$(rclone lsf 'montazh:Готовые!' -R --dirs-only --max-depth 2 | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
@@ -81,7 +81,7 @@ jobs:
           mkdir -p raw "work/$stem"
           rclone copyto "montazh:$F" "raw/$name"
           echo "RAW=$PWD/raw/$name" >> "$GITHUB_ENV"
-          echo "::notice::$name: $(du -h "raw/$name" | cut -f1), $(ffprobe -v error -show_entries format=duration -of csv=p=0 "raw/$name") с"
+          echo "::notice::$name: $(du -h "raw/$name" | cut -f1), $(ffprobe -v error -show_entries format=duration -of csv=p=0 "raw/$name") с, $(ffprobe -v error -select_streams v -show_entries stream=width,height,color_transfer:stream_side_data=rotation -of csv=p=0 "raw/$name" | tr '\n' ' ')"
 
       - name: Распознать речь
         run: |
