@@ -17,12 +17,13 @@ fc = cv2.CascadeClassifier(f'{D}/haar.xml')
 f = fc.detectMultiScale(g, 1.1, 5, minSize=(60, 60))   # 04.10.2026: в шортсах в полный рост лицо мелкое, 150 его не находил
 if not len(f):   # мелкое лицо в кепке и очках — искать мягче
     f = fc.detectMultiScale(g, 1.05, 3, minSize=(40, 40))
-FACE = os.environ.get('FACE_JSON')   # запасной вариант: лицо, найденное montage.py по всему ролику
-if not len(f) and FACE and os.path.exists(FACE):
+FACE = os.environ.get('FACE_JSON')   # лицо, найденное montage.py по всему ролику: отсекает ложные «лица» (листва и т.п.)
+if FACE and os.path.exists(FACE):
     import json
-    fj = json.load(open(FACE)); h_ = fj['HN'] * H
-    f = [(int(fj['CX'] * W - h_ / 2), int(fj['EYE'] * H - 0.42 * h_), int(h_), int(h_))]
-    print('cover: лицо из face.json')
+    fj = json.load(open(FACE)); h_ = fj['HN'] * H; jx, jy = fj['CX'] * W, fj['EYE'] * H
+    near = [r for r in f if abs(r[0] + r[2] / 2 - jx) < W * 0.2 and abs(r[1] + 0.42 * r[3] - jy) < H * 0.1]
+    f = near or [(int(jx - h_ / 2), int(jy - 0.42 * h_), int(h_), int(h_))]
+    print('cover: лицо', 'найдено' if near else 'из face.json')
 if len(f):
     x, y, w, h = max(f, key=lambda r: r[2] * r[3]); cx, ey = x + w / 2, y + 0.42 * h
     y0_, h0_ = y, h
