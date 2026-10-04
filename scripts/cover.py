@@ -88,6 +88,8 @@ else:
     chest = os.environ.get('COVER_POS') == 'chest' or (os.environ.get('COVER_POS') != 'top' and head_top - 20 - SAFE_T < len(lines) * 90 * 1.32)
     if chest and len(f):
         chin = int(z * (y0_ + 1.05 * h0_) + ty)   # низ подбородка
+        if FACE and os.path.exists(FACE):   # мелкая ложная находка (очки, лоб) давала «подбородок» посреди лица — не выше, чем по face.json (04.10.2026)
+            chin = max(chin, int(z * (jy + 0.63 * h_) + ty))
         size = min(116, int((1670 - chin - 60) / (len(lines) * 1.32)))
         y = chin + 60
         print('cover: надпись на груди', chin)
