@@ -1,0 +1,47 @@
+name: Забрать картинки для проверки
+
+# Для Claude: кадры.jpg и обложки роликов с Диска уменьшенными копиями в архив задачи (artifact),
+# чтобы проверить их глазами без компьютера Евгения. Хранятся 1 день.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка в «Готовые!» с роликами, например Готовые!/Шортсы Год в Испании"
+        required: true
+      work_prefix:
+        description: "Начало ключа в «работа/», например «Шортсы Год в Испании - »"
+        required: false
+        default: ""
+
+jobs:
+  pics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать и уменьшить
+        env:
+          F: ${{ inputs.folder }}
+          WP: ${{ inputs.work_prefix }}
+        run: |
+          mkdir -p src out
+          rclone copy "montazh:$F" src --include "*/обложка.jpg"
+          for d in src/*/; do
+            n=$(basename "$d")
+            rclone copyto "montazh:работа/${WP}${n}/кадры.jpg" "src/$n/кадры.jpg" 2>/dev/null || true
+          done
+          for f in src/*/*.jpg; do
+            n=$(basename "$(dirname "$f")"); b=$(basename "$f" .jpg)
+            convert "$f" -resize 900x900 -quality 80 "out/${n} - ${b}.jpg"
+          done
+          echo "::notice::Картинок: $(ls out | wc -l)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kartinki
+          path: out
+          retention-days: 1
