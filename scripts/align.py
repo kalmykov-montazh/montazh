@@ -29,7 +29,8 @@ for key in list(cache):
     for s in range(pw.whisper_full_n_segments(ctx)):
         for t in range(pw.whisper_full_n_tokens(ctx, s)):
             d = pw.whisper_full_get_token_data(ctx, s, t)
-            txt = pw.whisper_full_get_token_text(ctx, s, t)
+            try: txt = pw.whisper_full_get_token_text(ctx, s, t)
+            except UnicodeDecodeError: continue   # токен с половиной русской буквы (04.10.2026, шортс 06) — пропустить
             if txt.startswith('[_') or txt.startswith('<|'): continue
             tt = max(0, d.t_dtw / 100)
             if txt.startswith(' ') or not words:
