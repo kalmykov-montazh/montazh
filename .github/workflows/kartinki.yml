@@ -35,10 +35,15 @@ jobs:
             n=$(basename "$d")
             rclone copyto "montazh:работа/${WP}${n}/кадры.jpg" "src/$n/кадры.jpg" 2>/dev/null || true
           done
-          for f in src/*/*.jpg; do
-            n=$(basename "$(dirname "$f")"); b=$(basename "$f" .jpg)
-            convert "$f" -resize 900x900 -quality 80 "out/${n} - ${b}.jpg"
-          done
+          pip install -q pillow
+          python3 - <<'PY'
+          import glob, os
+          from PIL import Image
+          for f in glob.glob('src/*/*.jpg'):
+              n = os.path.basename(os.path.dirname(f)); b = os.path.splitext(os.path.basename(f))[0]
+              im = Image.open(f).convert('RGB'); im.thumbnail((900, 900))
+              im.save(f'out/{n} - {b}.jpg', quality=80)
+          PY
           echo "::notice::Картинок: $(ls out | wc -l)"
       - uses: actions/upload-artifact@v4
         with:
