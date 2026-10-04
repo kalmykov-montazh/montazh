@@ -53,7 +53,7 @@ jobs:
               if printf '%s\n' "$ready" | grep -qF "$num"; then continue; fi
               list+=("Сырые!/$r")
             done <<< "$raws"
-            files=$(printf '%s\n' "${list[@]}" | head -10 | jq -Rcn '[inputs | select(length>0)]')
+            files=$(printf '%s\n' "${list[@]}" | head -30 | jq -Rcn '[inputs | select(length>0)]')
           fi
           echo "files=$files" >> "$GITHUB_OUTPUT"
           echo "::notice::Новые ролики: $files"
