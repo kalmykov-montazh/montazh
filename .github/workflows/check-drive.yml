@@ -57,3 +57,4 @@ jobs:
       - name: Посчитать файлы в «Сырые!»
         run: |
           echo "::notice::Файлов в Сырые!: $(rclone lsf "montazh:Сырые!" --files-only | wc -l)"
+
