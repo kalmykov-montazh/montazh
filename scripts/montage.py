@@ -128,20 +128,15 @@ import cv2, statistics as st_
 HAAR = os.environ.get('HAAR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'haar.xml'))
 cc = cv2.CascadeClassifier(HAAR)
 fx = []
-allf = []   # все находки по кадрам: детектор цепляется за листву и рубашку, поэтому берём не самое крупное, а то, что повторяется чаще (04.10.2026)
+allf = []   # все находки по кадрам (04.10.2026)
 for tt in [x / 10 for x in range(10, int(dur * 10) - 10, 25)]:
     sh(['ffmpeg', '-v', 'error', '-y', '-ss', f'{tt:.2f}', '-i', RAW, '-frames:v', '1', '-vf',
         f'{TM}scale={W//2}:{H//2}:force_original_aspect_ratio=increase,crop={W//2}:{H//2}', f'{OUT}/fr.png'])
     g = cv2.cvtColor(cv2.imread(f'{OUT}/fr.png'), cv2.COLOR_BGR2GRAY)
     f = cc.detectMultiScale(g, 1.1, 5, minSize=(30, 30))   # 04.10.2026: шортсы в полный рост
     allf.append([((x + w / 2) / (W / 2), (y + 0.42 * h) / (H / 2), (y + h) / (H / 2), h / (H / 2)) for x, y, w, h in f])
-def _near(a, b): return abs(a[0] - b[0]) < 0.08 and abs(a[1] - b[1]) < 0.05 and 0.6 < a[3] / b[3] < 1.6
-_cands = [d for fr in allf for d in fr]
-if _cands:
-    _best = max(_cands, key=lambda d: (sum(any(_near(d, e) for e in fr) for fr in allf), d[3]))
-    for fr in allf:
-        m = [d for d in fr if _near(d, _best)]
-        if m: fx.append(min(m, key=lambda d: abs(d[0] - _best[0]) + abs(d[1] - _best[1])))
+for fr in allf:
+    if fr: fx.append(max(fr, key=lambda d: d[3]))   # самое крупное, как было; при ошибке — подсказка FACE
 if os.environ.get('FACE'):   # ручная подсказка «CX,EYE» (доли кадра), если детектор всё же ошибся
     _cx, _ey = map(float, os.environ['FACE'].split(','))
     fx = [d for fr in allf for d in fr if abs(d[0] - _cx) < 0.08 and abs(d[1] - _ey) < 0.05] or [(_cx, _ey, _ey + 0.06, 0.08)]
