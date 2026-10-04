@@ -106,6 +106,11 @@ for p in kept:
     t += p['b'] - p['a']
 total = t / SPEED
 json.dump(plan, open(f'{OUT}/plan.json', 'w'), ensure_ascii=False, indent=1)
+if os.environ.get('ASR_ONLY'):   # облако, этап 1: только распознать и разложить на куски, без рендера (04.10.2026)
+    with open(f'{OUT}/текст.txt', 'w') as f_:
+        for p in plan:
+            f_.write(f"{p['a']:.3f}-{p['b']:.3f}\t{'+' if p['keep'] else '-'}\t{p['text']}\n")
+    sys.exit(0)
 words = [w for p in kept for w in p['words']]
 words = [w for w in words if w['w'].strip() not in ('-', '—', '–')]   # тире в субтитрах не показываем
 

@@ -1,0 +1,52 @@
+name: Подготовить машину для монтажа
+description: ffmpeg, шрифт Inter, Python-библиотеки, модель речи и модели лица
+inputs:
+  token: {required: true}
+  client_id: {required: true}
+  client_secret: {required: true}
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/rclone
+      with:
+        token: ${{ inputs.token }}
+        client_id: ${{ inputs.client_id }}
+        client_secret: ${{ inputs.client_secret }}
+
+    - name: ffmpeg и шрифт
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ffmpeg fonts-inter > /dev/null
+        fc-list | grep -qi "Inter.*Black" || { echo "::error::Нет шрифта Inter Black"; exit 1; }
+        ffmpeg -hide_banner -filters 2>/dev/null | grep -q zscale || { echo "::error::ffmpeg без zscale"; exit 1; }
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: requirements.txt
+
+    - name: Python-библиотеки
+      shell: bash
+      run: |
+        pip install -q -r requirements.txt
+        python -c "import cv2; assert hasattr(cv2,'CascadeClassifier') and hasattr(cv2,'face'), cv2.__version__"
+
+    - name: Модель речи из кэша
+      id: model
+      uses: actions/cache@v4
+      with:
+        path: models
+        key: models-v1
+
+    - name: Модели с Диска (речь и лицо)
+      shell: bash
+      run: |
+        mkdir -p models
+        [ -f models/ggml-small-q8_0.bin ] || rclone copy montazh: models --include ggml-small-q8_0.bin
+        [ -f models/haar.xml ] || rclone copy 'montazh:скрипты' models --include haar.xml
+        [ -f models/lbf.yaml ] || curl -fsSL -o models/lbf.yaml https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/lbfmodel.yaml
+        ls -la models
+        cp models/haar.xml models/lbf.yaml scripts/
+        echo "WMODEL=$PWD/models/ggml-small-q8_0.bin" >> "$GITHUB_ENV"

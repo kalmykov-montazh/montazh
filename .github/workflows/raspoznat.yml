@@ -1,0 +1,92 @@
+name: 1. Распознать новые ролики
+
+# Смотрит «Сырые!», на каждый новый ролик — отдельная машина: распознаёт речь и кладёт
+# текст по кускам в «Монтаж!/работа/<имя ролика>/». Монтаж (этап 2) — после проверки текста Claude.
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Путь внутри «Монтаж!», например Сырые!/20261003_152124_1.mp4 (пусто — все новые)"
+        required: false
+
+concurrency:
+  group: raspoznat
+  cancel-in-progress: false
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.f.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Найти новые ролики
+        id: f
+        env:
+          ONE: ${{ inputs.file }}
+        run: |
+          if [ -n "$ONE" ]; then
+            files=$(jq -cn --arg f "$ONE" '[$f]')
+          else
+            raws=$(rclone lsf 'montazh:Сырые!' --files-only | grep -viE '^VID_|из тел|\.(txt|json|jpg|png)$' || true)
+            done_work=$(rclone lsf montazh:работа --dirs-only 2>/dev/null | sed 's:/$::' || true)
+            ready=$(rclone lsf 'montazh:Готовые!' --dirs-only | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
+            list=()
+            while IFS= read -r r; do
+              [ -z "$r" ] && continue
+              stem="${r%.*}"; num=$(printf '%s' "${stem%_[0-9]}" | tr '[:upper:]' '[:lower:]')
+              if printf '%s\n' "$done_work" | grep -qxF "$stem"; then continue; fi
+              if printf '%s\n' "$ready" | grep -qF "$num"; then continue; fi
+              list+=("Сырые!/$r")
+            done <<< "$raws"
+            files=$(printf '%s\n' "${list[@]}" | head -10 | jq -Rcn '[inputs | select(length>0)]')
+          fi
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+          echo "::notice::Новые ролики: $files"
+
+  asr:
+    needs: find
+    if: needs.find.outputs.files != '[]' && needs.find.outputs.files != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJSON(needs.find.outputs.files) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+
+      - name: Скачать сырой ролик
+        env:
+          F: ${{ matrix.file }}
+        run: |
+          name=$(basename "$F"); stem="${name%.*}"
+          echo "STEM=$stem" >> "$GITHUB_ENV"
+          mkdir -p raw "work/$stem"
+          rclone copyto "montazh:$F" "raw/$name"
+          echo "RAW=$PWD/raw/$name" >> "$GITHUB_ENV"
+          echo "::notice::$name: $(du -h "raw/$name" | cut -f1), $(ffprobe -v error -show_entries format=duration -of csv=p=0 "raw/$name") с"
+
+      - name: Распознать речь
+        run: |
+          start=$(date +%s)
+          ASR_ONLY=1 python scripts/montage.py "$RAW" "work/$STEM"
+          echo "::notice::Распознано за $(( $(date +%s) - start )) с, кусков: $(wc -l < "work/$STEM/текст.txt")"
+
+      - name: Положить текст на Диск
+        run: |
+          rclone copy "work/$STEM" "montazh:работа/$STEM" --include asr_cache.json --include plan.json --include текст.txt
+          echo "::notice::Текст: $(cut -f2,3 "work/$STEM/текст.txt" | tr '\n' ' ' | cut -c1-3500)"
