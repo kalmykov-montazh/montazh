@@ -361,6 +361,8 @@ def zoom_at(t):
 sel = '+'.join(f'between(t,{p["a"]:.3f},{p["b"]:.3f})' for p in kept)
 # проход 1: лицо на каждом 3-м кадре в маленьком размере, потом сильное сглаживание (~2 с)
 SW, SH_ = W // 4, H // 4
+def fq(p):   # путь в фильтре ffmpeg: запятая в имени ролика ломала граф (04.10.2026, «13 Facebook молчал, а потом…»)
+    return "'" + p.replace('\\', '/').replace("'", "'\\\\''") + "'"
 p1 = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
     f"[0:v]select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
     f"{TM}scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},scale={SW}:{SH_}[v]", '-map', '[v]',
@@ -419,8 +421,8 @@ for name in os.environ.get('VARIANTS', 'B').split(','):
     out = f'{OUT}/ролик_{name}.mp4'
     outs.append(subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
         '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + ['-filter_complex',
-        (pfc + f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0[bs];[bs][pip]overlay={PX}:{PY}:eof_action=pass,format=yuv420p,subtitles={OUT}/subs_{name}.ass[v];{aud}") if PIP else
-        f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0,subtitles={OUT}/subs_{name}.ass[v];{aud}", '-map', '[v]', '-map', '[a]',
+        (pfc + f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0[bs];[bs][pip]overlay={PX}:{PY}:eof_action=pass,format=yuv420p,subtitles={fq(f'{OUT}/subs_{name}.ass')}[v];{aud}") if PIP else
+        f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0,subtitles={fq(f'{OUT}/subs_{name}.ass')}[v];{aud}", '-map', '[v]', '-map', '[a]',
         *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '17'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
         '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out],
