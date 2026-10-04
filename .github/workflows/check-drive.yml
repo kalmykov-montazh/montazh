@@ -21,7 +21,16 @@ jobs:
         run: |
           if [ -z "$RCLONE_TOKEN" ]; then echo "::error::Секрет RCLONE_TOKEN не найден"; exit 1; fi
           lines=$(printf '%s' "$RCLONE_TOKEN" | wc -l)
-          TOKEN=$(printf '%s' "$RCLONE_TOKEN" | tr -d '\r\n')
+          TOKEN=$(printf '%s' "$RCLONE_TOKEN" | tr -d '\r\n ')
+          # rclone с собственным пропуском выдаёт ключ в base64 — раскодировать
+          if [ "${TOKEN:0:1}" != "{" ]; then
+            dec=$(printf '%s' "$TOKEN" | base64 -d 2>/dev/null || true)
+            if printf '%s' "$dec" | jq -e '.token' > /dev/null 2>&1; then
+              TOKEN=$(printf '%s' "$dec" | jq -r '.token')
+            elif printf '%s' "$dec" | jq -e '.refresh_token' > /dev/null 2>&1; then
+              TOKEN=$(printf '%s' "$dec" | jq -c '.')
+            fi
+          fi
           if printf '%s' "$TOKEN" | jq -e '.refresh_token' > /dev/null 2>&1; then ok=yes; else ok=no; fi
           if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then echo "::error::Нет секретов пропуска"; exit 1; fi
           echo "::notice::Строк в ключе: $lines, ключ читается: $ok, длина: ${#TOKEN}, пробелов: $(printf '%s' "$TOKEN" | tr -cd ' ' | wc -c), первый символ: ${TOKEN:0:1}, последний: ${TOKEN: -1}, есть refresh_token: $(printf '%s' "$TOKEN" | grep -c refresh_token)"
