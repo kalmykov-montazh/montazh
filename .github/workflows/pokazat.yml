@@ -1,0 +1,35 @@
+name: Показать текстовый файл с Диска
+
+# Для Claude: логи задач ему не видны, поэтому текст выводится заметками (по 3000 знаков).
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Путь внутри «Монтаж!», можно несколько через ;"
+        required: true
+
+jobs:
+  show:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Показать
+        env:
+          P: ${{ inputs.path }}
+        run: |
+          IFS=';' read -ra paths <<< "$P"
+          for p in "${paths[@]}"; do
+            rclone cat "montazh:$p" --max-size 200k > f.txt || { echo "::error::Не прочитать: $p"; continue; }
+            python3 - "$p" <<'PY'
+          import sys
+          t = open('f.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+          for i in range(0, max(1, len(t)), 3000):
+              print(f"::notice title={sys.argv[1]} [{i // 3000 + 1}]::{t[i:i + 3000]}")
+          PY
+          done

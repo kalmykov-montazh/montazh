@@ -1,0 +1,116 @@
+name: 2. Смонтировать ролик
+
+# Запускает Claude после проверки текста. Берёт распознанный текст из «работа/<имя>/»,
+# исправления (fixes), точное время слов (align.py), рендер, обложку, проверки — и кладёт результат на Диск.
+
+on:
+  workflow_dispatch:
+    inputs:
+      src:
+        description: "Сырой ролик внутри «Монтаж!», например Сырые!/20261003_152124_1.mp4"
+        required: true
+      dest:
+        description: "Куда положить, например Готовые!/Тема в 3-4 словах 20261003_152124"
+        required: true
+      cover:
+        description: "Надпись обложки: СТРОКА1|СТРОКА2|СТРОКА3"
+        required: true
+      cover_hl:
+        description: "Слово на белой плашке"
+        required: false
+      cta:
+        description: "Призыв в конце, перенос строки \\N"
+        required: false
+        default: 'Было так же?\NНапишите в комментариях'
+      fixes:
+        description: "JSON исправлений: {ключ куска: текст}"
+        required: false
+        default: "{}"
+      pip:
+        description: "JSON вставок (pip.json), файлы — пути внутри «Монтаж!»"
+        required: false
+        default: ""
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+
+      - name: Скачать сырой, текст и вставки
+        env:
+          SRC: ${{ inputs.src }}
+          FIXES: ${{ inputs.fixes }}
+          PIPJ: ${{ inputs.pip }}
+        run: |
+          name=$(basename "$SRC"); stem="${name%.*}"
+          W="$PWD/work/$stem"; mkdir -p raw "$W"
+          { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; } >> "$GITHUB_ENV"
+          rclone copyto "montazh:$SRC" "raw/$name"
+          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
+          [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
+          printf '%s' "$FIXES" | jq . > "$W/fixes.json"
+          if [ -n "$PIPJ" ]; then
+            mkdir -p "$W/pip"
+            printf '%s' "$PIPJ" | jq -r '.segs[].file' | sort -u | while IFS= read -r f; do rclone copyto "montazh:$f" "$W/pip/$(basename "$f")"; done
+            printf '%s' "$PIPJ" | jq --arg d "$W/pip" '.segs |= map(.file = ($d + "/" + (.file | split("/") | last)))' > "$W/pip.json"
+            echo "PIP=$W/pip.json" >> "$GITHUB_ENV"
+          fi
+
+      - name: Точное время слов (align.py)
+        run: |
+          cp "$W/asr_cache.json" "$W/asr_cache.orig.json"
+          python scripts/align.py "$RAW" "$W" "$W/fixes.json" > "$W/align.log"
+
+      - name: Монтаж (montage.py)
+        env:
+          COVER: ${{ inputs.cover }}
+          COVER_HL: ${{ inputs.cover_hl }}
+          CTA: ${{ inputs.cta }}
+        run: |
+          start=$(date +%s)
+          ALIGNED=1 python scripts/montage.py "$RAW" "$W" > "$W/montage.log"
+          echo "::notice::Рендер за $(( ($(date +%s) - start) / 60 )) мин; $(grep -E '^(face|ttop|pip)' "$W/montage.log" | tr '\n' ' ')"
+
+      - name: Обложка
+        env:
+          COVER: ${{ inputs.cover }}
+          COVER_HL: ${{ inputs.cover_hl }}
+        run: |
+          python scripts/pick_frame.py "$RAW" "$W/pick.png" | tail -1
+          python scripts/cover.py "$W/pick.png" "$COVER" "$COVER_HL" "$W/обложка.jpg" 2
+
+      - name: Проверки
+        run: |
+          V="$W/ролик_B.mp4"
+          dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")
+          br=$(ffprobe -v error -show_entries format=bit_rate -of csv=p=0 "$V")
+          echo "::notice::Длина $(printf '%.1f' "$dur") с, битрейт $((br / 1000000)) Мбит/с, размер $(du -h "$V" | cut -f1)"
+          [ "$br" -ge 14000000 ] || echo "::warning::Битрейт ниже 14 Мбит/с"
+          mid=$(python -c "print(max(0,int($dur/2)-15))")
+          cd "$W" && ln -sf "$WMODEL" ggml-small-q8_0.bin
+          python "$GITHUB_WORKSPACE/scripts/check_sync.py" ролик_B.mp4 subs_B.ass 0 30 > sync.txt
+          python "$GITHUB_WORKSPACE/scripts/check_sync.py" ролик_B.mp4 subs_B.ass "$mid" "$((mid + 30))" >> sync.txt
+          echo "::notice::Сверка субтитров: $(grep -E '^слов' sync.txt | tr '\n' ' ')"
+          grep -E '^расхождение' sync.txt | head -15 | tr '\n' ' ' | sed 's/^/::notice::Расхождения: /'; echo
+          # кадры для проверки глазами: начало, середина, конец
+          for t in 0.5 "$(python -c "print($dur/2)")" "$(python -c "print($dur-1.2)")"; do
+            ffmpeg -v error -y -ss "$t" -i ролик_B.mp4 -frames:v 1 -vf scale=360:640 "k_$t.png"
+          done
+          ffmpeg -v error -y -pattern_type glob -i 'k_*.png' -filter_complex tile=3x1 кадры.jpg
+
+      - name: Положить на Диск
+        env:
+          DEST: ${{ inputs.dest }}
+        run: |
+          rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/видео.mp4"
+          rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
+          rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include subs_B.ass --include sync.txt \
+            --include кадры.jpg --include montage.log --include align.log --include pick.png
+          echo "::notice::Готово: $DEST"
