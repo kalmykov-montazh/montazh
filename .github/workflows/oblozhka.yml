@@ -19,6 +19,10 @@ on:
         description: "auto, top или chest"
         required: false
         default: auto
+      frame:
+        description: "Кадр: пусто — прежний, auto — выбрать заново, число — эта секунда сырого"
+        required: false
+        default: ""
 
 jobs:
   cover:
@@ -37,15 +41,17 @@ jobs:
           COVER: ${{ inputs.cover }}
           COVER_HL: ${{ inputs.cover_hl }}
           COVER_POS: ${{ inputs.pos }}
+          FRAME: ${{ inputs.frame }}
         run: |
           name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           rclone copyto "montazh:$SRC" "raw/$name"
           rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include face.json --include pick.png
           [ -f "$W/face.json" ] || FACE_ONLY=1 python scripts/montage.py "raw/$name" "$W" > /dev/null
-          [ -f "$W/pick.png" ] || python scripts/pick_frame.py "raw/$name" "$W/pick.png" | tail -1
+          if [ -n "$FRAME" ]; then rm -f "$W/pick.png"; case "$FRAME" in auto) ;; *) export PICK_T="$FRAME";; esac; fi
+          [ -f "$W/pick.png" ] || echo "::notice::$(python scripts/pick_frame.py "raw/$name" "$W/pick.png" | tail -1)"
           out=$(FACE_JSON="$W/face.json" python scripts/cover.py "$W/pick.png" "$COVER" "$COVER_HL" "$W/обложка.jpg" 2)
           echo "::notice::$out"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
-          rclone copy "$W" "montazh:работа/$stem" --include face.json
+          rclone copy "$W" "montazh:работа/$stem" --include face.json --include pick.png --include кандидаты.jpg
           echo "::notice::Обложка готова: $DEST"

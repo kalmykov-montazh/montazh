@@ -41,6 +41,7 @@ jobs:
           for d in src/*/; do
             n=$(basename "$d")
             rclone copyto "montazh:работа/${WP}${n}/кадры.jpg" "src/$n/кадры.jpg" 2>/dev/null || true
+            rclone copyto "montazh:работа/${WP}${n}/кандидаты.jpg" "src/$n/кандидаты.jpg" 2>/dev/null || true
           done
           pip install -q pillow
           python3 - <<'PY'
