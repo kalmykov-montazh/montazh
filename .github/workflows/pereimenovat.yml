@@ -1,0 +1,37 @@
+name: Переименовать на Диске
+
+# Для Claude: переименовать или перенести файлы и папки внутри «Монтаж!».
+# Пары «откуда=>куда» через «;», пути внутри «Монтаж!». Существующее не перезаписывает.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "откуда=>куда; ещё=>ещё (пути внутри «Монтаж!»)"
+        required: true
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Переименовать
+        env:
+          P: ${{ inputs.pairs }}
+        run: |
+          IFS=';' read -ra pairs <<< "$P"
+          for pr in "${pairs[@]}"; do
+            a=$(printf '%s' "${pr%%=>*}" | sed 's/^ *//;s/ *$//'); b=$(printf '%s' "${pr#*=>}" | sed 's/^ *//;s/ *$//')
+            if rclone lsf "montazh:$b" >/dev/null 2>&1 && [ -n "$(rclone lsf "montazh:$b" 2>/dev/null)" ]; then echo "::error::Уже есть: $b"; continue; fi
+            if rclone lsjson --stat "montazh:$a" 2>/dev/null | grep -q '"IsDir": true'; then
+              rclone moveto "montazh:$a" "montazh:$b" --drive-server-side-across-configs 2>err.txt && rclone rmdirs "montazh:$a" --leave-root=false 2>/dev/null
+            else
+              rclone moveto "montazh:$a" "montazh:$b" 2>err.txt
+            fi
+            if [ $? -eq 0 ]; then echo "::notice::OK: $a → $b"; else echo "::error::Не вышло: $a: $(tail -1 err.txt)"; fi
+          done
