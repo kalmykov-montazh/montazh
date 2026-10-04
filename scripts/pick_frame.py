@@ -22,7 +22,7 @@ while True:
     t = n*STEP; n += 1
     if t < 0.5: continue
     fr = np.frombuffer(b, np.uint8).reshape(SH, SW, 3); g = cv2.cvtColor(fr, cv2.COLOR_BGR2GRAY)
-    f = fc.detectMultiScale(g, 1.1, 5, minSize=(80,80))
+    f = fc.detectMultiScale(g, 1.1, 5, minSize=(40,40))   # 04.10.2026: шортсы в полный рост
     if not len(f): continue
     x,y,fw,fh = max(f, key=lambda r: r[2]*r[3])
     ok, lm = fm.fit(g, np.array([[x, y, fw, fh]]))

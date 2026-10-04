@@ -124,7 +124,7 @@ for tt in [x / 10 for x in range(10, int(dur * 10) - 10, 25)]:
     sh(['ffmpeg', '-v', 'error', '-y', '-ss', f'{tt:.2f}', '-i', RAW, '-frames:v', '1', '-vf',
         f'{TM}scale={W//2}:{H//2}:force_original_aspect_ratio=increase,crop={W//2}:{H//2}', f'{OUT}/fr.png'])
     g = cv2.cvtColor(cv2.imread(f'{OUT}/fr.png'), cv2.COLOR_BGR2GRAY)
-    f = cc.detectMultiScale(g, 1.1, 5, minSize=(60, 60))
+    f = cc.detectMultiScale(g, 1.1, 5, minSize=(30, 30))   # 04.10.2026: шортсы в полный рост
     if len(f):
         x, y, w, h = max(f, key=lambda r: r[2] * r[3])
         fx.append(((x + w / 2) / (W / 2), (y + 0.42 * h) / (H / 2), (y + h) / (H / 2), h / (H / 2)))
@@ -357,7 +357,7 @@ while True:
     if len(buf) < SW * SH_: break
     if n % 3 == 0:
         g = np.frombuffer(buf, np.uint8).reshape(SH_, SW)
-        f = cc.detectMultiScale(g, 1.1, 5, minSize=(40, 40))
+        f = cc.detectMultiScale(g, 1.1, 5, minSize=(20, 20))
         if len(f):
             x, y, w, h = max(f, key=lambda r: r[2] * r[3])
             det.append((n, (x + w / 2) * 4, (y + 0.42 * h) * 4))

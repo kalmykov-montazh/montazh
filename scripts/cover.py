@@ -14,7 +14,7 @@ im = Image.open(src).convert('RGB').resize((W, H))
 # лицо: крупнее и по центру, глаза примерно на 52% высоты
 g = cv2.cvtColor(np.array(im), cv2.COLOR_RGB2GRAY)
 fc = cv2.CascadeClassifier(f'{D}/haar.xml')
-f = fc.detectMultiScale(g, 1.1, 5, minSize=(150, 150))
+f = fc.detectMultiScale(g, 1.1, 5, minSize=(60, 60))   # 04.10.2026: в шортсах в полный рост лицо мелкое, 150 его не находил
 if len(f):
     x, y, w, h = max(f, key=lambda r: r[2] * r[3]); cx, ey = x + w / 2, y + 0.42 * h
 else:
