@@ -53,7 +53,7 @@ jobs:
           FIXES: ${{ inputs.fixes }}
           PIPJ: ${{ inputs.pip }}
         run: |
-          name=$(basename "$SRC"); stem="${name%.*}"
+          name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; } >> "$GITHUB_ENV"
           rclone copyto "montazh:$SRC" "raw/$name"

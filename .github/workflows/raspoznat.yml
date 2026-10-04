@@ -36,14 +36,17 @@ jobs:
           if [ -n "$ONE" ]; then
             files=$(jq -cn --arg f "$ONE" '[$f]')
           else
-            raws=$(rclone lsf 'montazh:Сырые!' --files-only | grep -viE '^VID_|из тел|\.(txt|json|jpg|png)$' || true)
+            # видео в «Сырые!» и подпапках; папки «…опубликован…» пропускаем; чужие вставки (VID_, «из тел») — тоже
+            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only \
+              | grep -iE '\.(mp4|mov|m4v|mkv)$' | grep -viE 'опубликован' | grep -viE '(^|/)(VID_|из тел)' || true)
             done_work=$(rclone lsf montazh:работа --dirs-only 2>/dev/null | sed 's:/$::' || true)
-            ready=$(rclone lsf 'montazh:Готовые!' --dirs-only | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
+            ready=$(rclone lsf 'montazh:Готовые!' -R --dirs-only --max-depth 2 | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
             list=()
             while IFS= read -r r; do
               [ -z "$r" ] && continue
-              stem="${r%.*}"; num=$(printf '%s' "${stem%_[0-9]}" | tr '[:upper:]' '[:lower:]')
-              if printf '%s\n' "$done_work" | grep -qxF "$stem"; then continue; fi
+              key=$(printf '%s' "${r%.*}" | sed 's:/: - :g')
+              base=$(basename "${r%.*}"); num=$(printf '%s' "${base%_[0-9]}" | tr '[:upper:]' '[:lower:]')
+              if printf '%s\n' "$done_work" | grep -qxF "$key"; then continue; fi
               if printf '%s\n' "$ready" | grep -qF "$num"; then continue; fi
               list+=("Сырые!/$r")
             done <<< "$raws"
@@ -73,7 +76,7 @@ jobs:
         env:
           F: ${{ matrix.file }}
         run: |
-          name=$(basename "$F"); stem="${name%.*}"
+          name=$(basename "$F"); rel="${F#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
           echo "STEM=$stem" >> "$GITHUB_ENV"
           mkdir -p raw "work/$stem"
           rclone copyto "montazh:$F" "raw/$name"
