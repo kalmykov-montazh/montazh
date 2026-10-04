@@ -314,7 +314,8 @@ for st, label in pops:
 
 # призыв в конце: на последних словах перед «Всё, пошёл работать»
 CTA = os.environ.get('CTA', 'Было так же?\\NНапишите в комментариях')
-evC = [f'Dialogue: 2,{ts(total - 2.6)},{ts(total)},Cta,,0,0,0,,'
+CTA_SEC = 5.0 if 'описани' in CTA.lower() else 2.6   # призыв «полное видео, ссылка в описании» — 5 с, чтобы успели прочитать (04.10.2026)
+evC = [f'Dialogue: 2,{ts(max(0, total - CTA_SEC))},{ts(total)},Cta,,0,0,0,,'
        r'{\an5\pos(540,'+str(CTA_Y)+r')\fscx60\fscy60\t(0,160,\fscx100\fscy100)}' + CTA]
 
 evT = []
