@@ -141,6 +141,7 @@ chin_out = max(CHIN * z - ycrop(z) for z in LEVELS)
 SUB_MV = int(max(int(H * 0.25), H * (1 - chin_out - 0.03) - 110))   # низ субтитров не ниже 75% высоты: ниже надписи TikTok
 HEAD_PX = (max(0.0, EYE - 0.72 * HN) * ZB - ycrop(ZB)) * H   # макушка С ВОЛОСАМИ в первом кадре, px (04.10.2026: было 0.54 — надпись садилась на волосы)
 CTA_Y = int(os.environ.get('CTA_Y', '250'))   # центр плашки-призыва: высоко над головой, лоб и очки не закрывать
+json.dump({'CX': float(CX), 'EYE': float(EYE), 'HN': float(HN), 'n': len(fx)}, open(f'{OUT}/face.json', 'w'))   # для cover.py, если там лицо не найдётся
 print('face', dict(CX=round(CX, 3), EYE=round(EYE, 3), CHIN=round(CHIN, 3), ZB=round(ZB, 2), SUB_MV=SUB_MV, CTA_Y=CTA_Y, n=len(fx)))
 
 # 5. зумы: смена крупности на каждой склейке после конца предложения + плавный наезд на хуке

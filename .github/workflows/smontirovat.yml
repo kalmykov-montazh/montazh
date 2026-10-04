@@ -88,7 +88,7 @@ jobs:
           COVER_HL: ${{ inputs.cover_hl }}
         run: |
           python scripts/pick_frame.py "$RAW" "$W/pick.png" | tail -1
-          python scripts/cover.py "$W/pick.png" "$COVER" "$COVER_HL" "$W/обложка.jpg" 2
+          FACE_JSON="$W/face.json" python scripts/cover.py "$W/pick.png" "$COVER" "$COVER_HL" "$W/обложка.jpg" 2
 
       - name: Проверки
         run: |
