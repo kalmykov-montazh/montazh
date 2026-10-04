@@ -393,9 +393,10 @@ if PIP:
     for i, sg in enumerate(PIP['segs']):
         d_ = min(sg['dur'], D - acc)
         if d_ <= 0: break
-        pin += ['-i', sg['file']]
+        img_ = sg['file'].lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))   # фото: держим кадр dur секунд (04.10.2026)
+        pin += (['-loop', '1', '-framerate', str(FPS), '-t', f'{d_ + 0.5:.3f}'] if img_ else []) + ['-i', sg['file']]
         k_ = len(parts_)
-        parts_.append(f"[{2 + k_}:v]trim=start={sg['ss']}:duration={d_:.3f},setpts=PTS-STARTPTS,fps={FPS},crop={sg['crop']},scale={PW}:{PH}:flags=lanczos,setsar=1,pad={PW + 2 * PB}:{PH + 2 * PB}:{PB}:{PB}:color=white,format=yuv420p[p{k_}]")
+        parts_.append(f"[{2 + k_}:v]trim=start={0 if img_ else sg['ss']}:duration={d_:.3f},setpts=PTS-STARTPTS,fps={FPS},crop={sg['crop']},scale={PW}:{PH}:flags=lanczos,setsar=1,pad={PW + 2 * PB}:{PH + 2 * PB}:{PB}:{PB}:color=white,format=yuv420p[p{k_}]")
         acc += d_
     n_ = len(parts_)
     pfc = ';'.join(parts_) + ';' + ''.join(f'[p{i}]' for i in range(n_)) + f"concat=n={n_}:v=1:a=0,format=yuva420p,fade=t=in:st=0:d=0.3:alpha=1,fade=t=out:st={max(0, D - 0.3):.3f}:d=0.3:alpha=1,setpts=PTS+{PIP_S:.3f}/TB[pip];"
