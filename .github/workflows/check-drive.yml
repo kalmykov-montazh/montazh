@@ -17,20 +17,29 @@ jobs:
         env:
           RCLONE_TOKEN: ${{ secrets.RCLONE_TOKEN }}
         run: |
-          if [ -z "$RCLONE_TOKEN" ]; then echo "Секрет RCLONE_TOKEN не найден"; exit 1; fi
+          if [ -z "$RCLONE_TOKEN" ]; then echo "::error::Секрет RCLONE_TOKEN не найден"; exit 1; fi
+          lines=$(printf '%s' "$RCLONE_TOKEN" | wc -l)
+          TOKEN=$(printf '%s' "$RCLONE_TOKEN" | tr -d '\r\n')
+          if printf '%s' "$TOKEN" | jq -e '.refresh_token' > /dev/null 2>&1; then ok=yes; else ok=no; fi
+          echo "::notice::Строк в ключе: $lines, ключ читается: $ok"
           mkdir -p ~/.config/rclone
           {
             echo "[montazh]"
             echo "type = drive"
             echo "scope = drive"
             echo "root_folder_id = 14cRZPujsOPWUQHOqHNu_W1wu1stLaohd"
-            echo "token = $RCLONE_TOKEN"
+            echo "token = $TOKEN"
           } > ~/.config/rclone/rclone.conf
 
       - name: Показать папки внутри «Монтаж!»
         run: |
-          rclone lsd montazh:
+          if out=$(rclone lsd montazh: 2>&1); then
+            echo "::notice::Папки: $(echo "$out" | awk '{print $NF}' | tr '\n' ' ')"
+          else
+            echo "::error::$(echo "$out" | tail -3 | tr '\n' ' ' | cut -c1-400)"
+            exit 1
+          fi
 
       - name: Посчитать файлы в «Сырые!»
         run: |
-          rclone lsf "montazh:Сырые!" --files-only | wc -l
+          echo "::notice::Файлов в Сырые!: $(rclone lsf "montazh:Сырые!" --files-only | wc -l)"
