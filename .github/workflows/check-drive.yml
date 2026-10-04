@@ -1,0 +1,34 @@
+name: Проверка доступа к Диску
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/check-drive.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Установить rclone
+        run: curl -fsSL https://rclone.org/install.sh | sudo bash
+
+      - name: Настроить доступ только к папке «Монтаж!»
+        env:
+          RCLONE_TOKEN: ${{ secrets.RCLONE_TOKEN }}
+        run: |
+          if [ -z "$RCLONE_TOKEN" ]; then echo "Секрет RCLONE_TOKEN не найден"; exit 1; fi
+          mkdir -p ~/.config/rclone
+          {
+            echo "[montazh]"
+            echo "type = drive"
+            echo "scope = drive"
+            echo "root_folder_id = 14cRZPujsOPWUQHOqHNu_W1wu1stLaohd"
+            echo "token = $RCLONE_TOKEN"
+          } > ~/.config/rclone/rclone.conf
+
+      - name: Показать папки внутри «Монтаж!»
+        run: rclone lsd montazh:
+
+      - name: Посчитать файлы в «Сырые!»
+        run: rclone lsf "montazh:Сырые!" --files-only | wc -l
