@@ -28,10 +28,5 @@ jobs:
           for pr in "${pairs[@]}"; do
             a=$(printf '%s' "${pr%%=>*}" | sed 's/^ *//;s/ *$//'); b=$(printf '%s' "${pr#*=>}" | sed 's/^ *//;s/ *$//')
             if rclone lsf "montazh:$b" >/dev/null 2>&1 && [ -n "$(rclone lsf "montazh:$b" 2>/dev/null)" ]; then echo "::error::Уже есть: $b"; continue; fi
-            if rclone lsjson --stat "montazh:$a" 2>/dev/null | grep -q '"IsDir": true'; then
-              rclone moveto "montazh:$a" "montazh:$b" --drive-server-side-across-configs 2>err.txt && rclone rmdirs "montazh:$a" --leave-root=false 2>/dev/null
-            else
-              rclone moveto "montazh:$a" "montazh:$b" 2>err.txt
-            fi
-            if [ $? -eq 0 ]; then echo "::notice::OK: $a → $b"; else echo "::error::Не вышло: $a: $(tail -1 err.txt)"; fi
+            if rclone moveto "montazh:$a" "montazh:$b" 2>err.txt; then echo "::notice::OK: $a → $b"; else echo "::error::Не вышло: $a: $(tail -1 err.txt)"; fi
           done
