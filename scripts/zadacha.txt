@@ -1,0 +1,30 @@
+
+Folder: \
+HostName:                             DESKTOP-1UA3EV1
+TaskName:                             \Montazh skleika
+Next Run Time:                        03.10.2026 13:30:00
+Status:                               Ready
+Logon Mode:                           Interactive only
+Last Run Time:                        03.10.2026 13:27:01
+Last Result:                          0
+Author:                               DESKTOP-1UA3EV1\evgen
+Task To Run:                          wscript.exe "G:\Мой диск\Монтаж!\скрипты\join.vbs"
+Start In:                             N/A
+Comment:                              N/A
+Scheduled Task State:                 Enabled
+Idle Time:                            Disabled
+Power Management:                     Stop On Battery Mode, No Start On Batteries
+Run As User:                          evgen
+Delete Task If Not Rescheduled:       Disabled
+Stop Task If Runs X Hours and X Mins: 72:00:00
+Schedule:                             Scheduling data is not available in this format.
+Schedule Type:                        One Time Only, Minute 
+Start Time:                           12:57:00
+Start Date:                           03.10.2026
+End Date:                             N/A
+Days:                                 N/A
+Months:                               N/A
+Repeat: Every:                        0 Hour(s), 3 Minute(s)
+Repeat: Until: Time:                  None
+Repeat: Until: Duration:              Disabled
+Repeat: Stop If Still Running:        Disabled
