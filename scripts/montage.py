@@ -85,6 +85,14 @@ for i, (a, b) in enumerate(chunks):
     plan.append({'a': a, 'b': b, 'text': text, 'keep': True, 'words': words})
     prev = text
 
+# 2б. обрезать конец куска после N-го слова (неудачный дубль внутри куска): TRIM='{"ключ куска": N}' (04.10.2026)
+for k_, n_ in json.loads(os.environ.get('TRIM', '{}')).items():
+    for p in plan:
+        if p['keep'] and f"{p['a']:.3f}-{p['b']:.3f}" == k_ and 0 < n_ < len(p['words']):
+            p['b'] = p['words'][n_]['s'] - 0.04
+            p['words'] = p['words'][:n_]
+            p['text'] = ' '.join(w['w'] for w in p['words'])
+
 # 3. оговорки: кусок, который начинается так же, как следующий, = неудачный дубль
 def norm(t):
     return re.sub(r'[^\w ]', '', t.lower()).split()

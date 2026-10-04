@@ -30,6 +30,10 @@ on:
         description: "JSON вставок (pip.json), файлы — пути внутри «Монтаж!»"
         required: false
         default: ""
+      trim:
+        description: "JSON {ключ куска: сколько слов оставить} — обрезать конец куска"
+        required: false
+        default: "{}"
       pack:
         description: "Текст упаковки (упаковка.txt)"
         required: false
@@ -77,6 +81,7 @@ jobs:
           COVER: ${{ inputs.cover }}
           COVER_HL: ${{ inputs.cover_hl }}
           CTA: ${{ inputs.cta }}
+          TRIM: ${{ inputs.trim }}
         run: |
           start=$(date +%s)
           ALIGNED=1 python scripts/montage.py "$RAW" "$W" > "$W/montage.log"
