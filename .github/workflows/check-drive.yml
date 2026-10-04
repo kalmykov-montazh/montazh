@@ -16,17 +16,22 @@ jobs:
       - name: Настроить доступ только к папке «Монтаж!»
         env:
           RCLONE_TOKEN: ${{ secrets.RCLONE_TOKEN }}
+          CLIENT_ID: ${{ secrets.RCLONE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.RCLONE_CLIENT_SECRET }}
         run: |
           if [ -z "$RCLONE_TOKEN" ]; then echo "::error::Секрет RCLONE_TOKEN не найден"; exit 1; fi
           lines=$(printf '%s' "$RCLONE_TOKEN" | wc -l)
           TOKEN=$(printf '%s' "$RCLONE_TOKEN" | tr -d '\r\n')
           if printf '%s' "$TOKEN" | jq -e '.refresh_token' > /dev/null 2>&1; then ok=yes; else ok=no; fi
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then echo "::error::Нет секретов пропуска"; exit 1; fi
           echo "::notice::Строк в ключе: $lines, ключ читается: $ok, длина: ${#TOKEN}, пробелов: $(printf '%s' "$TOKEN" | tr -cd ' ' | wc -c), первый символ: ${TOKEN:0:1}, последний: ${TOKEN: -1}, есть refresh_token: $(printf '%s' "$TOKEN" | grep -c refresh_token)"
           mkdir -p ~/.config/rclone
           {
             echo "[montazh]"
             echo "type = drive"
             echo "scope = drive"
+            echo "client_id = $(printf '%s' "$CLIENT_ID" | tr -d '\r\n ')"
+            echo "client_secret = $(printf '%s' "$CLIENT_SECRET" | tr -d '\r\n ')"
             echo "root_folder_id = 14cRZPujsOPWUQHOqHNu_W1wu1stLaohd"
             echo "token = $TOKEN"
           } > ~/.config/rclone/rclone.conf
