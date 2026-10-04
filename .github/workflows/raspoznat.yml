@@ -37,7 +37,7 @@ jobs:
             files=$(jq -cn --arg f "$ONE" '[$f]')
           else
             # видео в «Сырые!» и подпапках; папки «…опубликован…» пропускаем; чужие вставки (VID_, «из тел») — тоже
-            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only --max-size 3G --min-size 15M \
+            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only --max-size 3G \
               | grep -iE '\.(mp4|mov|m4v|mkv)$' | grep -viE 'опубликован' \
               | grep -viE '(^|/)(VID_|IMG_|из тел|screen|скрин|video_|telegram)' || true)
             # чужие вставки для «картинки в картинке» в счёт роликов не входят: основной ролик — с телефона Евгения
