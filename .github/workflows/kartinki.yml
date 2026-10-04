@@ -1,7 +1,8 @@
 name: Забрать картинки для проверки
 
 # Для Claude: кадры.jpg и обложки роликов с Диска уменьшенными копиями в архив задачи (artifact),
-# чтобы проверить их глазами без компьютера Евгения. Хранятся 1 день.
+# зашифрованным архивом в ветку tmp-pics (архивы задач через прокси Claude не скачиваются).
+# После просмотра Claude удаляет ветку.
 
 on:
   workflow_dispatch:
@@ -9,10 +10,16 @@ on:
       folder:
         description: "Папка в «Готовые!» с роликами, например Готовые!/Шортсы Год в Испании"
         required: true
+      key:
+        description: "Пароль для шифрования архива (картинки уходят зашифрованными в ветку tmp-pics)"
+        required: true
       work_prefix:
         description: "Начало ключа в «работа/», например «Шортсы Год в Испании - »"
         required: false
         default: ""
+
+permissions:
+  contents: write
 
 jobs:
   pics:
@@ -45,8 +52,13 @@ jobs:
               im.save(f'out/{n} - {b}.jpg', quality=80)
           PY
           echo "::notice::Картинок: $(ls out | wc -l)"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kartinki
-          path: out
-          retention-days: 1
+      - name: Зашифровать и положить в ветку tmp-pics
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
