@@ -1,0 +1,46 @@
+name: Забрать скрипты с Диска
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/pull-scripts.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+
+      - name: Что лежит на Диске
+        run: |
+          echo "::notice::Корень: $(rclone lsf montazh: --max-depth 1 --format sp --separator '=' | tr '\n' ' ' | cut -c1-900)"
+          echo "::notice::Скрипты: $(rclone lsf 'montazh:скрипты' -R --format sp --separator '=' | tr '\n' ' ' | cut -c1-900)"
+          echo "::notice::Образец: $(rclone lsf 'montazh:Образец' -R --format sp --separator '=' | tr '\n' ' ' | cut -c1-900)"
+
+      - name: Скопировать текстовые файлы скриптов в хранилище
+        run: |
+          mkdir -p scripts
+          rclone copy 'montazh:скрипты' scripts --max-size 2M \
+            --include '*.py' --include '*.json' --include '*.txt' --include '*.md' \
+            --include '*.ps1' --include '*.bat' --include '*.cmd' --include '*.sh' --include '*.ass' --include '*.cfg'
+          echo "::notice::Скопировано: $(cd scripts && find . -type f | sort | tr '\n' ' ' | cut -c1-900)"
+
+      - name: Сохранить в хранилище
+        run: |
+          git config user.name kalmykov-montazh
+          git config user.email kalmykov-montazh@users.noreply.github.com
+          git add scripts
+          if git diff --cached --quiet; then echo "::notice::Новых изменений нет"; exit 0; fi
+          git commit -m "Скрипты монтажа с Диска [skip ci]"
+          git push
+          echo "::notice::Скрипты сохранены в хранилище"

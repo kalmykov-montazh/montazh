@@ -1,0 +1,45 @@
+name: rclone для папки «Монтаж!»
+description: Ставит rclone и настраивает доступ только к папке «Монтаж!»
+inputs:
+  token: {required: true}
+  client_id: {required: true}
+  client_secret: {required: true}
+runs:
+  using: composite
+  steps:
+    - name: Установить rclone
+      shell: bash
+      run: command -v rclone || curl -fsSL https://rclone.org/install.sh | sudo bash
+
+    - name: Настроить доступ только к папке «Монтаж!»
+      env:
+        RCLONE_TOKEN: ${{ inputs.token }}
+        CLIENT_ID: ${{ inputs.client_id }}
+        CLIENT_SECRET: ${{ inputs.client_secret }}
+      shell: bash
+      run: |
+        if [ -z "$RCLONE_TOKEN" ]; then echo "::error::Секрет RCLONE_TOKEN не найден"; exit 1; fi
+        lines=$(printf '%s' "$RCLONE_TOKEN" | wc -l)
+        TOKEN=$(printf '%s' "$RCLONE_TOKEN" | tr -d '\r\n ')
+        # rclone с собственным пропуском выдаёт ключ в base64 — раскодировать
+        if [ "${TOKEN:0:1}" != "{" ]; then
+          dec=$(printf '%s' "$TOKEN" | base64 -d 2>/dev/null || true)
+          if printf '%s' "$dec" | jq -e '.token' > /dev/null 2>&1; then
+            TOKEN=$(printf '%s' "$dec" | jq -r '.token')
+          elif printf '%s' "$dec" | jq -e '.refresh_token' > /dev/null 2>&1; then
+            TOKEN=$(printf '%s' "$dec" | jq -c '.')
+          fi
+        fi
+        if printf '%s' "$TOKEN" | jq -e '.refresh_token' > /dev/null 2>&1; then ok=yes; else ok=no; fi
+        if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then echo "::error::Нет секретов пропуска"; exit 1; fi
+        mkdir -p ~/.config/rclone
+        {
+          echo "[montazh]"
+          echo "type = drive"
+          echo "scope = drive"
+          echo "client_id = $(printf '%s' "$CLIENT_ID" | tr -d '\r\n ')"
+          echo "client_secret = $(printf '%s' "$CLIENT_SECRET" | tr -d '\r\n ')"
+          echo "root_folder_id = 14cRZPujsOPWUQHOqHNu_W1wu1stLaohd"
+          echo "token = $TOKEN"
+        } > ~/.config/rclone/rclone.conf
+
