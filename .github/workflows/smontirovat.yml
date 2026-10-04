@@ -123,6 +123,6 @@ jobs:
           if [ -n "$PACK" ]; then printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"; fi
           rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/видео.mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
-          rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include subs_B.ass --include sync.txt \
+          rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
           echo "::notice::Готово: $DEST"

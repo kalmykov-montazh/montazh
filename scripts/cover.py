@@ -25,6 +25,7 @@ if not len(f) and FACE and os.path.exists(FACE):
     print('cover: лицо из face.json')
 if len(f):
     x, y, w, h = max(f, key=lambda r: r[2] * r[3]); cx, ey = x + w / 2, y + 0.42 * h
+    y0_, h0_ = y, h
 else:
     cx, ey = W / 2, H * 0.55
 lines = [l.strip() for l in text.split('|') if l.strip()]
@@ -82,6 +83,13 @@ else:
     maxh = max(300, head_top - 20 - SAFE_T)
     size = min(116, int(maxh / (len(lines) * 1.32)))
     y = max(SAFE_T, head_top - 20 - int(len(lines) * size * 1.32))   # низ надписи — над макушкой
+    # над головой мало места (снято в полный рост, голова высоко) — надпись на груди, под шеей (Евгений 04.10.2026)
+    chest = os.environ.get('COVER_POS') == 'chest' or (os.environ.get('COVER_POS') != 'top' and head_top - 20 - SAFE_T < len(lines) * 90 * 1.32)
+    if chest and len(f):
+        chin = int(z * (y0_ + 1.05 * h0_) + ty)   # низ подбородка
+        size = min(116, int((1670 - chin - 60) / (len(lines) * 1.32)))
+        y = chin + 60
+        print('cover: надпись на груди', chin)
     for i, ln in enumerate(lines):
         fo, s = fit(d, ln, 900, size)
         tw = d.textlength(ln, font=fo); pad = 26
