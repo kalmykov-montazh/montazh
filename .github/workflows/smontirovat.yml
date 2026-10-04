@@ -99,8 +99,13 @@ jobs:
           [ "$br" -ge 14000000 ] || echo "::warning::Битрейт ниже 14 Мбит/с"
           mid=$(python -c "print(max(0,int($dur/2)-15))")
           cd "$W" && ln -sf "$WMODEL" ggml-small-q8_0.bin
-          python "$GITHUB_WORKSPACE/scripts/check_sync.py" ролик_B.mp4 subs_B.ass 0 30 > sync.txt
-          python "$GITHUB_WORKSPACE/scripts/check_sync.py" ролик_B.mp4 subs_B.ass "$mid" "$((mid + 30))" >> sync.txt
+          : > sync.txt
+          for rng in "0 30" "$mid $((mid + 30))"; do
+            # shellcheck disable=SC2086
+            if ! python "$GITHUB_WORKSPACE/scripts/check_sync.py" ролик_B.mp4 subs_B.ass $rng >> sync.txt 2> sync_err.txt; then
+              echo "::warning::Сверка $rng не прошла: $(grep -v '^whisper_\|^ggml_\|^ *$' sync_err.txt | tail -4 | tr '\n' ' ' | cut -c1-500)"
+            fi
+          done
           echo "::notice::Сверка субтитров: $(grep -E '^слов' sync.txt | tr '\n' ' ')"
           grep -E '^расхождение' sync.txt | head -15 | tr '\n' ' ' | sed 's/^/::notice::Расхождения: /'; echo
           # кадры для проверки глазами: начало, середина, конец
@@ -110,6 +115,7 @@ jobs:
           ffmpeg -v error -y -pattern_type glob -i 'k_*.png' -filter_complex tile=3x1 кадры.jpg
 
       - name: Положить на Диск
+        if: ${{ !cancelled() && hashFiles('work/**/ролик_B.mp4') != '' }}
         env:
           DEST: ${{ inputs.dest }}
           PACK: ${{ inputs.pack }}
