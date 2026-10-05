@@ -140,3 +140,16 @@ jobs:
           rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
           echo "::notice::Готово: $DEST"
+
+      - name: Перенести сырой в папку готового ролика
+        # Вместо склейщика на компьютере: сырой уезжает из «Сырые!» в папку ролика (перенос внутри Диска).
+        # Только одиночный файл прямо в «Сырые!»; подпапки и переделки не трогаем.
+        if: ${{ success() }}
+        env:
+          SRC: ${{ inputs.src }}
+          DEST: ${{ inputs.dest }}
+        run: |
+          rest="${SRC#Сырые!/}"
+          if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Сырые!» — не переношу"; exit 0; fi
+          if [ -n "$(rclone lsf "montazh:$DEST/$rest" 2>/dev/null)" ]; then echo "::warning::В папке ролика уже есть $rest — сырой оставлен"; exit 0; fi
+          if rclone moveto "montazh:$SRC" "montazh:$DEST/$rest"; then echo "::notice::Сырой перенесён: $SRC → $DEST/$rest"; else echo "::warning::Не удалось перенести сырой $SRC"; fi
