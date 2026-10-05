@@ -151,5 +151,7 @@ jobs:
         run: |
           rest="${SRC#Сырые!/}"
           if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Сырые!» — не переношу"; exit 0; fi
-          if [ -n "$(rclone lsf "montazh:$DEST/$rest" 2>/dev/null)" ]; then echo "::warning::В папке ролика уже есть $rest — сырой оставлен"; exit 0; fi
-          if rclone moveto "montazh:$SRC" "montazh:$DEST/$rest"; then echo "::notice::Сырой перенесён: $SRC → $DEST/$rest"; else echo "::warning::Не удалось перенести сырой $SRC"; fi
+          # сырой получает то же название, что папка ролика
+          to="$DEST/$(basename "$DEST").${rest##*.}"
+          if [ -n "$(rclone lsf "montazh:$to" 2>/dev/null)" ]; then echo "::warning::Уже есть $to — сырой оставлен в «Сырые!»"; exit 0; fi
+          if rclone moveto "montazh:$SRC" "montazh:$to"; then echo "::notice::Сырой перенесён: $SRC → $to"; else echo "::warning::Не удалось перенести сырой $SRC"; fi
