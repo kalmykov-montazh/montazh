@@ -1,0 +1,53 @@
+name: Кадры ролика в заданные секунды
+
+# Для Claude: кадры готового видео в нужные секунды + обложка, зашифрованным архивом в ветку tmp-pics (05.10.2026).
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка ролика, например Готовые!/Тема 20261005_150827"
+        required: true
+      times:
+        description: "Секунды через пробел, например 0.1 7 13.2"
+        required: true
+      key:
+        description: "Пароль для шифрования"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  kadry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Кадры
+        env:
+          F: ${{ inputs.folder }}
+          T: ${{ inputs.times }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          mkdir -p out
+          rclone copyto "montazh:$F/видео.mp4" v.mp4
+          rclone copyto "montazh:$F/обложка.jpg" out/обложка.jpg || true
+          rclone copyto "montazh:$F/субтитры.srt" out/субтитры.srt || true
+          for t in $T; do ffmpeg -v error -y -ss "$t" -i v.mp4 -frames:v 1 -vf scale=432:768 "out/k_$t.jpg"; done
+          ffprobe -v error -show_entries format=duration -of csv=p=0 v.mp4 > out/dur.txt
+          echo "::notice::Кадров: $(ls out | wc -l)"
+      - name: Зашифровать и положить в ветку tmp-pics
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
