@@ -8,6 +8,13 @@ RAW, OUT = sys.argv[1], sys.argv[2]
 FIX = json.load(open(sys.argv[3])) if len(sys.argv) > 3 else {}
 MODEL = os.environ.get('WMODEL', 'ggml-small-q8_0.bin')
 cache = json.load(open(f'{OUT}/asr_cache.json'))
+# ключ из текст.txt может чуть отличаться от ключа в asr_cache (первый кусок «0.030-…» / «0.000-…», 06.10.2026) — сопоставляем с допуском
+def _ab(k): return tuple(map(float, k.split('-')))
+for k_ in [k for k in FIX if k not in cache]:
+    a_, b_ = _ab(k_)
+    near = [c for c in cache if abs(_ab(c)[0] - a_) < 0.3 and abs(_ab(c)[1] - b_) < 0.3]
+    if len(near) == 1: FIX[near[0]] = FIX.pop(k_); print(f'ключ {k_} → {near[0]}')
+    else: print(f'НЕ НАЙДЕН КЛЮЧ {k_}')
 wav = f'{OUT}/a.wav'
 if not os.path.exists(wav):
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', RAW, '-ar', '16000', '-ac', '1', wav], check=True)
