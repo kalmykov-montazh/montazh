@@ -104,6 +104,15 @@ for i in range(len(kept) - 1):
         kept[i]['keep'] = False; kept[i]['why'] = 'повтор/оговорка'
 kept = [p for p in plan if p['keep']]
 
+# 3б. ПРОБА 05.10.2026 (только если в папке работы есть proba.json): голос с первого кадра и обрыв сразу после «работать»
+PROBA = json.load(open(f'{OUT}/proba.json')) if os.path.exists(f'{OUT}/proba.json') else None
+if PROBA and kept:
+    f0 = kept[0]
+    if f0['words']: f0['a'] = max(f0['a'], f0['words'][0]['s'] - 0.03)
+    l0 = kept[-1]
+    if l0['words']: l0['b'] = min(l0['b'], l0['words'][-1]['e'] + 0.12)
+    print('proba', json.dumps({k: v for k, v in PROBA.items()}, ensure_ascii=False))
+
 # 4. таймлайн результата
 t = 0.0
 for p in kept:
@@ -221,6 +230,16 @@ def two_lines(ws):
     best = min(range(1, len(s)), key=lambda i: abs(len(' '.join(s[:i])) - len(' '.join(s[i:]))))
     return ' '.join(s[:best]) + r'\N' + ' '.join(s[best:])
 
+# ПРОБА 05.10.2026: слова по смыслу красным/зелёным всё время, пока на экране (не больше 6 за ролик)
+COLW = {}
+if PROBA:
+    def _hit(w, stems): return any(clean(w['w']).lower().strip('?!«»"').startswith(s) for s in stems)
+    for w in words:
+        if len(COLW) >= 6: break
+        if w['os'] < (TITLE_SEC if COVER else 0): continue
+        if _hit(w, PROBA.get('red', [])): COLW[id(w)] = r'&H00303BFF&'
+        elif _hit(w, PROBA.get('green', [])): COLW[id(w)] = r'&H0050D82E&'
+    print('colored', [clean(w['w']) for w in words if id(w) in COLW])
 evA, evB = [], []
 for i, ws in enumerate(phr):
     st = ws[0]['os']; en = phr[i + 1][0]['os'] if i + 1 < len(phr) else ws[-1]['oe'] + 0.3
@@ -240,8 +259,11 @@ for i, ws in enumerate(phr):
             parts = []
             for jj, x in enumerate(g):
                 tx = clean(x['w']).upper()
+                cc_ = COLW.get(id(x))
                 if jj == j:
-                    parts.append(r'{\c&H0000E1FF&\fscx112\fscy112}' + tx + r'{\c&H00FFFFFF&\fscx100\fscy100}')
+                    parts.append(r'{\c' + (cc_ or r'&H0000E1FF&') + r'\fscx112\fscy112}' + tx + r'{\c&H00FFFFFF&\fscx100\fscy100}')
+                elif cc_:
+                    parts.append(r'{\c' + cc_ + '}' + tx + r'{\c&H00FFFFFF&}')
                 else:
                     parts.append(tx)
             gl = len(' '.join(clean(x['w']) for x in g))
@@ -261,6 +283,23 @@ k = 0
 while keys[-1][0] < total:
     d, m_ = WAVES[k % len(WAVES)]
     keys.append((keys[-1][0] + d, ZB * m_)); k += 1
+
+# ПРОБА 05.10.2026: резкий наезд +8% за 0,15 с на 3–5 ключевых словах, держится до конца фразы (~1 с), потом плавно назад
+PUNCH = []
+if PROBA:
+    pend = {id(w): ws[-1]['oe'] for ws in phr for w in ws}
+    for w in words:
+        if len(PUNCH) >= 5: break
+        if w['os'] < (TITLE_SEC + 0.3 if COVER else 0.5) or w['os'] > total - 3: continue
+        if not _hit(w, PROBA.get('punch', [])): continue
+        if PUNCH and w['os'] - PUNCH[-1][0] < 5: continue
+        PUNCH.append((w['os'], min(max(w['os'] + 0.8, pend[id(w)]), w['os'] + 1.4)))
+    print('punch', [(round(a, 1), round(b, 1)) for a, b in PUNCH])
+def punch_at(t):
+    for a, b in PUNCH:
+        if a <= t <= b: return 1 + 0.08 * min(1, (t - a) / 0.15)
+        if b < t < b + 0.45: return 1 + 0.08 * (1 - ease((t - b) / 0.45))
+    return 1.0
 
 # картинка в картинке: PIP=pip.json {"from": raw_t, "to": raw_t, "segs": [{"file","ss","crop","credit"}]}
 PIP = json.load(open(os.environ['PIP'])) if os.environ.get('PIP') else None
@@ -346,6 +385,25 @@ with open(f'{OUT}/subs.srt', 'w') as f:
         st, en = ws[0]['os'], ws[-1]['oe']
         def st_(x): return f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}'
         f.write(f"{i}\n{st_(st)} --> {st_(en)}\n{' '.join(clean(x['w']) for x in ws)}\n\n")
+
+# ПРОБА 05.10.2026: субтитры.srt для YouTube/FB — по фразам, с пунктуацией, до 2 строк по ~42 знака
+if PROBA:
+    def _t(x): return f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(round(x*1000)%1000):03d}'
+    sp, cur_ = [], []
+    for w in words:
+        cur_.append(w)
+        tx_ = ' '.join(x['w'] for x in cur_)
+        if re.search(r'[.?!…]$', w['w']) or (re.search(r'[,:;]$', w['w']) and len(tx_) > 40) or len(tx_) > 76:
+            sp.append(cur_); cur_ = []
+    if cur_: sp.append(cur_)
+    with open(f'{OUT}/субтитры.srt', 'w') as f:
+        for i, ws in enumerate(sp, 1):
+            tw = [x['w'] for x in ws]; tx_ = ' '.join(tw)
+            if len(tx_) > 42 and len(tw) > 1:
+                b_ = min(range(1, len(tw)), key=lambda k_: abs(len(' '.join(tw[:k_])) - len(' '.join(tw[k_:]))))
+                tx_ = ' '.join(tw[:b_]) + '\n' + ' '.join(tw[b_:])
+            en = sp[i][0]['os'] if i < len(sp) else ws[-1]['oe']
+            f.write(f"{i}\n{_t(ws[0]['os'])} --> {_t(min(en, ws[-1]['oe'] + 0.5))}\n{tx_[:1].upper() + tx_[1:]}\n\n")
 
 # 7. сборка видео: каждый кадр отдельно — лицо по центру, плавный зум
 import numpy as np, math
@@ -434,8 +492,8 @@ while True:
     fr = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
     ex, ey = fxs[min(n, NF - 1)], fys[min(n, NF - 1)]
     t = n / FPS
-    z = zoom_at(t)
-    tx = min(0, max(W - z * W, W / 2 - z * ex))
+    z = zoom_at(t) * punch_at(t)
+    tx =min(0, max(W - z * W, W / 2 - z * ex))
     ty = min(0, max(H - z * H, EYE_T * H - z * ey))
     M = np.float32([[z, 0, tx], [0, z, ty]])
     o = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REPLICATE)
@@ -448,7 +506,7 @@ for pr in outs:
     pr.stdin.close(); pr.wait()
 dec.wait()
 
-print(json.dumps({'raw': dur, 'out': round(total, 2), 'chunks': len(plan), 'kept': len(kept),
+print(json.dumps({'raw': dur, 'out': round(total, 2), 'first_word': round(words[0]['os'], 2) if words else None, 'tail': round(total - words[-1]['oe'], 2) if words else None, 'chunks': len(plan), 'kept': len(kept),
                   'dropped': [(round(p['a'], 2), p['text'], p['why']) for p in plan if not p['keep']],
                   'pops': pops}, ensure_ascii=False))
 print(' '.join(clean(w['w']) for w in words))
