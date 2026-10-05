@@ -31,7 +31,7 @@ jobs:
           IFS=';' read -ra paths <<< "$P"
           : > list.txt
           for p in "${paths[@]}"; do
-            rclone lsf "montazh:$p" -R --files-only --include 'видео.mp4' --include 'ОК *.mp4' | sed "s:^:$p/:" >> list.txt
+            rclone lsf "montazh:$p" -R --files-only --include 'видео.mp4' --include '!!! *.mp4' | sed "s:^:$p/:" >> list.txt
           done
           files=$(jq -Rcn '[inputs | select(length>0)]' < list.txt)
           echo "files=$files" >> "$GITHUB_OUTPUT"

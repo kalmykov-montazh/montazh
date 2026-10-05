@@ -42,7 +42,7 @@ jobs:
               echo "::notice::$(ffprobe -v error -select_streams v -show_entries stream=width,height,color_transfer:stream_side_data=rotation -of compact=p=0 v.mp4 | tr '\n' ' ')"
               VF='scale=640:640:force_original_aspect_ratio=decrease' ;;
             *)
-              g=$(rclone lsf "montazh:$F" --files-only --include "ОК *.mp4" | head -1); [ -z "$g" ] && g="видео.mp4"
+              g=$(rclone lsf "montazh:$F" --files-only --include "!!! *.mp4" | head -1); [ -z "$g" ] && g="видео.mp4"
               rclone copyto "montazh:$F/$g" v.mp4
               rclone copyto "montazh:$F/обложка.jpg" out/обложка.jpg || true
               rclone copyto "montazh:$F/субтитры.srt" out/субтитры.srt || true

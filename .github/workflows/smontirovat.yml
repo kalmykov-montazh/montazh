@@ -135,8 +135,8 @@ jobs:
           PACK: ${{ inputs.pack }}
         run: |
           if [ -n "$PACK" ]; then printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"; fi
-          # готовое видео = «ОК <название папки>.mp4» (06.10.2026), чтобы не путать с сырым
-          rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/ОК $(basename "$DEST").mp4"
+          # готовое видео = «!!! <название папки>.mp4» (06.10.2026), чтобы не путать с сырым
+          rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/!!! $(basename "$DEST").mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
           rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
