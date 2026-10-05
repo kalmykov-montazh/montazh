@@ -104,14 +104,17 @@ for i in range(len(kept) - 1):
         kept[i]['keep'] = False; kept[i]['why'] = 'повтор/оговорка'
 kept = [p for p in plan if p['keep']]
 
-# 3б. ПРОБА 05.10.2026 (только если в папке работы есть proba.json): голос с первого кадра и обрыв сразу после «работать»
-PROBA = json.load(open(f'{OUT}/proba.json')) if os.path.exists(f'{OUT}/proba.json') else None
-if PROBA and kept:
+# 3б. Утверждено 05.10.2026 (Евгений, после пробы на «Выборы и аренда»): голос с первого кадра и обрыв сразу после «работать» — всегда.
+# Слова для цвета и наезда — файл slova.json в папке работы (Claude кладёт slova/<ключ>.json в хранилище перед рендером).
+PROBA = json.load(open(f'{OUT}/slova.json')) if os.path.exists(f'{OUT}/slova.json') else {}
+if os.environ.get('NO_TRIM_EDGES'): kept_edges = False
+else: kept_edges = True
+if kept_edges and kept:
     f0 = kept[0]
     if f0['words']: f0['a'] = max(f0['a'], f0['words'][0]['s'] - 0.03)
     l0 = kept[-1]
     if l0['words']: l0['b'] = min(l0['b'], l0['words'][-1]['e'] + 0.12)
-    print('proba', json.dumps({k: v for k, v in PROBA.items()}, ensure_ascii=False))
+    print('slova', json.dumps(PROBA, ensure_ascii=False))
 
 # 4. таймлайн результата
 t = 0.0
@@ -230,9 +233,9 @@ def two_lines(ws):
     best = min(range(1, len(s)), key=lambda i: abs(len(' '.join(s[:i])) - len(' '.join(s[i:]))))
     return ' '.join(s[:best]) + r'\N' + ' '.join(s[best:])
 
-# ПРОБА 05.10.2026: слова по смыслу красным/зелёным всё время, пока на экране (не больше 6 за ролик)
+# Утверждено 05.10.2026: слова по смыслу красным/зелёным всё время, пока на экране (не больше 6 за ролик)
 COLW = {}
-if PROBA:
+if True:
     def _hit(w, stems): return any(clean(w['w']).lower().strip('?!«»"').startswith(s) for s in stems)
     for w in words:
         if len(COLW) >= 6: break
@@ -257,22 +260,23 @@ for i, ws in enumerate(phr):
         for j, w in enumerate(g):
             ws_ = w['os']; we_ = g[j + 1]['os'] if j + 1 < len(g) else gend
             parts = []
+            gl = sum(len(clean(x['w'])) * (1.3 if id(x) in COLW else 1) for x in g) + len(g) - 1   # цветное слово крупнее — шире строка
+            fz = min(100, int(1200 / gl)) if gl > 12 else 100
             for jj, x in enumerate(g):
                 tx = clean(x['w']).upper()
                 cc_ = COLW.get(id(x))
+                big = 130 if cc_ else 100   # цветное слово на 30% крупнее (Евгений 05.10.2026)
                 if jj == j:
-                    parts.append(r'{\c' + (cc_ or r'&H0000E1FF&') + r'\fscx112\fscy112}' + tx + r'{\c&H00FFFFFF&\fscx100\fscy100}')
+                    sz = fz * (big + 12) // 100
+                    parts.append(r'{\c' + (cc_ or r'&H0000E1FF&') + r'\fscx%d\fscy%d}' % (sz, sz) + tx + r'{\c&H00FFFFFF&\fscx%d\fscy%d}' % (fz, fz))
                 elif cc_:
-                    parts.append(r'{\c' + cc_ + '}' + tx + r'{\c&H00FFFFFF&}')
+                    sz = fz * big // 100
+                    parts.append(r'{\c' + cc_ + r'\fscx%d\fscy%d}' % (sz, sz) + tx + r'{\c&H00FFFFFF&\fscx%d\fscy%d}' % (fz, fz))
                 else:
                     parts.append(tx)
-            gl = len(' '.join(clean(x['w']) for x in g))
-            fit = r'{\fscx%d\fscy%d}' % ((min(100, int(1200 / gl)),) * 2) if gl > 12 else ''
+            fit = r'{\fscx%d\fscy%d}' % (fz, fz) if fz < 100 else ''
             pop = r'{\fscx92\fscy92\t(0,90,\fscx100\fscy100)}' if j == 0 and not fit else ''
             line = ' '.join(parts)
-            if fit:
-                fz = min(100, int(1200 / gl))
-                line = line.replace(r'\fscx112\fscy112', r'\fscx%d\fscy%d' % (fz * 112 // 100, fz * 112 // 100)).replace(r'\fscx100\fscy100', r'\fscx%d\fscy%d' % (fz, fz))
             evB.append(f'Dialogue: 0,{ts(ws_)},{ts(we_)},Kar,,0,0,0,,{fit}{pop}' + line)
 
 
@@ -284,9 +288,9 @@ while keys[-1][0] < total:
     d, m_ = WAVES[k % len(WAVES)]
     keys.append((keys[-1][0] + d, ZB * m_)); k += 1
 
-# ПРОБА 05.10.2026: резкий наезд +8% за 0,15 с на 3–5 ключевых словах, держится до конца фразы (~1 с), потом плавно назад
+# Утверждено 05.10.2026: резкий наезд +8% за 0,15 с на 3–5 ключевых словах, держится до конца фразы (~1 с), потом плавно назад
 PUNCH = []
-if PROBA:
+if PROBA.get('punch'):
     pend = {id(w): ws[-1]['oe'] for ws in phr for w in ws}
     for w in words:
         if len(PUNCH) >= 5: break
@@ -386,24 +390,6 @@ with open(f'{OUT}/subs.srt', 'w') as f:
         def st_(x): return f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}'
         f.write(f"{i}\n{st_(st)} --> {st_(en)}\n{' '.join(clean(x['w']) for x in ws)}\n\n")
 
-# ПРОБА 05.10.2026: субтитры.srt для YouTube/FB — по фразам, с пунктуацией, до 2 строк по ~42 знака
-if PROBA:
-    def _t(x): return f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(round(x*1000)%1000):03d}'
-    sp, cur_ = [], []
-    for w in words:
-        cur_.append(w)
-        tx_ = ' '.join(x['w'] for x in cur_)
-        if re.search(r'[.?!…]$', w['w']) or (re.search(r'[,:;]$', w['w']) and len(tx_) > 40) or len(tx_) > 76:
-            sp.append(cur_); cur_ = []
-    if cur_: sp.append(cur_)
-    with open(f'{OUT}/субтитры.srt', 'w') as f:
-        for i, ws in enumerate(sp, 1):
-            tw = [x['w'] for x in ws]; tx_ = ' '.join(tw)
-            if len(tx_) > 42 and len(tw) > 1:
-                b_ = min(range(1, len(tw)), key=lambda k_: abs(len(' '.join(tw[:k_])) - len(' '.join(tw[k_:]))))
-                tx_ = ' '.join(tw[:b_]) + '\n' + ' '.join(tw[b_:])
-            en = sp[i][0]['os'] if i < len(sp) else ws[-1]['oe']
-            f.write(f"{i}\n{_t(ws[0]['os'])} --> {_t(min(en, ws[-1]['oe'] + 0.5))}\n{tx_[:1].upper() + tx_[1:]}\n\n")
 
 # 7. сборка видео: каждый кадр отдельно — лицо по центру, плавный зум
 import numpy as np, math

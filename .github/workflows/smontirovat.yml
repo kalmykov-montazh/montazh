@@ -68,7 +68,7 @@ jobs:
           rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
           [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
           printf '%s' "$FIXES" | jq . > "$W/fixes.json"
-          if [ -f "proba/$stem.json" ]; then cp "proba/$stem.json" "$W/proba.json"; echo "::notice::Проба 05.10.2026 включена для $stem"; fi
+          if [ -f "slova/$stem.json" ]; then cp "slova/$stem.json" "$W/slova.json"; else echo "::warning::Нет slova/$stem.json — цветных слов и наездов не будет"; fi
           if [ -n "$PIPJ" ]; then
             mkdir -p "$W/pip"
             printf '%s' "$PIPJ" | jq -r '.segs[].file' | sort -u | while IFS= read -r f; do rclone copyto "montazh:$f" "$W/pip/$(basename "$f")"; done
@@ -137,7 +137,6 @@ jobs:
           if [ -n "$PACK" ]; then printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"; fi
           rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/видео.mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
-          if [ -f "$W/субтитры.srt" ]; then rclone copyto "$W/субтитры.srt" "montazh:$DEST/субтитры.srt"; fi
           rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
           echo "::notice::Готово: $DEST"
