@@ -29,7 +29,13 @@ jobs:
             python3 - "$p" <<'PY'
           import sys
           t = open('f.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\r', '').replace('\n', '%0A')
-          for i in range(0, max(1, len(t)), 3000):
-              print(f"::notice title={sys.argv[1]} [{i // 3000 + 1}]::{t[i:i + 3000]}")
+          # куски по байтам (кириллица = 2 байта), иначе GitHub обрезает заметку (06.10.2026)
+          parts, cur = [], ''
+          for ch in t:
+              if len((cur + ch).encode()) > 3800: parts.append(cur); cur = ''
+              cur += ch
+          parts.append(cur)
+          for n, c in enumerate(parts, 1):
+              print(f"::notice title={sys.argv[1]} [{n}]::{c}")
           PY
           done
