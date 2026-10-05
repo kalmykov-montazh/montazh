@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       folder:
-        description: "Папка ролика, например Готовые!/Тема 20261005_150827"
+        description: "Папка ролика (Готовые!/Тема) или сырой файл (Сырые!/x.mp4)"
         required: true
       times:
         description: "Секунды через пробел, например 0.1 7 13.2"
@@ -35,10 +35,19 @@ jobs:
         run: |
           sudo apt-get install -y -qq ffmpeg > /dev/null
           mkdir -p out
-          rclone copyto "montazh:$F/видео.mp4" v.mp4
-          rclone copyto "montazh:$F/обложка.jpg" out/обложка.jpg || true
-          rclone copyto "montazh:$F/субтитры.srt" out/субтитры.srt || true
-          for t in $T; do ffmpeg -v error -y -ss "$t" -i v.mp4 -frames:v 1 -vf scale=432:768 "out/k_$t.jpg"; done
+          case "${F,,}" in
+            *.mp4|*.mov|*.m4v|*.mkv)
+              # сырой файл: кадры как есть, с размером и поворотом (05.10.2026)
+              rclone copyto "montazh:$F" v.mp4
+              echo "::notice::$(ffprobe -v error -select_streams v -show_entries stream=width,height,color_transfer:stream_side_data=rotation -of compact=p=0 v.mp4 | tr '\n' ' ')"
+              VF='scale=640:640:force_original_aspect_ratio=decrease' ;;
+            *)
+              rclone copyto "montazh:$F/видео.mp4" v.mp4
+              rclone copyto "montazh:$F/обложка.jpg" out/обложка.jpg || true
+              rclone copyto "montazh:$F/субтитры.srt" out/субтитры.srt || true
+              VF='scale=432:768' ;;
+          esac
+          for t in $T; do ffmpeg -v error -y -ss "$t" -i v.mp4 -frames:v 1 -vf "$VF" "out/k_$t.jpg"; done
           ffprobe -v error -show_entries format=duration -of csv=p=0 v.mp4 > out/dur.txt
           echo "::notice::Кадров: $(ls out | wc -l)"
       - name: Зашифровать и положить в ветку tmp-pics
