@@ -1,0 +1,74 @@
+name: Проверить готовые ролики на оговорки
+
+# Для Claude (05.10.2026): распознаёт ГОТОВЫЕ видео.mp4 и выводит их текст заметками,
+# чтобы найти оставшиеся перезаписи и двойные фразы. Ничего на Диске не меняет.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Папки внутри «Монтаж!», где искать видео.mp4, через ;"
+        required: true
+        default: "Готовые!;К публикации!"
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.f.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Найти готовые видео
+        id: f
+        env:
+          P: ${{ inputs.folders }}
+        run: |
+          IFS=';' read -ra paths <<< "$P"
+          : > list.txt
+          for p in "${paths[@]}"; do
+            rclone lsf "montazh:$p" -R --files-only --include 'видео.mp4' | sed "s:^:$p/:" >> list.txt
+          done
+          files=$(jq -Rcn '[inputs | select(length>0)]' < list.txt)
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+          echo "::notice::Видео: $(wc -l < list.txt)"
+
+  check:
+    needs: find
+    if: needs.find.outputs.files != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        file: ${{ fromJSON(needs.find.outputs.files) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Распознать готовое видео
+        env:
+          F: ${{ matrix.file }}
+        run: |
+          mkdir -p raw work
+          rclone copyto "montazh:$F" raw/v.mp4
+          ASR_ONLY=1 python scripts/montage.py "$PWD/raw/v.mp4" "$PWD/work" > /dev/null
+          python3 - "$F" <<'PY'
+          import sys
+          name = sys.argv[1].rsplit('/', 1)[0]
+          lines = []
+          for l in open('work/текст.txt', encoding='utf-8'):
+              ab, k, t = l.rstrip('\n').split('\t', 2)
+              lines.append(f"{float(ab.split('-')[0]):.0f}с {t}")
+          t = '\n'.join(lines).replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+          for i in range(0, max(1, len(t)), 3000):
+              print(f"::notice title=ТЕКСТ {name} [{i // 3000 + 1}]::{t[i:i + 3000]}")
+          PY
