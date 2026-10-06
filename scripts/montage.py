@@ -406,6 +406,8 @@ if MID:
     _sm = min(1.0, max(0.7, (HEAD_PX - 30 - 110) / _bm)); _tm = int(max(110, min(HEAD_PX - 30 - _bm * _sm, 640 - _bm * _sm)))
     _want = total * float(PROBA.get('mid_at', 0.45))
     _starts = [ws[0]['os'] for ws in phr if TITLE_SEC + 2 < ws[0]['os'] < total - CTA_SEC - MID_SEC - 2]
+    _free = [x for x in _starts if not any(c['s'] - 1 < x + MID_SEC and x < c['e'] + 1 for c in CARDS)]   # не на плашку по тексту (07.10.2026)
+    _starts = _free or _starts
     mst = min(_starts, key=lambda x: abs(x - _want)) if _starts else _want
     print('mid', round(mst, 2), MID_SEC)
     def _t0(e):   # начало события ASS в секундах

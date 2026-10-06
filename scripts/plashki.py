@@ -26,6 +26,7 @@ STY = {
     'strike':  (F('Black', 76), GRY),
     'text':    (F('Bold', 50), WHT),
     'redtext': (F('ExtraBold', 52), RED),
+    'greentext': (F('ExtraBold', 52), GRN),
     'small':   (F('SemiBold', 40), GRY),
 }
 GAP = 18
