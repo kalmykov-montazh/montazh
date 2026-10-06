@@ -320,6 +320,30 @@ if PIP:
     if COVER: PIP_S = max(PIP_S, TITLE_SEC + 0.15)   # не накладывать на надпись обложки
     print('pip', round(PIP_S, 2), round(PIP_E, 2))
 
+# плашки (06.10.2026, проба на «АВТО Срок украинских номеров»): slova.json "cards": [{"file": "plashki/<ключ>/a1.png", "from": raw_t, "to": raw_t}]
+# PNG рисует scripts/plashki.py. Плашка сверху над головой, подряд идущие — без мигания (затухание только на краях группы).
+CARDS = []
+if PROBA.get('cards'):
+    from PIL import Image as _Im
+    _zmax = ZB * 1.12 * 1.08                                # самый крупный план (волна + наезд) — голова выше всего
+    HEAD_MIN = (EYE_T - 0.72 * HN * _zmax) * H              # макушка при самом крупном плане, px
+    _avail = HEAD_MIN - 40 - 110
+    for c in PROBA['cards']:
+        w_, h_ = _Im.open(c['file']).size
+        a_, b_ = raw2out(c['from']), raw2out(c['to'])
+        if COVER: a_ = max(a_, TITLE_SEC + 0.15)
+        if b_ - a_ < 0.3: continue
+        CARDS.append({'file': c['file'], 's': a_, 'e': b_, 'w': w_, 'h': h_})
+    CS = min(1.0, max(0.6, _avail / max(c['h'] for c in CARDS))) if CARDS else 1.0   # одна крупность на весь ролик
+    for i, c in enumerate(CARDS):
+        c['fi'] = i == 0 or CARDS[i - 1]['e'] < c['s'] - 0.05
+        c['fo'] = i == len(CARDS) - 1 or CARDS[i + 1]['s'] > c['e'] + 0.05
+        c['sw'], c['sh'] = int(c['w'] * CS) // 2 * 2, int(c['h'] * CS) // 2 * 2
+        c['x'], c['y'] = (W - c['sw']) // 2, 110
+    print('cards', len(CARDS), 'scale', round(CS, 2), 'head_min', int(HEAD_MIN), [(round(c['s'], 1), round(c['e'], 1)) for c in CARDS])
+def in_card(t, pad=0.5):
+    return any(c['s'] - pad <= t <= c['e'] + 0.3 for c in CARDS)
+
 # всплывающие цифры
 NUM = {'один': 1, 'одна': 1, 'два': 2, 'две': 2, 'три': 3, 'четыре': 4, 'пять': 5, 'шесть': 6, 'семь': 7,
        'восемь': 8, 'девять': 9, 'десять': 10, 'двадцать': 20, 'тридцать': 30, 'сто': 100, 'тысяча': 1000}
@@ -346,6 +370,8 @@ for i, w in enumerate(lw):
         if COVER and st < TITLE_SEC + 0.2:
             continue
         if PIP_S - 0.5 <= st <= PIP_E + 0.3:   # сверху окошко с видео
+            continue
+        if in_card(st):   # сверху плашка
             continue
         if pops and (st - pops[-1][0] < 0.5 or (pops[-1][1] == label and st - pops[-1][0] < 3)):
             continue
@@ -462,7 +488,7 @@ aud = f"[1:a]aselect='{sel}',asetpts=N/SR/TB,atempo={SPEED},loudnorm=I=-14:TP=-1
 CRF = os.environ.get('CRF', '16')   # сжатие по качеству (~15-20 Мбит/с, как Edits/CapCut), Евгений одобрил 03.10.2026; 5-8 Мбит/с размазывали кожу
 VBR = os.environ.get('VBR', '8000k')   # постоянное качество; большой файл режется на куски (send_parts.py), склейщик собирает на компьютере
 print('crf', CRF)
-pin, pfc = [], ''
+pin, pfc, n_ = [], '', 0
 if PIP:
     D = PIP_E - PIP_S; acc = 0; parts_ = []
     for i, sg in enumerate(PIP['segs']):
@@ -475,13 +501,35 @@ if PIP:
         acc += d_
     n_ = len(parts_)
     pfc = ';'.join(parts_) + ';' + ''.join(f'[p{i}]' for i in range(n_)) + f"concat=n={n_}:v=1:a=0,format=yuva420p,fade=t=in:st=0:d=0.3:alpha=1,fade=t=out:st={max(0, D - 0.3):.3f}:d=0.3:alpha=1,setpts=PTS+{PIP_S:.3f}/TB[pip];"
+# плашки поверх видео (и окошка вставки), под субтитрами
+cin, cfc = [], ''
+if CARDS:
+    base_i = 2 + (n_ if PIP else 0)
+    for k, c in enumerate(CARDS):
+        cin += ['-loop', '1', '-framerate', str(FPS), '-t', f'{total + 1:.3f}', '-i', c['file']]
+        fl = f"[{base_i + k}:v]format=rgba,scale={c['sw']}:{c['sh']}:flags=lanczos"
+        if c['fi']: fl += f",fade=t=in:st={c['s']:.3f}:d=0.25:alpha=1"
+        if c['fo']: fl += f",fade=t=out:st={max(c['s'], c['e'] - 0.25):.3f}:d=0.25:alpha=1"
+        cfc += fl + f"[c{k}];"
+    prev = 'cb'
+    for k, c in enumerate(CARDS):
+        nxt = f'co{k}'
+        cfc += f"[{prev}][c{k}]overlay={c['x']}:{c['y']}:enable='between(t,{c['s']:.3f},{c['e']:.3f})'[{nxt}];"
+        prev = nxt
+    CARD_OUT = prev
+def vchain(name):
+    sub = f"subtitles={fq(f'{OUT}/subs_{name}.ass')}"
+    pre = "[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0"
+    if PIP: head = pfc + pre + "[bs];[bs][pip]overlay=" + f"{PX}:{PY}" + ":eof_action=pass,format=yuv420p"
+    else: head = pre
+    if CARDS: return head + "[cb];" + cfc + f"[{CARD_OUT}]format=yuv420p," + sub + "[v];" + aud
+    return head + "," + sub + "[v];" + aud
 outs = []
 for name in os.environ.get('VARIANTS', 'B').split(','):
     out = f'{OUT}/ролик_{name}.mp4'
     outs.append(subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
-        '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + ['-filter_complex',
-        (pfc + f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0[bs];[bs][pip]overlay={PX}:{PY}:eof_action=pass,format=yuv420p,subtitles={fq(f'{OUT}/subs_{name}.ass')}[v];{aud}") if PIP else
-        f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0,subtitles={fq(f'{OUT}/subs_{name}.ass')}[v];{aud}", '-map', '[v]', '-map', '[a]',
+        '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + cin + ['-filter_complex',
+        vchain(name), '-map', '[v]', '-map', '[a]',
         *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '17'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
         '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out],
