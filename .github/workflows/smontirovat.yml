@@ -70,6 +70,14 @@ jobs:
           rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
           [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
           printf '%s' "$FIXES" | jq . > "$W/fixes.json"
+          # плашки (06.10.2026): фото для карточек — с Диска (строки ["photo", путь] в spec.json), PNG рисуются здесь
+          if [ -f "plashki/$stem/spec.json" ]; then
+            mkdir -p "plashki/$stem/src"
+            jq -r '.cards[] | select(.rows) | .rows[] | select(.[0] == "photo") | .[1]' "plashki/$stem/spec.json" | sort -u | while IFS= read -r f; do
+              rclone copyto "montazh:$f" "plashki/$stem/src/$(basename "$f")" || echo "::warning::Нет фото для плашки: $f"
+            done
+            python scripts/plashki.py "plashki/$stem" > /dev/null || echo "::error::plashki.py упал"
+          fi
           if [ -f "slova/$stem.json" ]; then cp "slova/$stem.json" "$W/slova.json"; else echo "::warning::Нет slova/$stem.json — цветных слов и наездов не будет"; fi
           if [ -n "$PIPJ" ]; then
             mkdir -p "$W/pip"

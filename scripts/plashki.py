@@ -39,19 +39,36 @@ def wrap(d, txt, font, maxw):
     if cur: out.append(cur)
     return out
 
+PH = 320                    # высота фото в карточке, px
+SRC = ''                    # папка, куда сервер скачал фото с Диска (plashki/<ключ>/src)
+def photo(path):
+    # фото с Диска (путь внутри «Монтаж!») — сервер скачал его в SRC под тем же именем; обрезка «по центру» под W×PH
+    im = Image.open(os.path.join(SRC, os.path.basename(path))).convert('RGB')
+    k = max(W / im.width, PH / im.height)
+    im = im.resize((int(im.width * k + 0.5), int(im.height * k + 0.5)), Image.LANCZOS)
+    x, y = (im.width - W) // 2, (im.height - PH) // 2
+    return im.crop((x, y, x + W, y + PH))
+
 def card_rows(rows):
     tmp = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
+    ph = None
+    if rows and rows[0][0] == 'photo':   # фото — только первой строкой, во всю ширину карточки сверху
+        ph = photo(rows[0][1]); rows = rows[1:]
     lines = []
     for st, txt in rows:
         font, col = STY[st]
         for ln in wrap(tmp, txt, font, W - 2 * PAD):
             bb = tmp.textbbox((0, 0), ln, font=font)
             lines.append((st, ln, font, col, bb))
-    h = PAD * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
+    top = PH if ph else 0
+    h = top + PAD * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
     im = Image.new('RGBA', (W, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     d.rounded_rectangle((0, 0, W - 1, h - 1), 36, fill=BG)
-    y = PAD
+    if ph:   # фото со скруглёнными верхними углами
+        m = Image.new('L', (W, h), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, W - 1, PH + 40), 36, fill=255)
+        m = m.crop((0, 0, W, PH)); im.paste(ph, (0, 0), m)
+    y = top + PAD
     for st, ln, font, col, bb in lines:
         tw = d.textlength(ln, font=font)
         x = (W - tw) / 2
@@ -96,6 +113,8 @@ def card_list(spec):
     return im
 
 def main(folder):
+    global SRC
+    SRC = os.path.join(folder, 'src')
     spec = json.load(open(os.path.join(folder, 'spec.json'), encoding='utf-8'))
     for c in spec['cards']:
         im = card_list(c['list']) if 'list' in c else card_rows(c['rows'])
