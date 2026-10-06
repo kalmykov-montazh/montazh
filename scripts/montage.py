@@ -325,8 +325,8 @@ if PIP:
 CARDS = []
 if PROBA.get('cards'):
     from PIL import Image as _Im
-    _zmax = ZB * 1.12 * 1.08                                # самый крупный план (волна + наезд) — голова выше всего
-    HEAD_MIN = (EYE_T - 0.72 * HN * _zmax) * H              # макушка при самом крупном плане, px
+    # макушка при самом крупном плане (волна + наезд) — голова выше всего, px
+    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in [l * 1.08 for l in LEVELS] + LEVELS)
     _avail = HEAD_MIN - 40 - 110
     for c in PROBA['cards']:
         w_, h_ = _Im.open(c['file']).size

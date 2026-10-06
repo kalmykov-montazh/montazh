@@ -96,7 +96,7 @@ jobs:
           start=$(date +%s)
           ALIGNED=1 python scripts/montage.py "$RAW" "$W" > "$W/montage.log"
           grep -o '"first_word.*"tail": [-0-9.]*' "$W/montage.log" | sed 's/^/::notice::Начало и конец: /' || true
-          echo "::notice::Рендер за $(( ($(date +%s) - start) / 60 )) мин; $(grep -E '^(face|ttop|pip|colored|punch)' "$W/montage.log" | tr '\n' ' ')"
+          echo "::notice::Рендер за $(( ($(date +%s) - start) / 60 )) мин; $(grep -E '^(face|ttop|pip|colored|punch|cards)' "$W/montage.log" | tr '\n' ' ')"
 
       - name: Обложка
         env:
