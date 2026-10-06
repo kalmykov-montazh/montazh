@@ -147,7 +147,12 @@ jobs:
           if [ -n "$PACK" ]; then printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"; fi
           # готовое видео = «!!! <название папки>.mp4» (06.10.2026), чтобы не путать с сырым
           rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/!!! $(basename "$DEST").mp4"
-          rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
+          # перемонтаж старых роликов (07.10.2026): slova.json "keep_cover": true — готовую обложку не трогать, если она уже есть
+          if [ "$(jq -r '.keep_cover // false' "$W/slova.json" 2>/dev/null)" = true ] && rclone lsf "montazh:$DEST/обложка.jpg" 2>/dev/null | grep -q .; then
+            echo "::notice::Обложка оставлена прежняя"
+          else
+            rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
+          fi
           rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
           echo "::notice::Готово: $DEST"
