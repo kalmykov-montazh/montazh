@@ -19,6 +19,10 @@ on:
         description: "auto, top или chest"
         required: false
         default: auto
+      work:
+        description: "Ключ работы в «работа/» (пусто — по имени сырого). Нужен, если сырой уже в папке ролика"
+        required: false
+        default: ""
       frame:
         description: "Кадр: пусто — прежний, auto — выбрать заново, число — эта секунда сырого"
         required: false
@@ -42,8 +46,9 @@ jobs:
           COVER_HL: ${{ inputs.cover_hl }}
           COVER_POS: ${{ inputs.pos }}
           FRAME: ${{ inputs.frame }}
+          WORK: ${{ inputs.work }}
         run: |
-          name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
+          name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g'); [ -n "$WORK" ] && stem="$WORK"
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           rclone copyto "montazh:$SRC" "raw/$name"
           rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include face.json --include pick.png
