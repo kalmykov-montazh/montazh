@@ -93,12 +93,14 @@ def card_list(spec):
     d.rounded_rectangle((0, 0, W - 1, h - 1), 36, fill=BG)
     d.text(((W - d.textlength(spec['title'], font=tf)) / 2, PAD - tb[1]), spec['title'], font=tf, fill=YEL)
     y = PAD + (tb[3] - tb[1]) + 30
-    act, done = spec.get('active', 0), spec.get('done', spec.get('active', 0))
+    act = spec.get('active', 0); done = spec.get('done', act if act is not None else 0)
     for i, lines in enumerate(items):
         bh = len(lines) * LH
         if i == act:   # активный пункт — жёлтая плашка, текст чёрный
             d.rounded_rectangle((PAD - 18, y - 10, W - PAD + 18, y + bh + 4), 18, fill=YEL)
             col, ncol, mark = (12, 12, 12, 255), (12, 12, 12, 255), str(i + 1)
+        elif act is None:   # список без подсветки: всё белым, номера жёлтым (07.10.2026)
+            col, ncol, mark = WHT, YEL, str(i + 1)
         elif i < done:
             col, ncol, mark = WHT, GRN, '✓'
         else:
