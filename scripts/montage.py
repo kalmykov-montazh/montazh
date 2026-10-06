@@ -326,21 +326,22 @@ CARDS = []
 if PROBA.get('cards'):
     from PIL import Image as _Im
     # макушка при самом крупном плане (волна + наезд) — голова выше всего, px
-    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in [l * 1.08 for l in LEVELS] + LEVELS)
-    _avail = HEAD_MIN - 40 - 110
+    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in LEVELS)   # наезд +8% короткий, его не считаем
+    _avail = HEAD_MIN - 30 - 110
     for c in PROBA['cards']:
         w_, h_ = _Im.open(c['file']).size
         a_, b_ = raw2out(c['from']), raw2out(c['to'])
         if COVER: a_ = max(a_, TITLE_SEC + 0.15)
         if b_ - a_ < 0.3: continue
         CARDS.append({'file': c['file'], 's': a_, 'e': b_, 'w': w_, 'h': h_})
-    CS = min(1.0, max(0.6, _avail / max(c['h'] for c in CARDS))) if CARDS else 1.0   # одна крупность на весь ролик
+    CS = 1.0
     for i, c in enumerate(CARDS):
         c['fi'] = i == 0 or CARDS[i - 1]['e'] < c['s'] - 0.05
         c['fo'] = i == len(CARDS) - 1 or CARDS[i + 1]['s'] > c['e'] + 0.05
-        c['sw'], c['sh'] = int(c['w'] * CS) // 2 * 2, int(c['h'] * CS) // 2 * 2
+        cs_ = min(1.0, max(0.6, _avail / c['h']))   # своя крупность: высокая плашка уменьшается, чтобы не залезть на голову
+        c['sw'], c['sh'] = int(c['w'] * cs_) // 2 * 2, int(c['h'] * cs_) // 2 * 2
         c['x'], c['y'] = (W - c['sw']) // 2, 110
-    print('cards', len(CARDS), 'scale', round(CS, 2), 'head_min', int(HEAD_MIN), [(round(c['s'], 1), round(c['e'], 1)) for c in CARDS])
+    print('cards', len(CARDS), 'w', [c['sw'] for c in CARDS], 'head_min', int(HEAD_MIN), [(round(c['s'], 1), round(c['e'], 1)) for c in CARDS])
 def in_card(t, pad=0.5):
     return any(c['s'] - pad <= t <= c['e'] + 0.3 for c in CARDS)
 
