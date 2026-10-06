@@ -531,7 +531,7 @@ for name in os.environ.get('VARIANTS', 'B').split(','):
     outs.append(subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
         '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + cin + ['-filter_complex',
         vchain(name), '-map', '[v]', '-map', '[a]',
-        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '17'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
+        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '15'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
         '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out],
         stdin=subprocess.PIPE))
