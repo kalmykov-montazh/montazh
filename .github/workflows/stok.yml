@@ -1,0 +1,91 @@
+name: Стоковые фото по теме (Pixabay)
+
+# Для Claude (06.10.2026): ищет фото на Pixabay по запросам, кладёт их на Диск в папку ролика,
+# а уменьшенные копии с номерами — зашифрованным архивом в ветку tmp-pics, чтобы Claude выбрал глазами.
+# Лицензия Pixabay: можно в роликах бесплатно, подпись автора не обязательна. Ключ — секрет PIXABAY_API_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dest:
+        description: "Папка на Диске внутри «Монтаж!», например Готовые!/Тема/сток"
+        required: true
+      queries:
+        description: "Запросы через ; в виде имя=запрос на английском, например car=car highway;docs=documents desk"
+        required: true
+      n:
+        description: "Сколько фото на запрос"
+        required: false
+        default: "4"
+      orientation:
+        description: "horizontal / vertical / all"
+        required: false
+        default: "horizontal"
+      key:
+        description: "Пароль для шифрования превью"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  stok:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Найти и скачать
+        env:
+          PKEY: ${{ secrets.PIXABAY_API_KEY }}
+          Q: ${{ inputs.queries }}
+          N: ${{ inputs.n }}
+          OR: ${{ inputs.orientation }}
+        run: |
+          [ -n "$PKEY" ] || { echo "::error::Нет секрета PIXABAY_API_KEY"; exit 1; }
+          pip install -q pillow requests
+          mkdir -p img prev
+          python3 - <<'PY'
+          import os, json, requests
+          from PIL import Image, ImageDraw
+          key, n, orient = os.environ['PKEY'], int(os.environ['N']), os.environ['OR']
+          credits, total = [], 0
+          for part in os.environ['Q'].split(';'):
+              if '=' not in part: continue
+              name, q = [x.strip() for x in part.split('=', 1)]
+              r = requests.get('https://pixabay.com/api/', params={'key': key, 'q': q, 'image_type': 'photo',
+                  'orientation': orient, 'safesearch': 'true', 'per_page': max(3, n), 'order': 'popular'}, timeout=30)
+              if r.status_code != 200:
+                  print(f'::error::{name}: Pixabay ответил {r.status_code} {r.text[:200]}'); continue
+              hits = r.json().get('hits', [])[:n]
+              print(f'::notice::{name} ({q}): найдено {len(hits)}')
+              for i, h in enumerate(hits, 1):
+                  fn = f'{name}_{i}.jpg'
+                  img = requests.get(h['largeImageURL'], timeout=60).content
+                  open(f'img/{fn}', 'wb').write(img)
+                  credits.append(f"{fn}\t{h['user']}\t{h['pageURL']}\t{h['imageWidth']}x{h['imageHeight']}")
+                  im = Image.open(f'img/{fn}').convert('RGB'); im.thumbnail((480, 360))
+                  d = ImageDraw.Draw(im); d.rectangle((0, 0, 150, 34), fill=(0, 0, 0)); d.text((6, 8), fn, fill=(255, 255, 0))
+                  im.save(f'prev/{fn}', quality=80); total += 1
+          open('img/источники.txt', 'w').write('Фото с Pixabay (лицензия Pixabay, подпись не обязательна)\n' + '\n'.join(credits) + '\n')
+          print(f'::notice::Скачано фото: {total}')
+          PY
+      - name: Положить на Диск
+        env:
+          DEST: ${{ inputs.dest }}
+        run: |
+          rclone copy img "montazh:$DEST"
+          echo "::notice::На Диске: $DEST"
+      - name: Превью зашифрованным архивом в ветку tmp-pics
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C prev .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
