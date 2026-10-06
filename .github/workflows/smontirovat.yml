@@ -62,6 +62,8 @@ jobs:
           PIPJ: ${{ inputs.pip }}
         run: |
           name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
+          # сырой уже в папке ролика (перемонтаж): ключ работы — из klyuchi.json по имени файла (06.10.2026)
+          k=$(jq -r --arg n "${name%.*}" '.[$n] // empty' klyuchi.json 2>/dev/null); [ -n "$k" ] && stem="$k"
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; } >> "$GITHUB_ENV"
           rclone copyto "montazh:$SRC" "raw/$name"

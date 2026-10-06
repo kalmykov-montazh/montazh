@@ -371,6 +371,18 @@ if COVER:   # как обложка: жёлтые плашки, строка с 
     for i, ln in enumerate(COVER.split('|')):
         st_name = 'TitleW' if COVER_HL and any(w.strip('?!.,') == COVER_HL for w in ln.split()) else 'TitleY'
         evT.append(f'Dialogue: 3,{ts(0)},{ts(TITLE_SEC)},{st_name},,0,0,0,,' + r'{\an8\pos(540,' + str(int(TTOP + i * 132 * TSC)) + r')\fscx' + str(int(TSC * 100)) + r'\fscy' + str(int(TSC * 100)) + r'\fad(0,250)}' + ln)
+# плашка-призыв в середине ролика (06.10.2026, серия СК): slova.json "mid": "СТРОКА1|СТРОКА2|…", последняя строка — на белой
+MID = PROBA.get('mid', '')
+if MID:
+    MID_SEC = float(PROBA.get('mid_sec', 4.0))
+    _lm = MID.split('|'); _bm = (len(_lm) - 1) * 132 + 115
+    _sm = min(1.0, max(0.7, (HEAD_PX - 30 - 110) / _bm)); _tm = int(max(110, min(HEAD_PX - 30 - _bm * _sm, 640 - _bm * _sm)))
+    _want = total * float(PROBA.get('mid_at', 0.45))
+    _starts = [ws[0]['os'] for ws in phr if TITLE_SEC + 2 < ws[0]['os'] < total - CTA_SEC - MID_SEC - 2]
+    mst = min(_starts, key=lambda x: abs(x - _want)) if _starts else _want
+    print('mid', round(mst, 2), MID_SEC)
+    for i, ln in enumerate(_lm):
+        evT.append(f'Dialogue: 3,{ts(mst)},{ts(mst + MID_SEC)},{"TitleW" if i == len(_lm) - 1 else "TitleY"},,0,0,0,,' + r'{\an8\pos(540,' + str(int(_tm + i * 132 * _sm)) + r')\fscx' + str(int(_sm * 100)) + r'\fscy' + str(int(_sm * 100)) + r'\fad(200,250)}' + ln)
 evP = []
 if PIP:
     t0_ = PIP_S
