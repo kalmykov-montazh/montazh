@@ -326,7 +326,7 @@ CARDS = []
 if PROBA.get('cards'):
     from PIL import Image as _Im
     # макушка при самом крупном плане (волна + наезд) — голова выше всего, px
-    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in LEVELS)   # наезд +8% короткий, его не считаем
+    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in LEVELS[:2])   # самая крупная волна (+12%) и наезд короткие — их не считаем (07.10.2026)
     _avail = HEAD_MIN - 30 - 110
     for c in PROBA['cards']:
         w_, h_ = _Im.open(c['file']).size

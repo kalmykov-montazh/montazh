@@ -42,37 +42,52 @@ def wrap(d, txt, font, maxw):
 
 PH = 240                    # высота фото в карточке, px
 SRC = ''                    # папка, куда сервер скачал фото с Диска (plashki/<ключ>/src)
-def photo(path):
-    # фото с Диска (путь внутри «Монтаж!») — сервер скачал его в SRC под тем же именем; обрезка «по центру» под W×PH
+def photo(path, w=None, h=None):
+    # фото с Диска (путь внутри «Монтаж!») — сервер скачал его в SRC под тем же именем; обрезка «по центру» под w×h
+    w, h = w or W, h or PH
     im = Image.open(os.path.join(SRC, os.path.basename(path))).convert('RGB')
-    k = max(W / im.width, PH / im.height)
+    k = max(w / im.width, h / im.height)
     im = im.resize((int(im.width * k + 0.5), int(im.height * k + 0.5)), Image.LANCZOS)
-    x, y = (im.width - W) // 2, (im.height - PH) // 2
-    return im.crop((x, y, x + W, y + PH))
+    x, y = (im.width - w) // 2, (im.height - h) // 2
+    return im.crop((x, y, x + w, y + h))
+
+SIDE = 330                  # ширина фото сбоку (photo_side) — для роликов, где над головой мало места
 
 def card_rows(rows):
     tmp = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
-    ph = None
-    if rows and rows[0][0] == 'photo':   # фото — только первой строкой, во всю ширину карточки сверху
-        ph = photo(rows[0][1]); rows = rows[1:]
+    ph = side = None
+    if rows and rows[0][0] == 'photo':   # фото первой строкой, во всю ширину карточки сверху
+        ph = rows[0][1]; rows = rows[1:]
+    elif rows and rows[0][0] == 'photo_side':   # фото слева, текст справа — карточка низкая (07.10.2026)
+        side = rows[0][1]; rows = rows[1:]
+    x0 = SIDE if side else 0
     lines = []
     for st, txt in rows:
         font, col = STY[st]
-        for ln in wrap(tmp, txt, font, W - 2 * PAD):
+        mw = W - x0 - 2 * PAD
+        while font.size > 30 and any(tmp.textlength(w, font=font) > mw for w in txt.split()):   # длинное слово не влезает — шрифт меньше
+            font = font.font_variant(size=font.size - 4)
+        for ln in wrap(tmp, txt, font, mw):
             bb = tmp.textbbox((0, 0), ln, font=font)
             lines.append((st, ln, font, col, bb))
     top = PH if ph else 0
-    h = top + PAD * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
+    th = PAD * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
+    h = top + (max(th, 220) if side else th)
     im = Image.new('RGBA', (W, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     d.rounded_rectangle((0, 0, W - 1, h - 1), 36, fill=BG)
     if ph:   # фото со скруглёнными верхними углами
+        p_ = photo(ph)
         m = Image.new('L', (W, h), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, W - 1, PH + 40), 36, fill=255)
-        m = m.crop((0, 0, W, PH)); im.paste(ph, (0, 0), m)
-    y = top + PAD
+        m = m.crop((0, 0, W, PH)); im.paste(p_, (0, 0), m)
+    if side:   # фото со скруглёнными левыми углами
+        p_ = photo(side, SIDE, h)
+        m = Image.new('L', (SIDE + 40, h), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, SIDE + 39, h - 1), 36, fill=255)
+        m = m.crop((0, 0, SIDE, h)); im.paste(p_, (0, 0), m)
+    y = top + (h - top - th) // 2 + PAD
     for st, ln, font, col, bb in lines:
         tw = d.textlength(ln, font=font)
-        x = (W - tw) / 2
+        x = x0 + (W - x0 - tw) / 2
         d.text((x, y - bb[1]), ln, font=font, fill=col)
         if st == 'strike':   # красная черта поперёк
             my = y + (bb[3] - bb[1]) / 2

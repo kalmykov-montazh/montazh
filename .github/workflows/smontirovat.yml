@@ -73,7 +73,7 @@ jobs:
           # плашки (06.10.2026): фото для карточек — с Диска (строки ["photo", путь] в spec.json), PNG рисуются здесь
           if [ -f "plashki/$stem/spec.json" ]; then
             mkdir -p "plashki/$stem/src"
-            jq -r '.cards[] | select(.rows) | .rows[] | select(.[0] == "photo") | .[1]' "plashki/$stem/spec.json" | sort -u | while IFS= read -r f; do
+            jq -r '.cards[] | select(.rows) | .rows[] | select(.[0] == "photo" or .[0] == "photo_side") | .[1]' "plashki/$stem/spec.json" | sort -u | while IFS= read -r f; do
               rclone copyto "montazh:$f" "plashki/$stem/src/$(basename "$f")" || echo "::warning::Нет фото для плашки: $f"
             done
             python scripts/plashki.py "plashki/$stem" > /dev/null || echo "::error::plashki.py упал"
