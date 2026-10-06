@@ -381,6 +381,9 @@ if MID:
     _starts = [ws[0]['os'] for ws in phr if TITLE_SEC + 2 < ws[0]['os'] < total - CTA_SEC - MID_SEC - 2]
     mst = min(_starts, key=lambda x: abs(x - _want)) if _starts else _want
     print('mid', round(mst, 2), MID_SEC)
+    def _t0(e):   # начало события ASS в секундах
+        h, m, x = e.split(',')[1].split(':'); return int(h) * 3600 + int(m) * 60 + float(x)
+    evN = [e for e in evN if not (mst - 1.3 < _t0(e) < mst + MID_SEC)]   # всплывающие цифры не налезают на плашку
     for i, ln in enumerate(_lm):
         evT.append(f'Dialogue: 3,{ts(mst)},{ts(mst + MID_SEC)},{"TitleW" if i == len(_lm) - 1 else "TitleY"},,0,0,0,,' + r'{\an8\pos(540,' + str(int(_tm + i * 132 * _sm)) + r')\fscx' + str(int(_sm * 100)) + r'\fscy' + str(int(_sm * 100)) + r'\fad(200,250)}' + ln)
 evP = []
