@@ -40,8 +40,9 @@ jobs:
           rclone copy "montazh:$F" src --include "*/обложка.jpg"
           for d in src/*/; do
             n=$(basename "$d")
-            rclone copyto "montazh:работа/${WP}${n}/кадры.jpg" "src/$n/кадры.jpg" 2>/dev/null || true
-            rclone copyto "montazh:работа/${WP}${n}/кандидаты.jpg" "src/$n/кандидаты.jpg" 2>/dev/null || true
+            k=$(jq -r --arg n "$n" '.[$n] // empty' klyuchi.json 2>/dev/null); [ -n "$k" ] || k="${WP}${n}"   # одиночные ролики: ключ работы из klyuchi.json (06.10.2026)
+            rclone copyto "montazh:работа/$k/кадры.jpg" "src/$n/кадры.jpg" 2>/dev/null || true
+            rclone copyto "montazh:работа/$k/кандидаты.jpg" "src/$n/кандидаты.jpg" 2>/dev/null || true
           done
           pip install -q pillow
           python3 - <<'PY'
