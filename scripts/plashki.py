@@ -27,7 +27,7 @@ STY = {
     'text':    (F('Bold', 50), WHT),
     'redtext': (F('ExtraBold', 52), RED),
     'greentext': (F('ExtraBold', 52), GRN),
-    'line': (F('Black', 54), YEL),   # одна строка для роликов, где над головой мало места (07.10.2026)
+    'line': (F('Black', 72), YEL),   # одна строка для роликов, где над головой мало места (07.10.2026)
     'small':   (F('SemiBold', 40), GRY),
 }
 GAP = 18
@@ -68,13 +68,14 @@ def card_rows(rows):
         mw = W - x0 - 2 * PAD
         while font.size > 30 and any(tmp.textlength(w, font=font) > mw for w in txt.split()):   # длинное слово не влезает — шрифт меньше
             font = font.font_variant(size=font.size - 4)
-        while st == 'line' and font.size > 40 and tmp.textlength(txt, font=font) > mw:   # 'line' — всегда в одну строку
+        while st == 'line' and font.size > 44 and tmp.textlength(txt, font=font) > mw:   # 'line' — всегда в одну строку
             font = font.font_variant(size=font.size - 2)
         for ln in wrap(tmp, txt, font, mw):
             bb = tmp.textbbox((0, 0), ln, font=font)
             lines.append((st, ln, font, col, bb))
     top = PH if ph else 0
-    th = PAD * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
+    pad = 24 if lines and all(l[0] == 'line' for l in lines) else PAD   # строка-плашка — тонкая
+    th = pad * 2 + sum(b[3] - b[1] for *_, b in lines) + GAP * (len(lines) - 1)
     h = top + (max(th, 220) if side else th)
     im = Image.new('RGBA', (W, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
@@ -87,7 +88,7 @@ def card_rows(rows):
         p_ = photo(side, SIDE, h)
         m = Image.new('L', (SIDE + 40, h), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, SIDE + 39, h - 1), 36, fill=255)
         m = m.crop((0, 0, SIDE, h)); im.paste(p_, (0, 0), m)
-    y = top + (h - top - th) // 2 + PAD
+    y = top + (h - top - th) // 2 + pad
     for st, ln, font, col, bb in lines:
         tw = d.textlength(ln, font=font)
         x = x0 + (W - x0 - tw) / 2
