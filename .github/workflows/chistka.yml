@@ -1,0 +1,43 @@
+name: Почистить упаковки
+
+# Для Claude: в упаковках из «Готовые!» и «К публикации!» удалить всё со строки «Обложка:».
+# mode=check — только показать; mode=fix — почистить (оригиналы в «работа/бэкап_упаковки»).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check или fix"
+        required: true
+        default: check
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать тексты
+        run: |
+          for d in 'Готовые!' 'К публикации!'; do
+            rclone copy "montazh:$d" "orig/$d" --include '*.txt' || echo "::warning::Не скачал $d"
+          done
+          cp -r orig work
+      - name: Почистить
+        env:
+          MODE: ${{ inputs.mode }}
+        run: python3 scripts/chistka_upakovki.py work "$MODE"
+      - name: Залить обратно
+        if: inputs.mode == 'fix'
+        run: |
+          n=0
+          while IFS= read -r rel; do
+            [ -z "$rel" ] && continue
+            rclone copyto "orig/$rel" "montazh:работа/бэкап_упаковки_$(date +%Y%m%d)/$rel"
+            if rclone copyto "work/$rel" "montazh:$rel"; then n=$((n+1)); else echo "::error::Не записал $rel"; fi
+          done < changed.txt
+          echo "::notice::Записано $n файлов"
