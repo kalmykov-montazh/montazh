@@ -338,7 +338,7 @@ if PROBA.get('cards'):
     for i, c in enumerate(CARDS):
         c['fi'] = i == 0 or CARDS[i - 1]['e'] < c['s'] - 0.05
         c['fo'] = i == len(CARDS) - 1 or CARDS[i + 1]['s'] > c['e'] + 0.05
-        cs_ = min(1.0, max(0.6, _avail / c['h']))   # своя крупность: высокая плашка уменьшается, чтобы не залезть на голову
+        cs_ = min(1.0, max(float(PROBA.get('card_min', 0.6)), _avail / c['h']))   # своя крупность: высокая плашка уменьшается, чтобы не залезть на голову
         c['sw'], c['sh'] = int(c['w'] * cs_) // 2 * 2, int(c['h'] * cs_) // 2 * 2
         c['x'], c['y'] = (W - c['sw']) // 2, 110
     print('cards', len(CARDS), 'w', [c['sw'] for c in CARDS], 'head_min', int(HEAD_MIN), [(round(c['s'], 1), round(c['e'], 1)) for c in CARDS])

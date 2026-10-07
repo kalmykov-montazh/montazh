@@ -27,6 +27,7 @@ STY = {
     'text':    (F('Bold', 50), WHT),
     'redtext': (F('ExtraBold', 52), RED),
     'greentext': (F('ExtraBold', 52), GRN),
+    'line': (F('Black', 54), YEL),   # одна строка для роликов, где над головой мало места (07.10.2026)
     'small':   (F('SemiBold', 40), GRY),
 }
 GAP = 18
@@ -67,6 +68,8 @@ def card_rows(rows):
         mw = W - x0 - 2 * PAD
         while font.size > 30 and any(tmp.textlength(w, font=font) > mw for w in txt.split()):   # длинное слово не влезает — шрифт меньше
             font = font.font_variant(size=font.size - 4)
+        while st == 'line' and font.size > 40 and tmp.textlength(txt, font=font) > mw:   # 'line' — всегда в одну строку
+            font = font.font_variant(size=font.size - 2)
         for ln in wrap(tmp, txt, font, mw):
             bb = tmp.textbbox((0, 0), ln, font=font)
             lines.append((st, ln, font, col, bb))
