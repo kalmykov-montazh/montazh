@@ -4,12 +4,8 @@
    "name": "a",
    "rows": [
     [
-     "title",
-     "TikTok · Instagram"
-    ],
-    [
-     "mid",
-     "4966 · 4351"
+     "line",
+     "TIKTOK — 4966"
     ]
    ]
   },
@@ -17,12 +13,8 @@
    "name": "b",
    "rows": [
     [
-     "title",
-     "Facebook"
-    ],
-    [
-     "mid",
-     "9113"
+     "line",
+     "INSTAGRAM — 4351"
     ]
    ]
   },
@@ -30,16 +22,8 @@
    "name": "d",
    "rows": [
     [
-     "title",
-     "Threads"
-    ],
-    [
-     "mid",
-     "209"
-    ],
-    [
-     "small",
-     "любит текстовые посты"
+     "line",
+     "FACEBOOK — 9113"
     ]
    ]
   },
@@ -47,12 +31,17 @@
    "name": "e",
    "rows": [
     [
-     "title",
-     "YouTube"
-    ],
+     "line",
+     "THREADS — 209"
+    ]
+   ]
+  },
+  {
+   "name": "f",
+   "rows": [
     [
-     "mid",
-     "822"
+     "line",
+     "YOUTUBE — 822"
     ]
    ]
   }
