@@ -1,0 +1,60 @@
+{
+ "cards": [
+  {
+   "name": "a",
+   "rows": [
+    [
+     "title",
+     "TikTok · Instagram"
+    ],
+    [
+     "mid",
+     "4966 · 4351"
+    ]
+   ]
+  },
+  {
+   "name": "b",
+   "rows": [
+    [
+     "title",
+     "Facebook"
+    ],
+    [
+     "mid",
+     "9113"
+    ]
+   ]
+  },
+  {
+   "name": "d",
+   "rows": [
+    [
+     "title",
+     "Threads"
+    ],
+    [
+     "mid",
+     "209"
+    ],
+    [
+     "small",
+     "любит текстовые посты"
+    ]
+   ]
+  },
+  {
+   "name": "e",
+   "rows": [
+    [
+     "title",
+     "YouTube"
+    ],
+    [
+     "mid",
+     "822"
+    ]
+   ]
+  }
+ ]
+}
