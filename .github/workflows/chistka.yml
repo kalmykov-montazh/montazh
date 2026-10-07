@@ -39,5 +39,5 @@ jobs:
             [ -z "$rel" ] && continue
             rclone copyto "orig/$rel" "montazh:работа/бэкап_упаковки_$(date +%Y%m%d)/$rel"
             if rclone copyto "work/$rel" "montazh:$rel"; then n=$((n+1)); else echo "::error::Не записал $rel"; fi
-          done < changed.txt
+          done < <(cat changed.txt; echo)
           echo "::notice::Записано $n файлов"
