@@ -95,13 +95,22 @@ for k_, n_ in json.loads(os.environ.get('TRIM', '{}')).items():
 
 # 3. оговорки: кусок, который начинается так же, как следующий, = неудачный дубль
 def norm(t):
-    return re.sub(r'[^\w ]', '', t.lower()).split()
+    return re.sub(r'[^\w ]', '', t.lower().replace('ё', 'е')).split()
+FILL = {'а', 'и', 'ну', 'вот', 'так', 'но', 'э', 'эм', 'это', 'то'}
+def core(ws):   # без «а/и/ну…» в начале: «А я сейчас…» = «Я сейчас…» (11.10.2026)
+    k = 0
+    while k < len(ws) - 1 and ws[k] in FILL: k += 1
+    return ws[k:]
 kept = [p for p in plan if p['keep']]
 for i in range(len(kept) - 1):
-    x, y = norm(kept[i]['text']), norm(kept[i + 1]['text'])
-    n = min(3, len(x), len(y))
-    if n >= 2 and x[:n] == y[:n]:
-        kept[i]['keep'] = False; kept[i]['why'] = 'повтор/оговорка'
+    for j in (i + 1, i + 2):   # дубль может идти через короткий кусок-оговорку
+        if j >= len(kept) or (j == i + 2 and kept[i + 1]['b'] - kept[i + 1]['a'] > 1.0): break
+        x, y = core(norm(kept[i]['text'])), core(norm(kept[j]['text']))
+        n = min(3, len(x), len(y))
+        if n >= 2 and x[:n] == y[:n]:
+            for q in range(i, j):
+                kept[q]['keep'] = False; kept[q]['why'] = 'повтор/оговорка'
+            break
 kept = [p for p in plan if p['keep']]
 
 # 3б. Утверждено 05.10.2026 (Евгений, после пробы на «Выборы и аренда»): голос с первого кадра и обрыв сразу после «работать» — всегда.

@@ -132,6 +132,12 @@ jobs:
           done
           echo "::notice::Сверка субтитров: $(grep -E '^слов' sync.txt | tr '\n' ' ')"
           grep -E '^расхождение' sync.txt | head -15 | tr '\n' ' ' | sed 's/^/::notice::Расхождения: /'; echo
+          # повторы (недорезанные дубли) — 11.10.2026, после «БИЗ Своё дело»: с повтором ролик на Диск не кладётся
+          if python "$GITHUB_WORKSPACE/scripts/check_dups.py" ролик_B.mp4 "$WMODEL" > dups.txt 2> /dev/null; then
+            echo "::notice::Повторов нет"; : > dups.txt
+          else
+            grep '^ПОВТОР' dups.txt | head -8 | while read -r l; do echo "::error::$l"; done
+          fi
           # кадры для проверки глазами: начало, середина, конец
           for t in 0.5 "$(python -c "print($dur/2)")" "$(python -c "print($dur-1.2)")"; do
             ffmpeg -v error -y -ss "$t" -i ролик_B.mp4 -frames:v 1 -vf scale=360:640 "k_$t.png"
@@ -144,6 +150,7 @@ jobs:
           DEST: ${{ inputs.dest }}
           PACK: ${{ inputs.pack }}
         run: |
+          if grep -q '^ПОВТОР' "$W/dups.txt" 2>/dev/null; then echo "::error::Найден повтор — ролик на Диск НЕ положен, вырезать дубль (fixes/trim) и перемонтировать"; exit 1; fi
           if [ -n "$PACK" ]; then printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"; fi
           # готовое видео = «!!! <название папки>.mp4» (06.10.2026), чтобы не путать с сырым
           rclone copyto "$W/ролик_B.mp4" "montazh:$DEST/!!! $(basename "$DEST").mp4"
