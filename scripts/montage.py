@@ -534,6 +534,8 @@ def vchain(name):
     pre = "[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0"
     if PIP: head = pfc + pre + "[bs];[bs][pip]overlay=" + f"{PX}:{PY}" + ":eof_action=pass,format=yuv420p"
     else: head = pre
+    if os.environ.get('NOSUBS'):   # новый стиль (21.10.2026): субтитры и плашки накладывает scripts/overlay.py
+        return head + "[v];" + aud
     if CARDS: return head + "[cb];" + cfc + f"[{CARD_OUT}]format=yuv420p," + sub + "[v];" + aud
     return head + "," + sub + "[v];" + aud
 outs = []
@@ -542,7 +544,7 @@ for name in os.environ.get('VARIANTS', 'B').split(','):
     outs.append(subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
         '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + cin + ['-filter_complex',
         vchain(name), '-map', '[v]', '-map', '[a]',
-        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '15'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
+        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', os.environ.get('PRESET', 'slow'), '-crf', os.environ.get('CRF264', '15'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
         '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out],
         stdin=subprocess.PIPE))
@@ -571,3 +573,5 @@ print(json.dumps({'raw': dur, 'out': round(total, 2), 'first_word': round(words[
                   'dropped': [(round(p['a'], 2), p['text'], p['why']) for p in plan if not p['keep']],
                   'pops': pops}, ensure_ascii=False))
 print(' '.join(clean(w['w']) for w in words))
+# время слов в готовом ролике — для scripts/overlay.py (новый стиль, 21.10.2026)
+json.dump([{'w': clean(w['w']), 's': round(w['os'], 3), 'e': round(w['oe'], 3)} for w in words], open(f'{OUT}/words_out.json', 'w'), ensure_ascii=False)

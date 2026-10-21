@@ -1,0 +1,167 @@
+name: 2Н. Смонтировать ролик — новый стиль
+
+# Новый стиль (утверждён Евгением 21.10.2026, первый ролик «ЖИЗНЬ Чаевые в Испании»):
+# субтитры «микс» (scripts/overlay.py), плашки лесенкой сверху, надпись в начале и призыв в конце,
+# обложка одним из 7 стилей (scripts/cover_new.py). Скорость 1.2 и плавное кадрирование — наши (montage.py с NOSUBS=1).
+#
+# Перед запуском Claude кладёт в хранилище novyj/<ключ работы>.json — плашки, надпись, призыв и обложку:
+# {"top_y": 300, "mix_y": [1420,1380,1460,1400], "keys": [...], "title": {...}, "cta": {...}, "groups": [...],
+#  "cover": {"style": "torn", "top": "ВЕРХ|...", "bot": "НИЗ|...", "t": 12.4}}   (t — секунда готового ролика; нет t — кадр выбирается сам)
+# «Всё, пошёл работать» и другие куски выбрасываются через fixes: {"ключ куска": "субтитр"}.
+
+on:
+  workflow_dispatch:
+    inputs:
+      src:
+        description: "Сырой ролик внутри «Монтаж!», например Сырые!/20261003_152124_1.mp4"
+        required: true
+      dest:
+        description: "Куда положить, например Готовые!/ЖИЗНЬ Чаевые в Испании"
+        required: true
+      fixes:
+        description: "JSON исправлений: {ключ куска: текст}; «субтитр» = выбросить кусок"
+        required: false
+        default: "{}"
+      trim:
+        description: "JSON {ключ куска: сколько слов оставить}"
+        required: false
+        default: "{}"
+      face:
+        description: "Подсказка, где лицо: «CX,EYE» в долях кадра (пусто — сам)"
+        required: false
+        default: ""
+      pip:
+        description: "JSON вставок (pip.json), файлы — пути внутри «Монтаж!»"
+        required: false
+        default: ""
+      pack:
+        description: "Текст упаковки (упаковка.txt)"
+        required: false
+        default: ""
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+
+      - name: Скачать сырой, текст и вставки
+        env:
+          SRC: ${{ inputs.src }}
+          FIXES: ${{ inputs.fixes }}
+          PIPJ: ${{ inputs.pip }}
+        run: |
+          name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
+          k=$(jq -r --arg n "${name%.*}" '.[$n] // empty' klyuchi.json 2>/dev/null); [ -n "$k" ] && stem="$k"
+          W="$PWD/work/$stem"; mkdir -p raw "$W"
+          SPEC="$PWD/novyj/$stem.json"
+          [ -f "$SPEC" ] || { echo "::error::Нет novyj/$stem.json — сначала положить плашки и обложку в хранилище"; exit 1; }
+          jq -e . "$SPEC" > /dev/null || { echo "::error::novyj/$stem.json — ошибка в JSON"; exit 1; }
+          { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; echo "SPEC=$SPEC"; } >> "$GITHUB_ENV"
+          rclone copyto "montazh:$SRC" "raw/$name"
+          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
+          [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
+          printf '%s' "$FIXES" | jq . > "$W/fixes.json"
+          if [ -n "$PIPJ" ]; then
+            mkdir -p "$W/pip"
+            printf '%s' "$PIPJ" | jq -r '.segs[].file' | sort -u | while IFS= read -r f; do rclone copyto "montazh:$f" "$W/pip/$(basename "$f")"; done
+            printf '%s' "$PIPJ" | jq --arg d "$W/pip" '.segs |= map(.file = ($d + "/" + (.file | split("/") | last)))' > "$W/pip.json"
+            echo "PIP=$W/pip.json" >> "$GITHUB_ENV"
+          fi
+
+      - name: Точное время слов (align.py)
+        run: |
+          cp "$W/asr_cache.json" "$W/asr_cache.orig.json"
+          if ! python scripts/align.py "$RAW" "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err"; then
+            echo "::error::align упал после куска: $(tail -1 "$W/align.log" | cut -c1-80) | $(tail -3 "$W/align.err" | tr '\n' ' ' | cut -c1-300)"; exit 1
+          fi
+
+      - name: Монтаж без субтитров (montage.py, NOSUBS)
+        env:
+          TRIM: ${{ inputs.trim }}
+          FACE: ${{ inputs.face }}
+        run: |
+          start=$(date +%s)
+          ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py "$RAW" "$W" > "$W/montage.log"
+          [ -f "$W/words_out.json" ] || { echo "::error::montage.py не выгрузил words_out.json"; exit 1; }
+          grep -o '"first_word.*"tail": [-0-9.]*' "$W/montage.log" | sed 's/^/::notice::Начало и конец: /' || true
+          echo "::notice::Основа за $(( ($(date +%s) - start) / 60 )) мин; $(grep -E '^(face|ttop|pip)' "$W/montage.log" | tr '\n' ' ')"
+
+      - name: Субтитры «микс», плашки, надпись и призыв (overlay.py)
+        run: |
+          start=$(date +%s)
+          if ! python scripts/overlay.py "$W/ролик_B.mp4" "$W/words_out.json" "$SPEC" mix "$W/final.mp4" > "$W/overlay.log" 2>&1; then
+            echo "::error::overlay упал: $(tail -4 "$W/overlay.log" | tr '\n' ' ' | cut -c1-500)"; exit 1
+          fi
+          echo "::notice::Наложение за $(( ($(date +%s) - start) / 60 )) мин: $(tail -1 "$W/overlay.log")"
+
+      - name: Обложка (7 стилей)
+        run: |
+          st=$(jq -r '.cover.style // "yellow"' "$SPEC"); top=$(jq -r '.cover.top // ""' "$SPEC"); bot=$(jq -r '.cover.bot // ""' "$SPEC")
+          t=$(jq -r '.cover.t // empty' "$SPEC")
+          [ -n "$top$bot" ] || { echo "::error::В novyj/$STEM.json нет cover.top/cover.bot"; exit 1; }
+          if [ -z "$t" ]; then
+            # кадр выбирается сам: глаза открыты, рот закрыт; варианты — кандидаты.jpg в «работа/»
+            t=$(python scripts/pick_frame.py "$W/ролик_B.mp4" "$W/pick_tmp.png" | grep -o 'cover frame [0-9.]*' | awk '{print $3}')
+            [ -n "$t" ] || t=1.0
+          fi
+          ffmpeg -v error -y -ss "$t" -i "$W/ролик_B.mp4" -frames:v 1 "$W/pick.png"
+          python scripts/cover_new.py "$W/pick.png" "$st" "$top" "$bot" "$W/обложка.jpg"
+          echo "::notice::Обложка: стиль $st, кадр $t с"
+
+      - name: Проверки
+        run: |
+          V="$W/final.mp4"
+          dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")
+          br=$(ffprobe -v error -show_entries format=bit_rate -of csv=p=0 "$V")
+          echo "::notice::Длина $(printf '%.1f' "$dur") с, битрейт $((br / 1000000)) Мбит/с, размер $(du -h "$V" | cut -f1)"
+          [ "$br" -ge 8000000 ] || echo "::warning::Битрейт ниже 8 Мбит/с"
+          cd "$W"
+          if python "$GITHUB_WORKSPACE/scripts/check_dups.py" ролик_B.mp4 "$WMODEL" > dups.txt 2> /dev/null; then
+            echo "::notice::Повторов нет"; : > dups.txt
+          else
+            grep '^ПОВТОР' dups.txt | head -8 | while read -r l; do echo "::error::$l"; done
+          fi
+          # 10 кадров сеткой 5×2 — проверить плашки и субтитры глазами (рот и лицо не закрыты, ничего не обрезано)
+          mkdir -p k
+          for i in 0 1 2 3 4 5 6 7 8 9; do
+            t=$(python -c "print(round(0.8 + ($dur - 1.6) * $i / 9, 2))")
+            ffmpeg -v error -y -ss "$t" -i final.mp4 -frames:v 1 -vf "scale=360:640,drawtext=text='$t':x=8:y=8:fontsize=26:fontcolor=yellow:box=1:boxcolor=black@0.6" "k/$(printf %02d $i).png"
+          done
+          ffmpeg -v error -y -pattern_type glob -i 'k/*.png' -filter_complex tile=5x2 кадры.jpg
+
+      - name: Положить на Диск
+        if: ${{ !cancelled() && hashFiles('work/**/final.mp4') != '' }}
+        env:
+          DEST: ${{ inputs.dest }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          if grep -q '^ПОВТОР' "$W/dups.txt" 2>/dev/null; then echo "::error::Найден повтор — ролик на Диск НЕ положен, вырезать дубль (fixes/trim) и перемонтировать"; exit 1; fi
+          if [ -n "$PACK" ]; then
+            printf '%s' "$PACK" | grep -q 'Монтаж делал в приложении' || echo "::warning::В упаковке нет строки «Монтаж делал в приложении, ссылка на него в шапке профиля»"
+            printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"
+          fi
+          rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $(basename "$DEST").mp4"
+          rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
+          cp "$SPEC" "$W/spec.json"
+          rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include spec.json --include words_out.json \
+            --include кадры.jpg --include кандидаты.jpg --include pick.png --include montage.log --include overlay.log --include align.log
+          echo "::notice::Готово: $DEST"
+
+      - name: Перенести сырой в папку готового ролика
+        if: ${{ success() }}
+        env:
+          SRC: ${{ inputs.src }}
+          DEST: ${{ inputs.dest }}
+        run: |
+          rest="${SRC#Сырые!/}"
+          if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Сырые!» — не переношу"; exit 0; fi
+          to="$DEST/$(basename "$DEST").${rest##*.}"
+          if [ -n "$(rclone lsf "montazh:$to" 2>/dev/null)" ]; then echo "::warning::Уже есть $to — сырой оставлен в «Сырые!»"; exit 0; fi
+          if rclone moveto "montazh:$SRC" "montazh:$to"; then echo "::notice::Сырой перенесён: $SRC → $to"; else echo "::warning::Не удалось перенести сырой $SRC"; fi
