@@ -1,0 +1,87 @@
+name: Сторис — нарезка с ускорением и надписью
+
+# Для Claude (21.10.2026, первый — жим ногами 170 кг): куски сырого с разной скоростью, одна надпись на весь ролик.
+# segs: [[начало, конец, скорость], ...] в секундах сырого. Ускоренные куски — звук тоже ускорен и тише.
+# lines: строки надписи через «|»: 1 — крупно на белой карточке, 2 — плашка, 3 — мелко под ней.
+# Кадры для проверки уходят зашифрованными в ветку tmp-pics (пароль — key).
+
+on:
+  workflow_dispatch:
+    inputs:
+      src:
+        description: "Сырой внутри «Монтаж!», например Сырые!/20261016_224658.mp4"
+        required: true
+      dest:
+        description: "Папка результата, например Готовые!/СТОРИС Жим ногами 170 кг"
+        required: true
+      segs:
+        description: "JSON [[начало, конец, скорость], ...]"
+        required: true
+      lines:
+        description: "Надпись: строки через |"
+        required: true
+      y:
+        description: "Верх надписи в пикселях кадра 1080×1920"
+        required: false
+        default: "230"
+      key:
+        description: "Пароль для кадров проверки"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  storis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Монтаж
+        env:
+          SRC: ${{ inputs.src }}
+          SEGS: ${{ inputs.segs }}
+          LINES: ${{ inputs.lines }}
+          Y: ${{ inputs.y }}
+        run: |
+          sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install -q pillow
+          rclone copyto "montazh:$SRC" raw.mp4
+          python3 scripts/storis.py raw.mp4 "$SEGS" "$LINES" "$Y" final.mp4 > storis.log 2>&1 || { echo "::error::$(tail -5 storis.log | tr '\n' ' ' | cut -c1-600)"; exit 1; }
+          dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4)
+          echo "::notice::Длина $(printf '%.1f' "$dur") с, размер $(du -h final.mp4 | cut -f1); $(tail -1 storis.log)"
+          mkdir -p out
+          for i in 0 1 2 3 4 5 6 7 8 9; do
+            t=$(python3 -c "print(round(0.3 + ($dur - 0.6) * $i / 9, 2))")
+            ffmpeg -v error -y -ss "$t" -i final.mp4 -frames:v 1 -vf "scale=360:640,drawtext=text='$t':x=8:y=8:fontsize=26:fontcolor=yellow:box=1:boxcolor=black@0.6" "out/$(printf %02d $i).png"
+          done
+          ffmpeg -v error -y -pattern_type glob -i 'out/*.png' -filter_complex tile=5x2 out/кадры.jpg
+          # синхрон звука: длина звука и видео должны совпадать
+          va=$(ffprobe -v error -select_streams v -show_entries stream=duration -of csv=p=0 final.mp4); aa=$(ffprobe -v error -select_streams a -show_entries stream=duration -of csv=p=0 final.mp4)
+          echo "::notice::Видео $va с, звук $aa с"
+      - name: Положить на Диск
+        env:
+          SRC: ${{ inputs.src }}
+          DEST: ${{ inputs.dest }}
+        run: |
+          rclone copyto final.mp4 "montazh:$DEST/!!! $(basename "$DEST").mp4"
+          rclone copyto out/кадры.jpg "montazh:$DEST/кадры.jpg"
+          rest="${SRC#Сырые!/}"
+          if [ "$rest" != "$SRC" ] && [ "${rest#*/}" = "$rest" ]; then
+            rclone moveto "montazh:$SRC" "montazh:$DEST/$(basename "$DEST").${rest##*.}" && echo "::notice::Сырой перенесён в $DEST"
+          fi
+          echo "::notice::Готово: $DEST"
+      - name: Кадры для проверки в tmp-pics
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out кадры.jpg
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
