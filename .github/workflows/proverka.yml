@@ -13,7 +13,7 @@ on:
 
 jobs:
   find:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       files: ${{ steps.f.outputs.files }}
     steps:
@@ -40,7 +40,7 @@ jobs:
   check:
     needs: find
     if: needs.find.outputs.files != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
