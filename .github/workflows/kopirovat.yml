@@ -1,0 +1,32 @@
+name: Скопировать папку на Диске
+
+# Для Claude (22.10.2026): копия папки внутри «Монтаж!», например готовый ролик в «К публикации!» с номером слота.
+# Оригинал остаётся на месте. Если папка назначения уже есть и не пустая — пропуск.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "откуда=>куда; ещё=>ещё (пути внутри «Монтаж!»)"
+        required: true
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Копировать
+        env:
+          P: ${{ inputs.pairs }}
+        run: |
+          IFS=';' read -ra pairs <<< "$P"
+          for pr in "${pairs[@]}"; do
+            a="${pr%%=>*}"; b="${pr#*=>}"; a="${a# }"; b="${b# }"
+            if [ -n "$(rclone lsf "montazh:$b" 2>/dev/null)" ]; then echo "::error::Уже есть: $b"; continue; fi
+            if rclone copy "montazh:$a" "montazh:$b" --exclude "кадры.jpg" 2>err.txt; then echo "::notice::OK: $a → $b ($(rclone lsf "montazh:$b" | tr '\n' ' '))"; else echo "::error::Не вышло: $a: $(tail -1 err.txt)"; fi
+          done
