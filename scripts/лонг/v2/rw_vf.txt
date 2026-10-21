@@ -1,0 +1,1 @@
+select='not(mod(n,10))',scale=960:540,reverse,setpts=N/60/TB,scale=1920:1080,trim=end_frame=74,noise=alls=25:allf=t,drawbox=y=ih*0.45:h=8:w=iw:x=0:color=white@0.35:t=fill,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:textfile=txt/rw.txt:fontsize=120:fontcolor=white:borderw=6:bordercolor=black:x=w-tw-90:y=140,fade=t=out:st=0.917:d=0.3

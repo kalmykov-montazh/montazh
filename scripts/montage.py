@@ -85,14 +85,6 @@ for i, (a, b) in enumerate(chunks):
     plan.append({'a': a, 'b': b, 'text': text, 'keep': True, 'words': words})
     prev = text
 
-# 2б. обрезать конец куска после N-го слова (неудачный дубль внутри куска): TRIM='{"ключ куска": N}' (04.10.2026)
-for k_, n_ in json.loads(os.environ.get('TRIM', '{}')).items():
-    for p in plan:
-        if p['keep'] and f"{p['a']:.3f}-{p['b']:.3f}" == k_ and 0 < n_ < len(p['words']):
-            p['b'] = p['words'][n_]['s'] - 0.04
-            p['words'] = p['words'][:n_]
-            p['text'] = ' '.join(w['w'] for w in p['words'])
-
 # 3. оговорки: кусок, который начинается так же, как следующий, = неудачный дубль
 def norm(t):
     return re.sub(r'[^\w ]', '', t.lower().replace('ё', 'е')).split()
@@ -113,18 +105,6 @@ for i in range(len(kept) - 1):
             break
 kept = [p for p in plan if p['keep']]
 
-# 3б. Утверждено 05.10.2026 (Евгений, после пробы на «Выборы и аренда»): голос с первого кадра и обрыв сразу после «работать» — всегда.
-# Слова для цвета и наезда — файл slova.json в папке работы (Claude кладёт slova/<ключ>.json в хранилище перед рендером).
-PROBA = json.load(open(f'{OUT}/slova.json')) if os.path.exists(f'{OUT}/slova.json') else {}
-if os.environ.get('NO_TRIM_EDGES'): kept_edges = False
-else: kept_edges = True
-if kept_edges and kept:
-    f0 = kept[0]
-    if f0['words']: f0['a'] = max(f0['a'], f0['words'][0]['s'] - 0.03)
-    l0 = kept[-1]
-    if l0['words']: l0['b'] = min(l0['b'], l0['words'][-1]['e'] + 0.12)
-    print('slova', json.dumps(PROBA, ensure_ascii=False))
-
 # 4. таймлайн результата
 t = 0.0
 for p in kept:
@@ -135,11 +115,6 @@ for p in kept:
     t += p['b'] - p['a']
 total = t / SPEED
 json.dump(plan, open(f'{OUT}/plan.json', 'w'), ensure_ascii=False, indent=1)
-if os.environ.get('ASR_ONLY'):   # облако, этап 1: только распознать и разложить на куски, без рендера (04.10.2026)
-    with open(f'{OUT}/текст.txt', 'w') as f_:
-        for p in plan:
-            f_.write(f"{p['a']:.3f}-{p['b']:.3f}\t{'+' if p['keep'] else '-'}\t{p['text']}\n")
-    sys.exit(0)
 words = [w for p in kept for w in p['words']]
 words = [w for w in words if w['w'].strip() not in ('-', '—', '–')]   # тире в субтитрах не показываем
 
@@ -149,18 +124,14 @@ import cv2, statistics as st_
 HAAR = os.environ.get('HAAR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'haar.xml'))
 cc = cv2.CascadeClassifier(HAAR)
 fx = []
-allf = []   # все находки по кадрам (04.10.2026)
 for tt in [x / 10 for x in range(10, int(dur * 10) - 10, 25)]:
     sh(['ffmpeg', '-v', 'error', '-y', '-ss', f'{tt:.2f}', '-i', RAW, '-frames:v', '1', '-vf',
         f'{TM}scale={W//2}:{H//2}:force_original_aspect_ratio=increase,crop={W//2}:{H//2}', f'{OUT}/fr.png'])
     g = cv2.cvtColor(cv2.imread(f'{OUT}/fr.png'), cv2.COLOR_BGR2GRAY)
-    f = cc.detectMultiScale(g, 1.1, 5, minSize=(30, 30))   # 04.10.2026: шортсы в полный рост
-    allf.append([((x + w / 2) / (W / 2), (y + 0.42 * h) / (H / 2), (y + h) / (H / 2), h / (H / 2)) for x, y, w, h in f])
-for fr in allf:
-    if fr: fx.append(max(fr, key=lambda d: d[3]))   # самое крупное, как было; при ошибке — подсказка FACE
-if os.environ.get('FACE'):   # ручная подсказка «CX,EYE» (доли кадра), если детектор всё же ошибся
-    _cx, _ey = map(float, os.environ['FACE'].split(','))
-    fx = [d for fr in allf for d in fr if abs(d[0] - _cx) < 0.08 and abs(d[1] - _ey) < 0.05] or [(_cx, _ey, _ey + 0.06, 0.08)]
+    f = cc.detectMultiScale(g, 1.1, 5, minSize=(60, 60))
+    if len(f):
+        x, y, w, h = max(f, key=lambda r: r[2] * r[3])
+        fx.append(((x + w / 2) / (W / 2), (y + 0.42 * h) / (H / 2), (y + h) / (H / 2), h / (H / 2)))
 if fx:
     CX = st_.median(a[0] for a in fx); EYE = st_.median(a[1] for a in fx); CHIN = st_.median(a[2] for a in fx) + 0.02
 else:
@@ -174,8 +145,6 @@ chin_out = max(CHIN * z - ycrop(z) for z in LEVELS)
 SUB_MV = int(max(int(H * 0.25), H * (1 - chin_out - 0.03) - 110))   # низ субтитров не ниже 75% высоты: ниже надписи TikTok
 HEAD_PX = (max(0.0, EYE - 0.72 * HN) * ZB - ycrop(ZB)) * H   # макушка С ВОЛОСАМИ в первом кадре, px (04.10.2026: было 0.54 — надпись садилась на волосы)
 CTA_Y = int(os.environ.get('CTA_Y', '250'))   # центр плашки-призыва: высоко над головой, лоб и очки не закрывать
-json.dump({'CX': float(CX), 'EYE': float(EYE), 'HN': float(HN), 'n': len(fx)}, open(f'{OUT}/face.json', 'w'))   # для cover.py, если там лицо не найдётся
-if os.environ.get('FACE_ONLY'): sys.exit(0)
 print('face', dict(CX=round(CX, 3), EYE=round(EYE, 3), CHIN=round(CHIN, 3), ZB=round(ZB, 2), SUB_MV=SUB_MV, CTA_Y=CTA_Y, n=len(fx)))
 
 # 5. зумы: смена крупности на каждой склейке после конца предложения + плавный наезд на хуке
@@ -242,16 +211,6 @@ def two_lines(ws):
     best = min(range(1, len(s)), key=lambda i: abs(len(' '.join(s[:i])) - len(' '.join(s[i:]))))
     return ' '.join(s[:best]) + r'\N' + ' '.join(s[best:])
 
-# Утверждено 05.10.2026: слова по смыслу красным/зелёным всё время, пока на экране (не больше 6 за ролик)
-COLW = {}
-if True:
-    def _hit(w, stems): return any(clean(w['w']).lower().strip('?!«»"').startswith(s) for s in stems)
-    for w in words:
-        if len(COLW) >= 6: break
-        if w['os'] < (TITLE_SEC if COVER else 0): continue
-        if _hit(w, PROBA.get('red', [])): COLW[id(w)] = r'&H00303BFF&'
-        elif _hit(w, PROBA.get('green', [])): COLW[id(w)] = r'&H0050D82E&'
-    print('colored', [clean(w['w']) for w in words if id(w) in COLW])
 evA, evB = [], []
 for i, ws in enumerate(phr):
     st = ws[0]['os']; en = phr[i + 1][0]['os'] if i + 1 < len(phr) else ws[-1]['oe'] + 0.3
@@ -269,23 +228,19 @@ for i, ws in enumerate(phr):
         for j, w in enumerate(g):
             ws_ = w['os']; we_ = g[j + 1]['os'] if j + 1 < len(g) else gend
             parts = []
-            gl = sum(len(clean(x['w'])) * (1.3 if id(x) in COLW else 1) for x in g) + len(g) - 1   # цветное слово крупнее — шире строка
-            fz = min(100, int(1200 / gl)) if gl > 12 else 100
             for jj, x in enumerate(g):
                 tx = clean(x['w']).upper()
-                cc_ = COLW.get(id(x))
-                big = 130 if cc_ else 100   # цветное слово на 30% крупнее (Евгений 05.10.2026)
                 if jj == j:
-                    sz = fz * (big + 12) // 100
-                    parts.append(r'{\c' + (cc_ or r'&H0000E1FF&') + r'\fscx%d\fscy%d}' % (sz, sz) + tx + r'{\c&H00FFFFFF&\fscx%d\fscy%d}' % (fz, fz))
-                elif cc_:
-                    sz = fz * big // 100
-                    parts.append(r'{\c' + cc_ + r'\fscx%d\fscy%d}' % (sz, sz) + tx + r'{\c&H00FFFFFF&\fscx%d\fscy%d}' % (fz, fz))
+                    parts.append(r'{\c&H0000E1FF&\fscx112\fscy112}' + tx + r'{\c&H00FFFFFF&\fscx100\fscy100}')
                 else:
                     parts.append(tx)
-            fit = r'{\fscx%d\fscy%d}' % (fz, fz) if fz < 100 else ''
+            gl = len(' '.join(clean(x['w']) for x in g))
+            fit = r'{\fscx%d\fscy%d}' % ((min(100, int(1200 / gl)),) * 2) if gl > 12 else ''
             pop = r'{\fscx92\fscy92\t(0,90,\fscx100\fscy100)}' if j == 0 and not fit else ''
             line = ' '.join(parts)
+            if fit:
+                fz = min(100, int(1200 / gl))
+                line = line.replace(r'\fscx112\fscy112', r'\fscx%d\fscy%d' % (fz * 112 // 100, fz * 112 // 100)).replace(r'\fscx100\fscy100', r'\fscx%d\fscy%d' % (fz, fz))
             evB.append(f'Dialogue: 0,{ts(ws_)},{ts(we_)},Kar,,0,0,0,,{fit}{pop}' + line)
 
 
@@ -296,23 +251,6 @@ k = 0
 while keys[-1][0] < total:
     d, m_ = WAVES[k % len(WAVES)]
     keys.append((keys[-1][0] + d, ZB * m_)); k += 1
-
-# Утверждено 05.10.2026: резкий наезд +8% за 0,15 с на 3–5 ключевых словах, держится до конца фразы (~1 с), потом плавно назад
-PUNCH = []
-if PROBA.get('punch'):
-    pend = {id(w): ws[-1]['oe'] for ws in phr for w in ws}
-    for w in words:
-        if len(PUNCH) >= 5: break
-        if w['os'] < (TITLE_SEC + 0.3 if COVER else 0.5) or w['os'] > total - 3: continue
-        if not _hit(w, PROBA.get('punch', [])): continue
-        if PUNCH and w['os'] - PUNCH[-1][0] < 5: continue
-        PUNCH.append((w['os'], min(max(w['os'] + 0.8, pend[id(w)]), w['os'] + 1.4)))
-    print('punch', [(round(a, 1), round(b, 1)) for a, b in PUNCH])
-def punch_at(t):
-    for a, b in PUNCH:
-        if a <= t <= b: return 1 + 0.08 * min(1, (t - a) / 0.15)
-        if b < t < b + 0.45: return 1 + 0.08 * (1 - ease((t - b) / 0.45))
-    return 1.0
 
 # картинка в картинке: PIP=pip.json {"from": raw_t, "to": raw_t, "segs": [{"file","ss","crop","credit"}]}
 PIP = json.load(open(os.environ['PIP'])) if os.environ.get('PIP') else None
@@ -328,31 +266,6 @@ if PIP:
     PIP_S, PIP_E = raw2out(PIP['from']), raw2out(PIP['to'])
     if COVER: PIP_S = max(PIP_S, TITLE_SEC + 0.15)   # не накладывать на надпись обложки
     print('pip', round(PIP_S, 2), round(PIP_E, 2))
-
-# плашки (06.10.2026, проба на «АВТО Срок украинских номеров»): slova.json "cards": [{"file": "plashki/<ключ>/a1.png", "from": raw_t, "to": raw_t}]
-# PNG рисует scripts/plashki.py. Плашка сверху над головой, подряд идущие — без мигания (затухание только на краях группы).
-CARDS = []
-if PROBA.get('cards'):
-    from PIL import Image as _Im
-    # макушка при самом крупном плане (волна + наезд) — голова выше всего, px
-    HEAD_MIN = min((EYE * z - ycrop(z) - 0.72 * HN * z) * H for z in LEVELS[:2])   # самая крупная волна (+12%) и наезд короткие — их не считаем (07.10.2026)
-    _avail = HEAD_MIN - 30 - 110
-    for c in PROBA['cards']:
-        w_, h_ = _Im.open(c['file']).size
-        a_, b_ = raw2out(c['from']), raw2out(c['to'])
-        if COVER: a_ = max(a_, TITLE_SEC + 0.15)
-        if b_ - a_ < 0.3: continue
-        CARDS.append({'file': c['file'], 's': a_, 'e': b_, 'w': w_, 'h': h_})
-    CS = 1.0
-    for i, c in enumerate(CARDS):
-        c['fi'] = i == 0 or CARDS[i - 1]['e'] < c['s'] - 0.05
-        c['fo'] = i == len(CARDS) - 1 or CARDS[i + 1]['s'] > c['e'] + 0.05
-        cs_ = min(1.0, max(float(PROBA.get('card_min', 0.6)), _avail / c['h']))   # своя крупность: высокая плашка уменьшается, чтобы не залезть на голову
-        c['sw'], c['sh'] = int(c['w'] * cs_) // 2 * 2, int(c['h'] * cs_) // 2 * 2
-        c['x'], c['y'] = (W - c['sw']) // 2, 110
-    print('cards', len(CARDS), 'w', [c['sw'] for c in CARDS], 'head_min', int(HEAD_MIN), [(round(c['s'], 1), round(c['e'], 1)) for c in CARDS])
-def in_card(t, pad=0.5):
-    return any(c['s'] - pad <= t <= c['e'] + 0.3 for c in CARDS)
 
 # всплывающие цифры
 NUM = {'один': 1, 'одна': 1, 'два': 2, 'две': 2, 'три': 3, 'четыре': 4, 'пять': 5, 'шесть': 6, 'семь': 7,
@@ -381,8 +294,6 @@ for i, w in enumerate(lw):
             continue
         if PIP_S - 0.5 <= st <= PIP_E + 0.3:   # сверху окошко с видео
             continue
-        if in_card(st):   # сверху плашка
-            continue
         if pops and (st - pops[-1][0] < 0.5 or (pops[-1][1] == label and st - pops[-1][0] < 3)):
             continue
         pops.append((st, label))
@@ -393,8 +304,7 @@ for st, label in pops:
 
 # призыв в конце: на последних словах перед «Всё, пошёл работать»
 CTA = os.environ.get('CTA', 'Было так же?\\NНапишите в комментариях')
-CTA_SEC = 5.0 if 'описани' in CTA.lower() else 2.6   # призыв «полное видео, ссылка в описании» — 5 с, чтобы успели прочитать (04.10.2026)
-evC = [f'Dialogue: 2,{ts(max(0, total - CTA_SEC))},{ts(total)},Cta,,0,0,0,,'
+evC = [f'Dialogue: 2,{ts(total - 2.6)},{ts(total)},Cta,,0,0,0,,'
        r'{\an5\pos(540,'+str(CTA_Y)+r')\fscx60\fscy60\t(0,160,\fscx100\fscy100)}' + CTA]
 
 evT = []
@@ -407,23 +317,6 @@ if COVER:   # как обложка: жёлтые плашки, строка с 
     for i, ln in enumerate(COVER.split('|')):
         st_name = 'TitleW' if COVER_HL and any(w.strip('?!.,') == COVER_HL for w in ln.split()) else 'TitleY'
         evT.append(f'Dialogue: 3,{ts(0)},{ts(TITLE_SEC)},{st_name},,0,0,0,,' + r'{\an8\pos(540,' + str(int(TTOP + i * 132 * TSC)) + r')\fscx' + str(int(TSC * 100)) + r'\fscy' + str(int(TSC * 100)) + r'\fad(0,250)}' + ln)
-# плашка-призыв в середине ролика (06.10.2026, серия СК): slova.json "mid": "СТРОКА1|СТРОКА2|…", последняя строка — на белой
-MID = PROBA.get('mid', '')
-if MID:
-    MID_SEC = float(PROBA.get('mid_sec', 4.0))
-    _lm = MID.split('|'); _bm = (len(_lm) - 1) * 132 + 115
-    _sm = min(1.0, max(0.7, (HEAD_PX - 30 - 110) / _bm)); _tm = int(max(110, min(HEAD_PX - 30 - _bm * _sm, 640 - _bm * _sm)))
-    _want = total * float(PROBA.get('mid_at', 0.45))
-    _starts = [ws[0]['os'] for ws in phr if TITLE_SEC + 2 < ws[0]['os'] < total - CTA_SEC - MID_SEC - 2]
-    _free = [x for x in _starts if not any(c['s'] - 1 < x + MID_SEC and x < c['e'] + 1 for c in CARDS)]   # не на плашку по тексту (07.10.2026)
-    _starts = _free or _starts
-    mst = min(_starts, key=lambda x: abs(x - _want)) if _starts else _want
-    print('mid', round(mst, 2), MID_SEC)
-    def _t0(e):   # начало события ASS в секундах
-        h, m, x = e.split(',')[1].split(':'); return int(h) * 3600 + int(m) * 60 + float(x)
-    evN = [e for e in evN if not (mst - 1.3 < _t0(e) < mst + MID_SEC)]   # всплывающие цифры не налезают на плашку
-    for i, ln in enumerate(_lm):
-        evT.append(f'Dialogue: 3,{ts(mst)},{ts(mst + MID_SEC)},{"TitleW" if i == len(_lm) - 1 else "TitleY"},,0,0,0,,' + r'{\an8\pos(540,' + str(int(_tm + i * 132 * _sm)) + r')\fscx' + str(int(_sm * 100)) + r'\fscy' + str(int(_sm * 100)) + r'\fad(200,250)}' + ln)
 evP = []
 if PIP:
     t0_ = PIP_S
@@ -443,7 +336,6 @@ with open(f'{OUT}/subs.srt', 'w') as f:
         def st_(x): return f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}'
         f.write(f"{i}\n{st_(st)} --> {st_(en)}\n{' '.join(clean(x['w']) for x in ws)}\n\n")
 
-
 # 7. сборка видео: каждый кадр отдельно — лицо по центру, плавный зум
 import numpy as np, math
 FPS = 30
@@ -458,8 +350,6 @@ def zoom_at(t):
 sel = '+'.join(f'between(t,{p["a"]:.3f},{p["b"]:.3f})' for p in kept)
 # проход 1: лицо на каждом 3-м кадре в маленьком размере, потом сильное сглаживание (~2 с)
 SW, SH_ = W // 4, H // 4
-def fq(p):   # путь в фильтре ffmpeg: запятая в имени ролика ломала граф (04.10.2026, «13 Facebook молчал, а потом…»)
-    return "'" + p.replace('\\', '/').replace("'", "'\\\\''") + "'"
 p1 = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
     f"[0:v]select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
     f"{TM}scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},scale={SW}:{SH_}[v]", '-map', '[v]',
@@ -471,11 +361,10 @@ while True:
     if len(buf) < SW * SH_: break
     if n % 3 == 0:
         g = np.frombuffer(buf, np.uint8).reshape(SH_, SW)
-        f = cc.detectMultiScale(g, 1.1, 5, minSize=(20, 20))
-        if len(f):   # ближайшее к найденному лицу, а не самое крупное; далёкие находки — листва (04.10.2026)
-            x, y, w, h = min(f, key=lambda r: abs((r[0] + r[2] / 2) * 4 - CX * W) + abs((r[1] + 0.42 * r[3]) * 4 - EYE * H))
-            if abs((x + w / 2) * 4 - CX * W) < W * 0.2 and abs((y + 0.42 * h) * 4 - EYE * H) < H * 0.12:
-                det.append((n, (x + w / 2) * 4, (y + 0.42 * h) * 4))
+        f = cc.detectMultiScale(g, 1.1, 5, minSize=(40, 40))
+        if len(f):
+            x, y, w, h = max(f, key=lambda r: r[2] * r[3])
+            det.append((n, (x + w / 2) * 4, (y + 0.42 * h) * 4))
     n += 1
 p1.wait()
 NF = n
@@ -500,51 +389,26 @@ aud = f"[1:a]aselect='{sel}',asetpts=N/SR/TB,atempo={SPEED},loudnorm=I=-14:TP=-1
 CRF = os.environ.get('CRF', '16')   # сжатие по качеству (~15-20 Мбит/с, как Edits/CapCut), Евгений одобрил 03.10.2026; 5-8 Мбит/с размазывали кожу
 VBR = os.environ.get('VBR', '8000k')   # постоянное качество; большой файл режется на куски (send_parts.py), склейщик собирает на компьютере
 print('crf', CRF)
-pin, pfc, n_ = [], '', 0
+pin, pfc = [], ''
 if PIP:
     D = PIP_E - PIP_S; acc = 0; parts_ = []
     for i, sg in enumerate(PIP['segs']):
         d_ = min(sg['dur'], D - acc)
         if d_ <= 0: break
-        img_ = sg['file'].lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))   # фото: держим кадр dur секунд (04.10.2026)
-        pin += (['-loop', '1', '-framerate', str(FPS), '-t', f'{d_ + 0.5:.3f}'] if img_ else []) + ['-i', sg['file']]
+        pin += ['-i', sg['file']]
         k_ = len(parts_)
-        parts_.append(f"[{2 + k_}:v]trim=start={0 if img_ else sg['ss']}:duration={d_:.3f},setpts=PTS-STARTPTS,fps={FPS},crop={sg['crop']},scale={PW}:{PH}:flags=lanczos,setsar=1,pad={PW + 2 * PB}:{PH + 2 * PB}:{PB}:{PB}:color=white,format=yuv420p[p{k_}]")
+        parts_.append(f"[{2 + k_}:v]trim=start={sg['ss']}:duration={d_:.3f},setpts=PTS-STARTPTS,fps={FPS},crop={sg['crop']},scale={PW}:{PH}:flags=lanczos,setsar=1,pad={PW + 2 * PB}:{PH + 2 * PB}:{PB}:{PB}:color=white,format=yuv420p[p{k_}]")
         acc += d_
     n_ = len(parts_)
     pfc = ';'.join(parts_) + ';' + ''.join(f'[p{i}]' for i in range(n_)) + f"concat=n={n_}:v=1:a=0,format=yuva420p,fade=t=in:st=0:d=0.3:alpha=1,fade=t=out:st={max(0, D - 0.3):.3f}:d=0.3:alpha=1,setpts=PTS+{PIP_S:.3f}/TB[pip];"
-# плашки поверх видео (и окошка вставки), под субтитрами
-cin, cfc = [], ''
-if CARDS:
-    base_i = 2 + (n_ if PIP else 0)
-    for k, c in enumerate(CARDS):
-        cin += ['-loop', '1', '-framerate', str(FPS), '-t', f'{total + 1:.3f}', '-i', c['file']]
-        fl = f"[{base_i + k}:v]format=rgba,scale={c['sw']}:{c['sh']}:flags=lanczos"
-        if c['fi']: fl += f",fade=t=in:st={c['s']:.3f}:d=0.25:alpha=1"
-        if c['fo']: fl += f",fade=t=out:st={max(c['s'], c['e'] - 0.25):.3f}:d=0.25:alpha=1"
-        cfc += fl + f"[c{k}];"
-    prev = 'cb'
-    for k, c in enumerate(CARDS):
-        nxt = f'co{k}'
-        cfc += f"[{prev}][c{k}]overlay={c['x']}:{c['y']}:enable='between(t,{c['s']:.3f},{c['e']:.3f})'[{nxt}];"
-        prev = nxt
-    CARD_OUT = prev
-def vchain(name):
-    sub = f"subtitles={fq(f'{OUT}/subs_{name}.ass')}"
-    pre = "[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0"
-    if PIP: head = pfc + pre + "[bs];[bs][pip]overlay=" + f"{PX}:{PY}" + ":eof_action=pass,format=yuv420p"
-    else: head = pre
-    if os.environ.get('NOSUBS'):   # новый стиль (21.10.2026): субтитры и плашки накладывает scripts/overlay.py
-        return head + "[v];" + aud
-    if CARDS: return head + "[cb];" + cfc + f"[{CARD_OUT}]format=yuv420p," + sub + "[v];" + aud
-    return head + "," + sub + "[v];" + aud
 outs = []
 for name in os.environ.get('VARIANTS', 'B').split(','):
     out = f'{OUT}/ролик_{name}.mp4'
     outs.append(subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
-        '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + cin + ['-filter_complex',
-        vchain(name), '-map', '[v]', '-map', '[a]',
-        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', os.environ.get('PRESET', 'slow'), '-crf', os.environ.get('CRF264', '15'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
+        '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', RAW] + pin + ['-filter_complex',
+        (pfc + f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0[bs];[bs][pip]overlay={PX}:{PY}:eof_action=pass,format=yuv420p,subtitles={OUT}/subs_{name}.ass[v];{aud}") if PIP else
+        f"[0:v]scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,unsharp=5:5:0.5:5:5:0,subtitles={OUT}/subs_{name}.ass[v];{aud}", '-map', '[v]', '-map', '[a]',
+        *(['-c:v', 'libx265', '-preset', 'medium', '-crf', CRF, '-x265-params', 'aq-mode=3:vbv-maxrate=20000:vbv-bufsize=40000:log-level=error', '-tag:v', 'hvc1'] if os.environ.get('CODEC') == 'hevc' else ['-c:v', 'libx264', '-preset', 'slow', '-crf', os.environ.get('CRF264', '17'), '-profile:v', 'high', '-maxrate', '25M', '-bufsize', '50M']),   # H.264 по умолчанию (03.10.2026): играет везде, в т.ч. в просмотре Google Диска
         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
         '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out],
         stdin=subprocess.PIPE))
@@ -555,8 +419,8 @@ while True:
     fr = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
     ex, ey = fxs[min(n, NF - 1)], fys[min(n, NF - 1)]
     t = n / FPS
-    z = zoom_at(t) * punch_at(t)
-    tx =min(0, max(W - z * W, W / 2 - z * ex))
+    z = zoom_at(t)
+    tx = min(0, max(W - z * W, W / 2 - z * ex))
     ty = min(0, max(H - z * H, EYE_T * H - z * ey))
     M = np.float32([[z, 0, tx], [0, z, ty]])
     o = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REPLICATE)
@@ -569,9 +433,7 @@ for pr in outs:
     pr.stdin.close(); pr.wait()
 dec.wait()
 
-print(json.dumps({'raw': dur, 'out': round(total, 2), 'first_word': round(words[0]['os'], 2) if words else None, 'tail': round(total - words[-1]['oe'], 2) if words else None, 'chunks': len(plan), 'kept': len(kept),
+print(json.dumps({'raw': dur, 'out': round(total, 2), 'chunks': len(plan), 'kept': len(kept),
                   'dropped': [(round(p['a'], 2), p['text'], p['why']) for p in plan if not p['keep']],
                   'pops': pops}, ensure_ascii=False))
 print(' '.join(clean(w['w']) for w in words))
-# время слов в готовом ролике — для scripts/overlay.py (новый стиль, 21.10.2026)
-json.dump([{'w': clean(w['w']), 's': round(w['os'], 3), 'e': round(w['oe'], 3)} for w in words], open(f'{OUT}/words_out.json', 'w'), ensure_ascii=False)

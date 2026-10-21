@@ -10,8 +10,7 @@ pw.whisper_full(ctx,fp,pcm,len(pcm))
 heard=[]
 for s in range(pw.whisper_full_n_segments(ctx)):
     for t in range(pw.whisper_full_n_tokens(ctx,s)):
-        try: txt=pw.whisper_full_get_token_text(ctx,s,t)
-        except UnicodeDecodeError: continue
+        txt=pw.whisper_full_get_token_text(ctx,s,t)
         if txt.startswith('[_') or txt.startswith('<|'): continue
         d=pw.whisper_full_get_token_data(ctx,s,t)
         if txt.startswith(' ') or not heard: heard.append([T0+d.t_dtw/100, txt.strip()])

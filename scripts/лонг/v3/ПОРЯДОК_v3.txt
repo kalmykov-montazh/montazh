@@ -1,0 +1,6 @@
+Лонг v3 (17.10.2026, «17 ловушек аренды»). Подробно — файл проекта «Автомонтаж — YouTube лонги (формат)».
+tr.py (v1, поменять подсказку P) -> sync.py (сдвиг камеры) -> sl.py (смены слайдов) -> plan.py (snap к тишине, DROP, хук, окна WR, SUBR)
+-> тело: select по plan.json (как vbody.py, только raw) -> camwin.py (v2)
+-> aud.py (v2) -> level.py -> aud2.py (v2) -> alimiter 0.79 -> final_norm.wav
+-> hook_vf.txt генерировать под свои куски -> hookb.py (v2) -> mksub.py/mkend.py (v1), sub.mov = qtrle
+-> final3.py (сборка по частям, без нехватки памяти) -> blurfin.py (v2) -> parts.py
