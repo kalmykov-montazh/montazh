@@ -93,6 +93,10 @@ jobs:
           start=$(date +%s)
           ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py "$RAW" "$W" > "$W/montage.log"
           [ -f "$W/words_out.json" ] || { echo "::error::montage.py не выгрузил words_out.json"; exit 1; }
+          # «Всё, пошёл работать» не используем нигде (Евгений 21.10.2026) — если фраза осталась, ролик на Диск не кладём
+          if jq -e '[.[].w] | join(" ") | test("пош[её]л,? работать"; "i")' "$W/words_out.json" > /dev/null; then
+            echo "::error::В ролике осталось «Всё, пошёл работать» — вырезать этот кусок через fixes (\"ключ\": \"субтитр\") или trim и перемонтировать"; exit 1
+          fi
           grep -o '"first_word.*"tail": [-0-9.]*' "$W/montage.log" | sed 's/^/::notice::Начало и конец: /' || true
           echo "::notice::Основа за $(( ($(date +%s) - start) / 60 )) мин; $(grep -E '^(face|ttop|pip)' "$W/montage.log" | tr '\n' ' ')"
 
