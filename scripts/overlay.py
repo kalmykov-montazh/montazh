@@ -325,6 +325,7 @@ def sub_mix(ph, idx, upto):
     maxw = W - SAFE_L - SAFE_R - 40
     for t, k in toks:
         f = font(s['fn'], int(s['sz'] * (1.25 if k else 1)))
+        while f.getlength(t) > maxw and f.size > 30: f = font(s['fn'], f.size - 6)   # 22.10.2026: длинное слово («КОММЕНТАРИЯХ») не влезало и резалось краем кадра
         ww = f.getlength(t + ' ')
         if cur and curw + ww > maxw: lines.append(cur); cur, curw = [], 0
         cur.append((t, k, f)); curw += ww
@@ -335,6 +336,7 @@ def sub_mix(ph, idx, upto):
     for l in lines:
         lw = sum(f.getlength(t + ' ') for t, _, f in l)
         x = {'l': SAFE_L + 10, 'c': (W - lw) / 2, 'r': W - SAFE_R - 10 - lw}[s['al']]
+        x = max(SAFE_L, min(x, W - SAFE_R - lw))
         lh = max(f.size for _, _, f in l) * 1.05
         for t, k, f in l:
             if n <= upto:
