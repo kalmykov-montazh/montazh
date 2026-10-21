@@ -1,0 +1,72 @@
+name: Текст роликов для Claude (зашифрованно)
+
+# Для Claude (22.10.2026): по папкам роликов собирает текст по кускам (ключ куска | текст, прежние правки),
+# упаковку и список файлов папки — одним зашифрованным файлом в ветку tmp-tekst.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Папки роликов внутри «Монтаж!» через ;"
+        required: true
+      key:
+        description: "Пароль для шифрования"
+        required: true
+
+jobs:
+  tekst:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Собрать
+        env:
+          P: ${{ inputs.folders }}
+        run: |
+          mkdir -p out
+          IFS=';' read -ra paths <<< "$P"
+          for p in "${paths[@]}"; do
+            name=$(basename "$p")
+            stem=$(jq -r --arg n "$name" '.[$n] // empty' klyuchi.json)
+            d="w/$name"; mkdir -p "$d"
+            rclone lsf "montazh:$p" --format sp --separator ' | ' > "$d/ls.txt" 2>&1 || true
+            rclone copy "montazh:$p" "$d" --include "упаковка.txt" 2>/dev/null || true
+            [ -n "$stem" ] && rclone copy "montazh:работа/$stem" "$d" --include asr_cache.json --include fixes.json 2>/dev/null || true
+            python3 - "$d" "$name" "$stem" >> out/tekst.txt <<'PY'
+          import json, os, sys
+          d, name, stem = sys.argv[1:]
+          print(f"\n===== {name} | ключ {stem or 'НЕТ'}")
+          print("--- файлы:"); print(open(f"{d}/ls.txt", encoding="utf-8").read().strip())
+          fx = json.load(open(f"{d}/fixes.json")) if os.path.exists(f"{d}/fixes.json") else {}
+          if os.path.exists(f"{d}/asr_cache.json"):
+              c = json.load(open(f"{d}/asr_cache.json"))
+              print("--- текст (ключ | распознано | правка):")
+              for k in sorted(c, key=lambda k: float(k.split('-')[0])):
+                  v = c[k]
+                  t = v if isinstance(v, str) else ''.join(x[-1] if isinstance(x, list) else str(x) for x in v)
+                  f = fx.get(k)
+                  print(f"{k} | {t.strip()}" + (f" || ПРАВКА: {f}" if f is not None else ""))
+              rest = {k: v for k, v in fx.items() if k not in c}
+              if rest: print("--- правки без куска:", json.dumps(rest, ensure_ascii=False))
+          else:
+              print("--- НЕТ asr_cache.json")
+          if os.path.exists(f"{d}/упаковка.txt"):
+              print("--- упаковка:"); print(open(f"{d}/упаковка.txt", encoding="utf-8").read().strip())
+          PY
+          done
+          wc -c out/tekst.txt
+      - name: Зашифровать и положить в ветку tmp-tekst
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in out/tekst.txt -out /tmp/t.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-tekst; git rm -rqf .
+          cp /tmp/t.enc t.enc; git add t.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-tekst
