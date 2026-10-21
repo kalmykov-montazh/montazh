@@ -20,8 +20,9 @@ words = json.load(open(WORDS))
 if isinstance(words, list) and words and 'keep' in words[0]:   # plan.json: слова с пунктуацией
     words = [{'w': w['w'].strip(), 's': round(w['os'], 3), 'e': round(w['oe'], 3)} for p in words if p['keep'] for w in p['words'] if w['w'].strip() not in ('-', '—', '–')]
 spec = json.load(open(SPEC))
-total = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', BASE],
-                             capture_output=True, text=True).stdout)
+def _dur(*a): return [float(x) for x in subprocess.run(['ffprobe', '-v', 'error', *a, '-of', 'csv=p=0', BASE], capture_output=True, text=True).stdout.split() if x.replace('.', '', 1).isdigit()]
+# длина по видео, а не по контейнеру: звук бывает длиннее на 1–3 с, и призыв в конце тогда не показывался (21.10.2026)
+total = min(_dur('-select_streams', 'v:0', '-show_entries', 'stream=duration') + _dur('-show_entries', 'format=duration'))
 FIXW = spec.get('fix', {})
 for w in words:
     k = w['w']
