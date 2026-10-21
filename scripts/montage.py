@@ -446,7 +446,7 @@ with open(f'{OUT}/subs.srt', 'w') as f:
 
 # 7. сборка видео: каждый кадр отдельно — лицо по центру, плавный зум
 import numpy as np, math
-FPS = 30
+FPS = 30   # входное видео тоже приводится к 30 кадрам/с (fps= перед select): 22.10.2026 сырые с r_frame_rate=120 при реальных 30 давали ускоренное видео и стоп-кадр
 TRANS = 0.5   # длительность плавного перехода крупности, сек
 def ease(x):
     x = min(1, max(0, x)); return 0.5 - 0.5 * math.cos(math.pi * x)
@@ -461,7 +461,7 @@ SW, SH_ = W // 4, H // 4
 def fq(p):   # путь в фильтре ffmpeg: запятая в имени ролика ломала граф (04.10.2026, «13 Facebook молчал, а потом…»)
     return "'" + p.replace('\\', '/').replace("'", "'\\\\''") + "'"
 p1 = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
-    f"[0:v]select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
+    f"[0:v]fps={FPS},select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
     f"{TM}scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},scale={SW}:{SH_}[v]", '-map', '[v]',
     '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], stdout=subprocess.PIPE)
 det = []
@@ -493,7 +493,7 @@ if det:
     fys = np.convolve(np.pad(fys, pad, mode='edge'), kx, mode='valid')
 
 dec = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
-    f"[0:v]select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
+    f"[0:v]fps={FPS},select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
     f"{TM}scale={W}:{H}:force_original_aspect_ratio=increase:in_color_matrix=bt709,crop={W}:{H}[v]", '-map', '[v]',
     '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-'], stdout=subprocess.PIPE)
 aud = f"[1:a]aselect='{sel}',asetpts=N/SR/TB,atempo={SPEED},loudnorm=I=-14:TP=-1.5:LRA=11[a]"
