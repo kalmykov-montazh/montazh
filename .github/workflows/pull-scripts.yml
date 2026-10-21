@@ -1,10 +1,8 @@
 name: Забрать скрипты с Диска
 
 on:
+  # только вручную: 21.10.2026 правка этого файла запустила задачу сама и затёрла скрипты старыми копиями с Диска
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/pull-scripts.yml"
 
 permissions:
   contents: write

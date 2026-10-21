@@ -36,28 +36,3 @@ Get-ChildItem -LiteralPath $root -Recurse -Filter '*.parts' | ForEach-Object {
     Add-Content -LiteralPath $log -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm') ошибка: $($m.FullName): $_" -Encoding UTF8
   }
 }
-
-# Перенос сырых: в папке ролика лежит метка _сырой.move, внутри имя файла (или папки) из «Сырые!».
-# Склейщик сам переносит этот сырой в папку ролика и удаляет метку.
-$raw = Get-ChildItem -LiteralPath $root -Directory | Where-Object { $_.Name -like 'Сырые*' } | Select-Object -First 1
-if ($raw) {
-  Get-ChildItem -LiteralPath $root -Recurse -Filter '_сырой.move' | ForEach-Object {
-    $mk = $_
-    try {
-      $names = (Get-Content -LiteralPath $mk.FullName -Encoding UTF8) | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-      $left = @()
-      foreach ($nm in $names) {
-        $from = Join-Path $raw.FullName $nm
-        $to = Join-Path $mk.DirectoryName (Split-Path $nm -Leaf)
-        if (Test-Path -LiteralPath $from) {
-          if (Test-Path -LiteralPath $to) { $left += $nm; continue }
-          Move-Item -LiteralPath $from -Destination $to
-          Add-Content -LiteralPath $log -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm') сырой перенесён: $nm -> $($mk.DirectoryName)" -Encoding UTF8
-        } elseif (-not (Test-Path -LiteralPath $to)) { $left += $nm }
-      }
-      if ($left.Count -eq 0) { Remove-Item -LiteralPath $mk.FullName -Force }
-    } catch {
-      Add-Content -LiteralPath $log -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm') ошибка переноса: $($mk.FullName): $_" -Encoding UTF8
-    }
-  }
-}

@@ -14,9 +14,19 @@ im = Image.open(src).convert('RGB').resize((W, H))
 # лицо: крупнее и по центру, глаза примерно на 52% высоты
 g = cv2.cvtColor(np.array(im), cv2.COLOR_RGB2GRAY)
 fc = cv2.CascadeClassifier(f'{D}/haar.xml')
-f = fc.detectMultiScale(g, 1.1, 5, minSize=(150, 150))
+f = fc.detectMultiScale(g, 1.1, 5, minSize=(60, 60))   # 04.10.2026: в шортсах в полный рост лицо мелкое, 150 его не находил
+if not len(f):   # мелкое лицо в кепке и очках — искать мягче
+    f = fc.detectMultiScale(g, 1.05, 3, minSize=(40, 40))
+FACE = os.environ.get('FACE_JSON')   # лицо, найденное montage.py по всему ролику: отсекает ложные «лица» (листва и т.п.)
+if FACE and os.path.exists(FACE):
+    import json
+    fj = json.load(open(FACE)); h_ = fj['HN'] * H; jx, jy = fj['CX'] * W, fj['EYE'] * H
+    near = [r for r in f if abs(r[0] + r[2] / 2 - jx) < W * 0.2 and abs(r[1] + 0.42 * r[3] - jy) < H * 0.1]
+    f = near or [(int(jx - h_ / 2), int(jy - 0.42 * h_), int(h_), int(h_))]
+    print('cover: лицо', 'найдено' if near else 'из face.json')
 if len(f):
     x, y, w, h = max(f, key=lambda r: r[2] * r[3]); cx, ey = x + w / 2, y + 0.42 * h
+    y0_, h0_ = y, h
 else:
     cx, ey = W / 2, H * 0.55
 lines = [l.strip() for l in text.split('|') if l.strip()]
@@ -74,6 +84,15 @@ else:
     maxh = max(300, head_top - 20 - SAFE_T)
     size = min(116, int(maxh / (len(lines) * 1.32)))
     y = max(SAFE_T, head_top - 20 - int(len(lines) * size * 1.32))   # низ надписи — над макушкой
+    # над головой мало места (снято в полный рост, голова высоко) — надпись на груди, под шеей (Евгений 04.10.2026)
+    chest = os.environ.get('COVER_POS') == 'chest' or (os.environ.get('COVER_POS') != 'top' and head_top - 20 - SAFE_T < len(lines) * 90 * 1.32)
+    if chest and len(f):
+        chin = int(z * (y0_ + 1.05 * h0_) + ty)   # низ подбородка
+        if FACE and os.path.exists(FACE):   # мелкая ложная находка (очки, лоб) давала «подбородок» посреди лица — не выше, чем по face.json (04.10.2026)
+            chin = max(chin, int(z * (jy + 0.63 * h_) + ty))
+        size = min(116, int((1670 - chin - 60) / (len(lines) * 1.32)))
+        y = chin + 60
+        print('cover: надпись на груди', chin)
     for i, ln in enumerate(lines):
         fo, s = fit(d, ln, 900, size)
         tw = d.textlength(ln, font=fo); pad = 26
