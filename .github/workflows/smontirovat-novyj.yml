@@ -19,7 +19,7 @@ on:
         description: "Куда положить, например Готовые!/ЖИЗНЬ Чаевые в Испании"
         required: true
       fixes:
-        description: "JSON исправлений: {ключ куска: текст}; «субтитр» = выбросить кусок"
+        description: "JSON исправлений: {ключ куска: текст}; «субтитр» = выбросить кусок. Прежние правки с Диска берутся сами"
         required: false
         default: "{}"
       trim:
@@ -65,9 +65,12 @@ jobs:
           jq -e . "$SPEC" > /dev/null || { echo "::error::novyj/$stem.json — ошибка в JSON"; exit 1; }
           { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; echo "SPEC=$SPEC"; } >> "$GITHUB_ENV"
           rclone copyto "montazh:$SRC" "raw/$name"
-          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
+          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json --include fixes.json
           [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
-          printf '%s' "$FIXES" | jq . > "$W/fixes.json"
+          # прежние правки текста с Диска + новые из запуска (новые главнее) — перемонтаж старых роликов не теряет исправлений
+          [ -f "$W/fixes.json" ] && mv "$W/fixes.json" "$W/fixes_prev.json" || echo '{}' > "$W/fixes_prev.json"
+          printf '%s' "${FIXES:-{\}}" | jq -s '.[0] * .[1]' "$W/fixes_prev.json" - > "$W/fixes.json"
+          echo "::notice::Правок текста: $(jq length "$W/fixes_prev.json") прежних, итого $(jq length "$W/fixes.json")"
           if [ -n "$PIPJ" ]; then
             mkdir -p "$W/pip"
             printf '%s' "$PIPJ" | jq -r '.segs[].file' | sort -u | while IFS= read -r f; do rclone copyto "montazh:$f" "$W/pip/$(basename "$f")"; done
@@ -97,7 +100,9 @@ jobs:
         run: |
           start=$(date +%s)
           if ! python scripts/overlay.py "$W/ролик_B.mp4" "$W/words_out.json" "$SPEC" mix "$W/final.mp4" > "$W/overlay.log" 2>&1; then
-            echo "::error::overlay упал: $(tail -4 "$W/overlay.log" | tr '\n' ' ' | cut -c1-500)"; exit 1
+            echo "::error::overlay упал: $(tail -4 "$W/overlay.log" | tr '\n' ' ' | cut -c1-500)"
+            echo "::notice::Текст ролика: $(jq -r '[.[].w] | join(" ")' "$W/words_out.json" | cut -c1-3000)"
+            rclone copy "$W" "montazh:работа/$STEM" --include words_out.json --include overlay.log --include montage.log; exit 1
           fi
           echo "::notice::Наложение за $(( ($(date +%s) - start) / 60 )) мин: $(tail -1 "$W/overlay.log")"
 
