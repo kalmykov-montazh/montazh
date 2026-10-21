@@ -1,0 +1,33 @@
+name: Свойства видео (ffprobe)
+
+# Для Claude: длина, частота кадров и время дорожек видео на Диске (22.10.2026).
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Файлы внутри «Монтаж!» через ;"
+        required: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: ffprobe
+        env:
+          P: ${{ inputs.path }}
+        run: |
+          sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg > /dev/null
+          IFS=';' read -ra paths <<< "$P"
+          for p in "${paths[@]}"; do
+            rclone copyto "montazh:$p" v.mp4 || { echo "::error::Нет $p"; continue; }
+            s=$(ffprobe -v error -show_entries stream=codec_type,r_frame_rate,avg_frame_rate,nb_frames,duration,start_time,time_base:stream_tags=com.android.capture.fps:format=duration -of compact=p=0 v.mp4 | tr '\n' ' ')
+            f=$(ffprobe -v error -select_streams v -show_entries packet=pts_time -of csv=p=0 v.mp4 | sort -n | awk 'NR==1{a=$1} {if(NR>1){d=$1-p; if(d>m)m=d} p=$1} END{print "первый", a, "последний", p, "макс. разрыв", m, "кадров", NR}')
+            echo "::notice title=$(basename "$p")::$s | $f"
+          done
