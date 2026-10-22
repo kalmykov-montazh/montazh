@@ -1,0 +1,65 @@
+name: 2Л. Шортс из горизонтального лонга — лёгкая переделка
+
+# Для шортсов, нарезанных из горизонтального лонга (слайд + камера, «ШОРТС ВНЖ после защиты»), 22.10.2026:
+# отрезает приклеенное «Всё, пошёл работать» (последняя 1,0 с), старый призыв «Ссылка в описании» заменяет
+# белой карточкой нового стиля, ставит обложку первым кадром на 0,15 с (TikTok). Субтитры и слайды остаются как были.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка ролика, например Готовые!/ШОРТС ВНЖ после защиты/07 ПМЖ с защиты"
+        required: true
+      text:
+        description: "Текст призыва"
+        required: false
+        default: "Полное видео на YouTube"
+      label:
+        description: "Метка над призывом"
+        required: false
+        default: "ссылка в шапке профиля"
+      pack:
+        description: "Новый текст упаковки (пусто — не менять)"
+        required: false
+        default: ""
+
+jobs:
+  redo:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Переделать
+        env:
+          F: ${{ inputs.folder }}
+          TEXT: ${{ inputs.text }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null; pip install -q pillow
+          mkdir -p w
+          g=$(rclone lsf "montazh:$F" --files-only --include "!!! *.mp4" | head -1)
+          [ -n "$g" ] || { echo "::error::Нет «!!! …mp4» в $F"; exit 1; }
+          echo "G=$g" >> "$GITHUB_ENV"
+          rclone copyto "montazh:$F/$g" w/in.mp4; rclone copyto "montazh:$F/обложка.jpg" w/обложка.jpg
+          python scripts/redo_long_short.py w/in.mp4 w/обложка.jpg w/out.mp4 "$TEXT" "$LABEL" | sed 's/^/::notice::/'
+          ffmpeg -v error -y -ss 0 -i w/out.mp4 -frames:v 1 w/f0.png
+          python - <<'PY'
+          from PIL import Image, ImageChops, ImageStat
+          a = Image.open('w/f0.png').convert('RGB').resize((270, 480)); b = Image.open('w/обложка.jpg').convert('RGB').resize((270, 480))
+          d = sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3
+          print(f"::notice::Первый кадр = обложка (разница {d:.1f})" if d < 12 else f"::error::Первый кадр не обложка (разница {d:.1f})")
+          PY
+          v=$(ffprobe -v error -select_streams v -show_entries stream=duration -of csv=p=0 w/out.mp4); a=$(ffprobe -v error -select_streams a -show_entries stream=duration -of csv=p=0 w/out.mp4)
+          echo "::notice::Видео $v с, звук $a с, $(du -h w/out.mp4 | cut -f1)"
+      - name: Положить на Диск
+        env:
+          F: ${{ inputs.folder }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          rclone copyto w/out.mp4 "montazh:$F/$G"
+          [ -n "$PACK" ] && printf '%s' "$PACK" | rclone rcat "montazh:$F/упаковка.txt"
+          echo "::notice::Готово: $F"
