@@ -235,8 +235,8 @@ def resolve_overlaps():
     gids = []
     for e in sorted(EL, key=lambda e: e['t0']):
         if e['g'] not in gids: gids.append(e['g'])
-    moved = cut = 0
-    for _ in range(3):
+    moved = cut = 0; waited = [0]
+    for _ in range(6):
         changed = False
         for gb in gids:
             B = [e for e in EL if e['g'] == gb]
@@ -261,11 +261,22 @@ def resolve_overlaps():
                             for x in B: x['x'] += dx
                             moved += 1; changed = True; break
                 else:
-                    # 2) места сбоку нет — старая плашка уходит до появления новой
+                    # 2) места сбоку нет. Старая только появилась (надпись в начале, свежая плашка) — новая ждёт, пока она уйдёт;
+                    #    старая висит давно — она уходит до появления новой
                     for o in bad:
-                        for x in EL:
-                            if x['g'] == o['g'] and x['t1'] > t - 0.25: x['t1'] = max(x['t0'] + 0.3, t - 0.25)
-                    cut += 1; changed = True
+                        og = [x for x in EL if x['g'] == o['g']]
+                        g0 = min(x['t0'] for x in og); g1 = max(x['t1'] for x in og)
+                        if (t - g0 < 1.5 or o['g'] == 'title') and g1 + 0.25 < e['t1'] - 1.0:
+                            for x in B:
+                                if x['t0'] < g1 + 0.25: x['t0'] = g1 + 0.25
+                            waited[0] += 1
+                        else:
+                            for x in og:
+                                if x['t1'] > t - 0.25: x['t1'] = t - 0.25
+                            for x in og:
+                                if x['t1'] < x['t0'] + 0.3: x['t1'] = x['t0'] + 0.3
+                            cut += 1
+                    changed = True
                 break
         if not changed: break
     # итоговая проверка: ни одной пары плашек разных групп одновременно в одном месте
@@ -276,7 +287,7 @@ def resolve_overlaps():
                 t = max(a['t0'], b['t0'])
                 if min(a['t1'], b['t1']) + 0.25 > t:
                     raise SystemExit(f"плашки перекрываются: группа {a['g']} и {b['g']} на {t:.1f} с")
-    print(f'наложения плашек: сдвинуто вбок {moved}, раньше убрано {cut}')
+    print(f'наложения плашек: сдвинуто вбок {moved}, новая ждёт старую {waited[0]}, старая ушла раньше {cut}')
 resolve_overlaps()
 EL.sort(key=lambda e: {'card': 0, 'big': 0, 'arrow': 1, 'stamp': 2}[e['kind']])
 # проверка: всё в кадре
