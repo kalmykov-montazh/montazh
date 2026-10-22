@@ -59,12 +59,14 @@ jobs:
           dark = (b.max(axis=2) < 70)                                     # чёрная обводка букв
           yel = (hsv[..., 0] > 15) & (hsv[..., 0] < 40) & (hsv[..., 1] > 120) & (hsv[..., 2] > 150)
           m = (dark | yel).astype(np.uint8) * 255
-          m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
-          ys, xs = np.nonzero(m)
-          mask = np.zeros(im.shape[:2], np.uint8)
-          if len(xs):   # прямоугольник вокруг текста целиком (белые буквы внутри обводки тоже)
-              mask[y1 + max(0, ys.min() - 8):y1 + ys.max() + 8, max(0, xs.min() - 8):xs.max() + 8] = 255
-          cv2.imwrite('pick.png', cv2.inpaint(im, mask, 9, cv2.INPAINT_TELEA))
+          core = (dark | yel).astype(np.uint8)
+          core[:, :150] = 0; core[:, 930:] = 0
+          near = cv2.dilate(core, np.ones((15, 15), np.uint8)) > 0
+          white = b.min(axis=2) > 190
+          m = (near & (dark | yel | white)).astype(np.uint8)
+          m = cv2.dilate(m, np.ones((5, 5), np.uint8)) * 255
+          mask = np.zeros(im.shape[:2], np.uint8); mask[y1:y2] = m
+          cv2.imwrite('pick.png', cv2.inpaint(im, mask, 9, cv2.INPAINT_NS))
           print(f"::notice::Стёрто субтитров: {int((mask > 0).sum())} точек")
           PY
           fi
