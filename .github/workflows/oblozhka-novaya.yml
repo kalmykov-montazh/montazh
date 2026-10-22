@@ -1,0 +1,51 @@
+name: 3Н. Обложка нового стиля из кадра готового видео
+
+# Для Claude (22.10.2026): кадр из файла в папке ролика → scripts/cover_new.py → обложка.jpg в ту же папку.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка ролика"
+        required: true
+      src:
+        description: "Файл в папке, из которого брать кадр"
+        required: true
+      t:
+        description: "Секунда кадра"
+        required: true
+      style:
+        description: "Стиль 1–7 или название"
+        required: true
+      top:
+        description: "ВЕРХ|…"
+        required: false
+        default: ""
+      bot:
+        description: "НИЗ|…"
+        required: true
+
+jobs:
+  cover:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Обложка
+        env:
+          F: ${{ inputs.folder }}
+          SRC: ${{ inputs.src }}
+          T: ${{ inputs.t }}
+          ST: ${{ inputs.style }}
+          TOP: ${{ inputs.top }}
+          BOT: ${{ inputs.bot }}
+        run: |
+          rclone copyto "montazh:$F/$SRC" v.mp4
+          ffmpeg -v error -y -ss "$T" -i v.mp4 -frames:v 1 pick.png
+          python scripts/cover_new.py pick.png "$ST" "$TOP" "$BOT" обложка.jpg
+          rclone copyto обложка.jpg "montazh:$F/обложка.jpg"
+          echo "::notice::Обложка: $F, стиль $ST, кадр $T с"
