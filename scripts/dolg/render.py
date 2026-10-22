@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Шортс нового стиля из горизонтального лонга (22.10.2026, «17 ловушек аренды»).
 python render.py long.mp4 model.bin job.json workdir
-Раскладка 1080x1920: размытый фон, по центру окно 1080x800 (y=540):
+Раскладка 1080x1920: размытый фон, по центру окно 1080x920 (y=420):
   крупный план лонга — кадр 1080x800 вокруг лица без плашки лонга;
   слайд + камера в углу — окно камеры, увеличенное в 2,14 раза (слайд не показываем, смысл несут наши плашки).
-Сверху (150–520) надпись и плашки, снизу (1380–1540) субтитры «микс». Конец — 1,2 с стоп-кадра под белую карточку призыва.
+Сверху (150–410) надпись и плашки, снизу (1380–1540) субтитры «микс». Конец — 1,2 с стоп-кадра под белую карточку призыва.
 -> workdir/base.mp4 (без наложений, 30 к/с), words_out.json, spec.json, modes.json, cover_t.txt
 """
 import json, os, re, subprocess, sys, difflib
@@ -15,9 +15,9 @@ os.makedirs(W, exist_ok=True)
 job = json.load(open(JOB))
 segs = job['segs']
 TAIL = 1.2
-WIN_Y = 540
-CLOSE = 'crop=1080:800:450:40'
-CAMW = 'crop=504:373:1292:668,scale=1080:800:flags=lanczos,unsharp=5:5:0.6:5:5:0'
+WIN_Y = 420
+CLOSE = 'crop=940:800:520:40,scale=1080:920:flags=lanczos'
+CAMW = 'crop=504:429:1292:648,scale=1080:920:flags=lanczos,unsharp=5:5:0.6:5:5:0'
 
 
 def run(c): subprocess.run(c, check=True)
@@ -116,7 +116,7 @@ expr = '+'.join(f'between(t,{x0:.2f},{x1:.2f})' for x0, x1 in iv) or '0'
 vf = ''.join(f'[{i}:v]setpts=PTS-STARTPTS,fps=30[v{i}];' for i in range(n))
 vf += ''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0,tpad=stop_mode=clone:stop_duration={TAIL},split=2[va][vb];'
 vf += f'[va]{CLOSE}[cw];[vb]{CAMW}[sw];[cw][sw]overlay=0:0:enable=\'{expr}\',split=2[w1][w2];'
-vf += '[w2]crop=450:800:315:0,scale=1080:1920,boxblur=28:3,eq=brightness=-0.10:saturation=0.85[bg];'
+vf += '[w2]crop=518:920:281:0,scale=1080:1920,boxblur=28:3,eq=brightness=-0.10:saturation=0.85[bg];'
 vf += '[w1]drawbox=x=0:y=0:w=iw:h=ih:color=white@0.9:t=5[wb];'
 vf += f'[bg][wb]overlay=0:{WIN_Y},format=yuv420p[vo];'
 vf += af.replace('[ac]', '[ac0]') + f';[ac0]apad=pad_dur={TAIL}[ao]'
