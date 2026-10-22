@@ -1,0 +1,36 @@
+name: Найти файлы на Диске по имени
+
+# Для Claude (22.10.2026): ищет по всей «Монтаж!» файлы, имя которых подходит под шаблон rclone (--include).
+
+on:
+  workflow_dispatch:
+    inputs:
+      pattern:
+        description: "Шаблоны через ;, например *Цена жизни*;*Год в Испании*"
+        required: true
+
+jobs:
+  find:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Найти
+        env:
+          P: ${{ inputs.pattern }}
+        run: |
+          args=(); IFS=';' read -ra ps <<< "$P"; for p in "${ps[@]}"; do args+=(--include "$p" --include "$p/**"); done
+          rclone lsf "montazh:" -R --format sp --separator ' | ' "${args[@]}" > f.txt || true
+          python3 - <<'PY'
+          t = open('f.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\n', '%0A')
+          parts, cur = [], ''
+          for ch in t:
+              if len((cur + ch).encode()) > 3800: parts.append(cur); cur = ''
+              cur += ch
+          parts.append(cur)
+          for n, c in enumerate(parts[:9], 1): print(f"::notice title=[{n}]::{c}")
+          PY
