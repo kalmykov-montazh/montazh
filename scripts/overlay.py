@@ -150,7 +150,7 @@ def T(v, after=0.0):
 
 
 TOP_Y = spec.get('top_y', 330)   # центр ряда плашек
-for g in spec.get('groups', []):
+for GI, g in enumerate(spec.get('groups', [])):
     items = g['items']
     t_end = T(g['end']) if 'end' in g else None
     # готовим картинки
@@ -193,7 +193,7 @@ for g in spec.get('groups', []):
         y = TOP_Y - im.height / 2 + dy
         if it['type'] == 'arrow': y = TOP_Y - im.height / 2
         px, py = clampxy(im, x + im.width / 2, y + im.height / 2)
-        EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind=it['type']))
+        EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind=it['type'], g=GI))
         if it['type'] == 'card': cards_t.append((len(EL) - 1, t0))
         x += im.width + gap
     # предыдущие карточки тускнеют, когда появляется следующая
@@ -203,7 +203,7 @@ for g in spec.get('groups', []):
         if it['type'] == 'stamp':
             cx = W / 2 + off + it.get('dx', 0)
             px, py = clampxy(im, cx, TOP_Y + rowmaxh / 2 * sc - 14 + it.get('dy', 0))
-            EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind='stamp'))
+            EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind='stamp', g=GI))
 
 
 # ---------- надпись в начале и призыв в конце (21.10.2026) ----------
@@ -215,13 +215,69 @@ def stack(ims, gap=10):
 if spec.get('title'):   # {"stamp": "Чаевые в Испании", "cards": ["Сколько оставлять?"], "size": 62, "y": 250, "sec": 3.5}
     tt = spec['title']; ims = [stamp_img(tt['stamp'], tt.get('ssize', 64))] + [card_img(x, tt.get('label') if k == 0 else None, 1, tt.get('size', 60), 800) for k, x in enumerate(tt.get('cards', []))]
     im = stack(ims, -6); px, py = clampxy(im, W / 2, tt.get('y', TOP_Y) + im.height / 2 - 60)
-    EL.append(dict(img=im, x=px, y=py, t0=0.0, t1=tt.get('sec', 3.5), kind='stamp'))
+    EL.append(dict(img=im, x=px, y=py, t0=0.0, t1=tt.get('sec', 3.5), kind='stamp', g='title'))
 if spec.get('cta'):   # {"text": "Напишите в комментариях", "label": "А вы оставляете?", "size": 54, "y": 300, "sec": 2.8}
     cc = spec['cta']; im = card_img(cc['text'], cc.get('label'), 1, cc.get('size', 54), 760)
     d0 = cc.get('sec', 2.8); px, py = clampxy(im, W / 2, cc.get('y', TOP_Y))
     EL = [e for e in EL if e['t0'] < total - d0]
     for e in EL: e['t1'] = min(e['t1'], total - d0)
-    EL.append(dict(img=im, x=px, y=py, t0=total - d0, t1=total + 1, kind='stamp'))
+    EL.append(dict(img=im, x=px, y=py, t0=total - d0, t1=total + 1, kind='stamp', g='cta'))
+# ---------- плашки разных групп НЕ перекрывают друг друга (Евгений 22.10.2026, «БИЗ Офис или свобода») ----------
+# Внутри группы стрелка и штамп заходят на карточки специально. Между группами: если по времени висят вместе
+# и по месту пересекаются — новую группу ставим сбоку от старой, если влезает; иначе старая уходит до появления новой.
+PADV = 26   # поля тени вокруг картинки, в пересечение не считаются
+def _box(es):
+    return (min(e['x'] for e in es) + PADV, min(e['y'] for e in es) + PADV,
+            max(e['x'] + e['img'].width for e in es) - PADV, max(e['y'] + e['img'].height for e in es) - PADV)
+def _hit(a, b, m=10): return a[0] < b[2] + m and b[0] < a[2] + m and a[1] < b[3] + m and b[1] < a[3] + m
+def _live(es, t): return [e for e in es if e['t0'] - 0.05 <= t < e['t1'] + 0.25]
+def resolve_overlaps():
+    gids = []
+    for e in sorted(EL, key=lambda e: e['t0']):
+        if e['g'] not in gids: gids.append(e['g'])
+    moved = cut = 0
+    for _ in range(3):
+        changed = False
+        for gb in gids:
+            B = [e for e in EL if e['g'] == gb]
+            for e in B:
+                t = e['t0']
+                others = [o for o in _live(EL, t) if o['g'] != gb and o['t0'] <= t]
+                if not others: continue
+                eb = _box([e])
+                bad = [o for o in others if _hit(eb, _box([o]))]
+                if not bad: continue
+                # 1) сбоку: сдвинуть всю группу B вправо или влево от занятого места, если влезает в кадр
+                ob = _box(bad); bb = _box(B); bw = bb[2] - bb[0]
+                lim_l, lim_r = SAFE_L, W - SAFE_R
+                for nx in (ob[2] + 24, ob[0] - 24 - bw):
+                    if nx >= lim_l and nx + bw <= lim_r:
+                        dx = nx - bb[0]
+                        test = [(o, _box([o])) for o in EL if o['g'] != gb]
+                        nb = [(x['x'] + dx, x) for x in B]
+                        ok = all(not (_hit((bx + PADV, x['y'] + PADV, bx + x['img'].width - PADV, x['y'] + x['img'].height - PADV), obx)
+                                     and x['t0'] < o['t1'] + 0.25 and o['t0'] < x['t1'] + 0.25) for bx, x in nb for o, obx in test)
+                        if ok:
+                            for x in B: x['x'] += dx
+                            moved += 1; changed = True; break
+                else:
+                    # 2) места сбоку нет — старая плашка уходит до появления новой
+                    for o in bad:
+                        for x in EL:
+                            if x['g'] == o['g'] and x['t1'] > t - 0.25: x['t1'] = max(x['t0'] + 0.3, t - 0.25)
+                    cut += 1; changed = True
+                break
+        if not changed: break
+    # итоговая проверка: ни одной пары плашек разных групп одновременно в одном месте
+    for a in EL:
+        for b in EL:
+            if a is b or a['g'] == b['g']: continue
+            if a['t0'] < b['t1'] + 0.25 and b['t0'] < a['t1'] + 0.25 and _hit(_box([a]), _box([b]), 0):
+                t = max(a['t0'], b['t0'])
+                if min(a['t1'], b['t1']) + 0.25 > t:
+                    raise SystemExit(f"плашки перекрываются: группа {a['g']} и {b['g']} на {t:.1f} с")
+    print(f'наложения плашек: сдвинуто вбок {moved}, раньше убрано {cut}')
+resolve_overlaps()
 EL.sort(key=lambda e: {'card': 0, 'big': 0, 'arrow': 1, 'stamp': 2}[e['kind']])
 # проверка: всё в кадре
 for e in EL:
@@ -402,13 +458,18 @@ enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_f
                         '-ss', str(T_FROM), '-to', str(t_to), '-i', BASE, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', os.environ.get('PRESET', 'medium'), '-crf', os.environ.get('CRF264', '17'),
                         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
                         '-c:a', 'copy', '-movflags', '+faststart', '-shortest', OUT], stdin=subprocess.PIPE)
+# обложка на долю секунды в самом начале — TikTok через автопубликатор берёт кадр с 0 с (Евгений 22.10.2026)
+COVER = os.environ.get('COVER', '')
+COVER_SEC = float(os.environ.get('COVER_SEC', '0.15'))
+cov = Image.open(COVER).convert('RGB').resize((W, H), Image.LANCZOS) if COVER and os.path.exists(COVER) and T_FROM == 0 else None
 n = 0
 while True:
     buf = dec.stdout.read(W * H * 3)
     if len(buf) < W * H * 3: break
     fr = Image.frombytes('RGB', (W, H), buf).convert('RGBA')
+    if cov is not None and n / FPS < COVER_SEC: enc.stdin.write(cov.tobytes()); n += 1; continue
     draw(fr, T_FROM + n / FPS)
     enc.stdin.write(fr.convert('RGB').tobytes())
     n += 1
 enc.stdin.close(); enc.wait(); dec.wait()
-print('ok', OUT, n, 'кадров', len(EL), 'плашек', len(PH), 'фраз')
+print('ok', OUT, n, 'кадров', ('обложка в начале' if cov is not None else 'без обложки в начале'), len(EL), 'плашек', len(PH), 'фраз')
