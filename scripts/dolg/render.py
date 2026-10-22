@@ -84,9 +84,6 @@ else:
         words.append({'w': w, 's': round(st[j], 3), 'e': round(max(e, st[j] + 0.05), 3)})
 
 json.dump(words, open(f'{W}/words_out.json', 'w'), ensure_ascii=False)
-match = sum(1 for x in st if x is not None)
-eq = sum(j2 - j1 for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, src, dst, autojunk=False).get_opcodes() if tag == 'equal')
-print(f'words {len(words)} совпало с распознанным {eq}/{len(dst)}', flush=True)
 if re.search(r'пош[её]л,? работать', ' '.join(x['w'] for x in words), re.I): sys.exit('в тексте «Всё, пошёл работать»')
 
 # ---------- где крупный план, где слайд с окном камеры (по каждому кадру, 30 к/с) ----------
