@@ -172,10 +172,14 @@ for a, b in segs:
         both = any(x0 <= t - 0.1 and t < x1 for x0, x1 in iv)
         if both and np.abs(fr[i] - fr[i - 1]).mean() > 6: sch.append(round(t, 2))
     tl0 += b - a
-late = [t for t in sch if t > total_sp - 8]
+late = [t - 0.15 for t in sch if t > total_sp - 8]
+# слайд вернулся после крупного плана в последние 8 с — там может быть уже следующий слайд; держим кадр до крупного плана
+for k in range(1, len(iv)):
+    if iv[k][0] > total_sp - 8 and iv[k][0] < total_sp: late.append(iv[k - 1][1] - 0.15)
+late.sort()
 SLV = SLIDE
 if late:
-    tf = late[0] - 0.15
+    tf = late[0]
     SLV = f'trim=end={tf:.3f},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={total_sp + TAIL - tf + 1:.3f},{SLIDE}'
     print('смена слайда в конце на', late[0], 'с — держу прежний слайд', flush=True)
 vf += f'[va]{SLV}[sl];[vb]{CAM}[cm];[vc]{CLOSE}[cl];'
