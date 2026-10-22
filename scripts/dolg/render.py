@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Шортс нового стиля из горизонтального лонга (22.10.2026, «17 ловушек аренды»).
+"""Шортс из горизонтального лонга (22.10.2026, «17 ловушек аренды»), старая раскладка «Штрафов»:
+полоса 300 сверху, слайд, под ним окно камеры; где в лонге крупно — лицо на всю высоту под полосой.
+Новое: субтитры «микс», надпись в начале, белая карточка призыва, обложка первым кадром, плашки только на цифрах.
 python render.py long.mp4 model.bin job.json workdir
-Раскладка 1080x1920: размытый фон, по центру окно 1080x920 (y=420):
-  крупный план лонга — кадр 1080x800 вокруг лица без плашки лонга;
-  слайд + камера в углу — окно камеры, увеличенное в 2,14 раза (слайд не показываем, смысл несут наши плашки).
-Сверху (150–410) надпись и плашки, снизу (1380–1540) субтитры «микс». Конец — 1,2 с стоп-кадра под белую карточку призыва.
--> workdir/base.mp4 (без наложений, 30 к/с), words_out.json, spec.json, modes.json, cover_t.txt
+-> workdir/base.mp4, words_out.json, spec.json, modes.json, cover_iv.txt
 """
 import json, os, re, subprocess, sys, difflib
 import numpy as np
@@ -15,9 +13,6 @@ os.makedirs(W, exist_ok=True)
 job = json.load(open(JOB))
 segs = job['segs']
 TAIL = 1.2
-WIN_Y = 420
-CLOSE = 'crop=940:800:520:40,scale=1080:920:flags=lanczos'
-CAMW = 'crop=504:429:1292:648,scale=1080:920:flags=lanczos,unsharp=5:5:0.6:5:5:0'
 
 
 def run(c): subprocess.run(c, check=True)
@@ -88,50 +83,94 @@ eq = sum(j2 - j1 for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, src, d
 print(f'words {len(words)} совпало с распознанным {eq}/{len(dst)}', flush=True)
 if re.search(r'пош[её]л,? работать', ' '.join(x['w'] for x in words), re.I): sys.exit('в тексте «Всё, пошёл работать»')
 
-# ---------- где крупный план, где слайд с окном камеры ----------
+# ---------- где крупный план, где слайд с окном камеры (по каждому кадру, 30 к/с) ----------
 # у слайда на x=1287 резкая граница окна камеры: слева фон слайда, справа комната
 modes = []; tl = 0.0
 for a, b in segs:
-    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=5,crop=24:360:1275:690,format=gray',
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=30,crop=24:360:1275:690,format=gray',
                           '-f', 'rawvideo', '-'], capture_output=True).stdout
     fr = np.frombuffer(raw, np.uint8).reshape(-1, 360, 24).astype(float)
-    d = np.abs(fr[:, :, 4:10].mean(2) - fr[:, :, 14:20].mean(2)).mean(1)   # граница около x=1287
+    d = np.abs(fr[:, :, 4:10].mean(2) - fr[:, :, 14:20].mean(2)).mean(1)
     flat = (np.abs(np.diff(fr[:, :, :10], axis=2)).mean((1, 2)) + np.abs(np.diff(fr[:, :, 14:], axis=2)).mean((1, 2))) / 2
-    sl = (d > 18) & (d > 3 * flat)
-    k = 5; sm = np.array([np.median(sl[max(0, i - k // 2):i + k // 2 + 1]) for i in range(len(sl))]) > 0.5
-    for i, v in enumerate(sm): modes.append((round(tl + i / 5, 2), int(v), round(float(d[i]), 1)))
+    sl = ((d > 18) & (d > 3 * flat)).astype(int)
+    sm = sl.copy()   # одиночные кадры-выбросы (1–2 кадра) убираем, границы остаются точными
+    for i in range(2, len(sl) - 2):
+        if sl[i - 2] == sl[i + 2] != sl[i] and (sl[i - 1] == sl[i - 2] or sl[i + 1] == sl[i + 2]): sm[i] = sl[i - 2]
+    for i, v in enumerate(sm): modes.append((round(tl + i / 30, 3), int(v)))
     tl += b - a
 json.dump(modes, open(f'{W}/modes.json', 'w'))
-iv = []   # интервалы слайда во времени ролика
-cur = None
-for t, v, _ in modes:
+iv = []; cur = None
+for t, v in modes:
     if v and cur is None: cur = t
     if not v and cur is not None: iv.append([cur, t]); cur = None
 if cur is not None: iv.append([cur, total_sp + TAIL])
-iv = [x for x in iv if x[1] - x[0] >= 0.6]
-print('слайд с окном камеры:', iv, flush=True)
-expr = '+'.join(f'between(t,{x0:.2f},{x1:.2f})' for x0, x1 in iv) or '0'
+print('слайд:', iv, flush=True)
+close = []; prev = 0.0
+for x0, x1 in iv + [[total_sp + TAIL, total_sp + TAIL]]:
+    if x0 - prev > 0.05: close.append([prev, x0])
+    prev = x1
+print('крупно:', close, flush=True)
 
-# ---------- картинка ----------
+# ---------- раскладка как в шортсах из «Штрафов»: полоса 300, слайд, под ним окно камеры; крупный план — лицо на всю высоту ----------
+TOPB = 300; BG = '0x0E1A2A'
+SLIDE = 'crop=1214:680:68:40,scale=1080:604:flags=lanczos'           # слайд без угла камеры (x < 1287)
+CAM_Y = TOPB + 604 + 6
+CAM = 'crop=512:330:1288:684,scale=1080:696:flags=lanczos,unsharp=5:5:0.5:5:5:0'   # окно камеры (контент лонга до x=1800)
+# крупный план: лицо по центру, плашка лонга (y>850) отрезана
+import cv2
+fc = cv2.CascadeClassifier(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'haar.xml'))
+def tl2src(t):
+    acc = 0.0
+    for a, b in segs:
+        if t < acc + (b - a): return a + (t - acc)
+        acc += b - a
+    return segs[-1][1] - 0.1
+xs = []
+for c0, c1 in close:
+    for k in range(3):
+        t = c0 + (c1 - c0) * (k + 1) / 4
+        img = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{tl2src(t):.3f}', '-i', LONG, '-frames:v', '1', '-vf', 'scale=960:540,format=gray', '-f', 'rawvideo', '-'], capture_output=True).stdout
+        if len(img) < 960 * 540: continue
+        g = np.frombuffer(img, np.uint8).reshape(540, 960)
+        f = fc.detectMultiScale(g[:430], 1.1, 5, minSize=(50, 50))
+        if len(f): x, y, w, h = max(f, key=lambda r: r[2] * r[3]); xs.append((x + w / 2) * 2)
+FX = int(np.median(xs)) if xs else 990
+CW = 566   # 566x850 -> 1080x1620
+CX0 = max(0, min(1800 - CW, FX - CW // 2))
+CLOSE = f'crop={CW}:850:{CX0}:0,scale=1080:1620:flags=lanczos'
+print('лицо крупно x =', FX, 'по', len(xs), 'кадрам', flush=True)
+expr = '+'.join(f'between(t,{x0:.3f},{x1 - 0.001:.3f})' for x0, x1 in close) or '0'
+
 vf = ''.join(f'[{i}:v]setpts=PTS-STARTPTS,fps=30[v{i}];' for i in range(n))
-vf += ''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0,tpad=stop_mode=clone:stop_duration={TAIL},split=2[va][vb];'
-vf += f'[va]{CLOSE}[cw];[vb]{CAMW}[sw];[cw][sw]overlay=0:0:enable=\'{expr}\',split=2[w1][w2];'
-vf += '[w2]crop=518:920:281:0,scale=1080:1920,boxblur=28:3,eq=brightness=-0.10:saturation=0.85[bg];'
-vf += '[w1]drawbox=x=0:y=0:w=iw:h=ih:color=white@0.9:t=5[wb];'
-vf += f'[bg][wb]overlay=0:{WIN_Y},format=yuv420p[vo];'
+vf += ''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0,tpad=stop_mode=clone:stop_duration={TAIL},split=3[va][vb][vc];'
+vf += f'color=c={BG}:s=1080x1920:r=30:d={total_sp + TAIL:.3f}[bg];'
+vf += f'[va]{SLIDE}[sl];[vb]{CAM}[cm];[vc]{CLOSE}[cl];'
+vf += f'[bg][sl]overlay=0:{TOPB}:shortest=1[t1];[t1][cm]overlay=0:{CAM_Y}:shortest=1[t2];'
+vf += f'[t2][cl]overlay=0:{TOPB}:shortest=1:enable=\'{expr}\',format=yuv420p[vo];'
 vf += af.replace('[ac]', '[ac0]') + f';[ac0]apad=pad_dur={TAIL}[ao]'
 run(['ffmpeg', '-v', 'error', '-y', *ins, '-filter_complex', vf, '-map', '[vo]', '-map', '[ao]', '-r', '30',
      '-c:v', 'libx264', '-preset', 'medium', '-crf', '15', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
      '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-movflags', '+faststart', f'{W}/base.mp4'])
 
-# кадр для обложки — середина самого длинного крупного плана (лицо чётче)
-close = []; prev = 0.0
-for x0, x1 in iv + [[total_sp, total_sp]]:
-    if x0 - prev > 0: close.append([prev, x0])
-    prev = x1
-close = [c for c in close if c[1] - c[0] > 1.5]
-best = max(close, key=lambda c: c[1] - c[0]) if close else [0, total_sp]
-open(f'{W}/cover_iv.txt', 'w').write(f'{best[0]:.2f} {min(best[1], best[0] + 12):.2f}')
+# кадр обложки — со слайдом и окном камеры (как в «Штрафах»): самый длинный участок слайда
+sl_iv = [x for x in iv if x[1] - x[0] > 1.5]
+best = max(sl_iv, key=lambda c: c[1] - c[0]) if sl_iv else [0, total_sp]
+open(f'{W}/cover_iv.txt', 'w').write(f'{best[0] + 0.3:.2f} {min(best[1], best[0] + 12):.2f}\n')
+
+# плашки на цифрах: в пустом месте слайда (y≈720); если в этот момент крупный план — выше головы (y≈470)
 spec = job['spec']
+def nw(x): return re.sub(r'[^\wё]', '', x.lower())
+lw = [nw(x['w']) for x in words]
+def find(ph, after=0.0):
+    ph = [nw(x) for x in ph.split() if nw(x)]
+    for i in range(len(lw)):
+        if words[i]['s'] + 0.01 < after: continue
+        if all(i + k < len(lw) and lw[i + k].startswith(ph[k][:max(3, len(ph[k]) - 2)]) for k in range(len(ph))): return words[i]['s']
+    return None
+TOPY = spec.get('top_y', 600)
+for g in spec.get('groups', []):
+    t = find(g['items'][0]['at']) or 0
+    incl = any(c0 <= t < c1 for c0, c1 in close)
+    for it in g['items']: it['dy'] = (470 if incl else 720) - TOPY
 json.dump(spec, open(f'{W}/spec.json', 'w'), ensure_ascii=False)
-print('base ok', round(total_sp + TAIL, 1), 'с; кадр обложки ищу в', best, flush=True)
+print('base ok', round(total_sp + TAIL, 1), 'с; обложка со слайдом из', best, flush=True)
