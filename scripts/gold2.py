@@ -25,7 +25,7 @@ def put(lines, y, size, anchor_bottom=False):
     if anchor_bottom: y -= tot
     for ln, f, bb in hs:
         d.text(((W - (bb[2] - bb[0])) / 2 - bb[0], y - bb[1]), ln, font=f, fill=255); y += bb[3] - bb[1] + 24
-put([l.upper() for l in TOP.split('|') if l], 300 if var == 'a' else 230, 210, anchor_bottom=False)
+put([l.upper() for l in TOP.split('|') if l], 300, 210, anchor_bottom=False)
 put([l.upper() for l in BOT.split('|') if l], H - 330, 230, anchor_bottom=True)
 yy = np.arange(H)[:, None]; t = np.sin(yy / 30.0) * 0.5 + 0.5
 grad = np.zeros((H, W, 3), np.uint8)

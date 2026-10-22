@@ -66,6 +66,7 @@ def block(lines, y, size, bottom=False, top_style=None):
             img.alpha_composite(grad_fill(m, c1, c2, y, y + h))
         y += h + gap
 
-block([l.upper() for l in TOP.split('|') if l], 230, 200, top_style=P['top'])
+# верх не выше 300: сетка Instagram режет 1920 до 3:4 (видно 240–1680), Евгений 22.10.2026
+block([l.upper() for l in TOP.split('|') if l], 300, 200, top_style=P['top'])
 block([l.upper() for l in BOT.split('|') if l], H - 330, 230, bottom=True)
 img.convert('RGB').save(OUT, quality=94)

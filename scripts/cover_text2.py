@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 import os as _os
 FD = _os.environ.get('FONTS', _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'fonts')) + '/'   # шрифты нового стиля (21.10.2026)
 SRC, ST, OUT = sys.argv[1:4]; L = [x.upper() for x in sys.argv[4:]]
+# верх не выше 300: сетка Instagram режет 1920 до 3:4 (видно 240–1680), Евгений 22.10.2026
 W, H = 1080, 1920; FO = FD + 'oswald-700.ttf'; FM = FD + 'montserrat-900.ttf'
 img = Image.open(SRC).convert('RGB').resize((W, H))
 img = ImageEnhance.Color(ImageEnhance.Contrast(img).enhance(1.1)).enhance(1.08)
@@ -39,11 +40,11 @@ if ST == 'torn':
     x, y, h = centered(L[0], f1, y0); text_layer(L[0], f1, x, y, (255, 255, 255), rot=-3)
     x, y, h = centered(L[1], f2, y0 + h1 + 30); text_layer(L[1], f2, x, y, (235, 30, 35), rot=-3)
     if len(L) > 2:
-        f3 = fit(L[2], FM, 900, 90); x, y, h = centered(L[2], f3, 230); text_layer(L[2], f3, x, y, (255, 255, 255), stroke=6)
+        f3 = fit(L[2], FM, 900, 90); x, y, h = centered(L[2], f3, 300); text_layer(L[2], f3, x, y, (255, 255, 255), stroke=6)
 
 elif ST == 'goldpill':
     txt = Image.new('L', (W, H), 0); dt = ImageDraw.Draw(txt)
-    f1 = fit(L[0], FO, 940, 230); x, y, h1 = centered(L[0], f1, 200); dt.text((x, y), L[0], font=f1, fill=255)
+    f1 = fit(L[0], FO, 940, 230); x, y, h1 = centered(L[0], f1, 290); dt.text((x, y), L[0], font=f1, fill=255)
     f3 = fit(L[2], FO, 940, 250); h3 = f3.getbbox(L[2])[3] - f3.getbbox(L[2])[1]
     y3 = H - 340 - h3; x, y, _ = centered(L[2], f3, y3); dt.text((x, y), L[2], font=f3, fill=255)
     # плашка со средним словом — над нижней строкой
@@ -65,7 +66,7 @@ elif ST == 'goldpill':
     gp = gold.copy(); gp.putalpha(pm); img.alpha_composite(gp)
 
 elif ST == 'ladder':
-    f1 = fit(L[0], FM, 860, 100); x, y, h1 = centered(L[0], f1, 210); text_layer(L[0], f1, x, y, (255, 255, 255), stroke=8, rot=3)
+    f1 = fit(L[0], FM, 860, 100); x, y, h1 = centered(L[0], f1, 300); text_layer(L[0], f1, x, y, (255, 255, 255), stroke=8, rot=3)
     y2 = int(H * 0.60)
     f2 = fit(L[1], FM, 980, 220); x, y, h2 = centered(L[1], f2, y2); text_layer(L[1], f2, x, y, (255, 214, 0), stroke=10, rot=3)
     f3 = fit(L[2], FM, 820, 110); bb = f3.getbbox(L[2]); w3, h3 = bb[2] - bb[0], bb[3] - bb[1]
