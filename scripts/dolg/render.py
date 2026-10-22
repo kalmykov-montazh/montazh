@@ -84,15 +84,14 @@ print(f'words {len(words)} совпало с распознанным {eq}/{len(
 if re.search(r'пош[её]л,? работать', ' '.join(x['w'] for x in words), re.I): sys.exit('в тексте «Всё, пошёл работать»')
 
 # ---------- где крупный план, где слайд с окном камеры (по каждому кадру, 30 к/с) ----------
-# у слайда на x=1287 резкая граница окна камеры: слева фон слайда, справа комната
+# у слайдов лонга сверху тонкая цветная полоса (y 1–5), у крупного плана её нет
 modes = []; tl = 0.0
 for a, b in segs:
-    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=30,crop=24:360:1275:690,format=gray',
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=30,crop=1600:4:100:1,format=rgb24',
                           '-f', 'rawvideo', '-'], capture_output=True).stdout
-    fr = np.frombuffer(raw, np.uint8).reshape(-1, 360, 24).astype(float)
-    d = np.abs(fr[:, :, 4:10].mean(2) - fr[:, :, 14:20].mean(2)).mean(1)
-    flat = (np.abs(np.diff(fr[:, :, :10], axis=2)).mean((1, 2)) + np.abs(np.diff(fr[:, :, 14:], axis=2)).mean((1, 2))) / 2
-    sl = ((d > 18) & (d > 3 * flat)).astype(int)
+    fr = np.frombuffer(raw, np.uint8).reshape(-1, 4, 1600, 3).astype(float)
+    sat = (fr.max(3) - fr.min(3)).mean((1, 2))   # у слайдов сверху цветная полоса (насыщенность ~200), у крупного плана ~18
+    sl = (sat > 100).astype(int)
     sm = sl.copy()   # одиночные кадры-выбросы (1–2 кадра) убираем, границы остаются точными
     for i in range(2, len(sl) - 2):
         if sl[i - 2] == sl[i + 2] != sl[i] and (sl[i - 1] == sl[i - 2] or sl[i + 1] == sl[i + 2]): sm[i] = sl[i - 2]
@@ -152,10 +151,16 @@ run(['ffmpeg', '-v', 'error', '-y', *ins, '-filter_complex', vf, '-map', '[vo]',
      '-c:v', 'libx264', '-preset', 'medium', '-crf', '15', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
      '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-movflags', '+faststart', f'{W}/base.mp4'])
 
-# кадр обложки — со слайдом и окном камеры (как в «Штрафах»): самый длинный участок слайда
-sl_iv = [x for x in iv if x[1] - x[0] > 1.5]
-best = max(sl_iv, key=lambda c: c[1] - c[0]) if sl_iv else [0, total_sp]
-open(f'{W}/cover_iv.txt', 'w').write(f'{best[0] + 0.3:.2f} {min(best[1], best[0] + 12):.2f}\n')
+# кадр обложки — со слайдом и тобой: окно камеры сразу под полосой, слайд ниже (надпись обложки ложится на слайд, лицо открыто).
+# Берётся первый участок слайда от 3 с — там слайд этой ловушки.
+sl_iv = [x for x in iv if x[1] - x[0] >= 3] or [x for x in iv if x[1] - x[0] > 1] or [[0, min(10, total_sp)]]
+best = sl_iv[0]
+c0, c1 = best[0] + 0.5, min(best[1] - 0.2, best[0] + 10)
+cvf = (f"color=c={BG}:s=1080x1920:r=30:d={c1 - c0:.3f}[bg];[0:v]fps=30,split=2[a][b];[a]{CAM}[cm];[b]{SLIDE}[sl];"
+       f"[bg][cm]overlay=0:{TOPB}:shortest=1[t1];[t1][sl]overlay=0:{TOPB + 696 + 6}:shortest=1,format=yuv420p[v]")
+run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{tl2src(c0):.3f}', '-t', f'{c1 - c0:.3f}', '-i', LONG, '-filter_complex', cvf, '-map', '[v]', '-map', '0:a',
+     '-c:v', 'libx264', '-crf', '16', '-c:a', 'aac', f'{W}/cv.mp4'])
+open(f'{W}/cover_iv.txt', 'w').write(f'{c0:.2f} {c1:.2f}\n')
 
 # плашки на цифрах: в пустом месте слайда (y≈720); если в этот момент крупный план — выше головы (y≈470)
 spec = job['spec']

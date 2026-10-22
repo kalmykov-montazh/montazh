@@ -106,12 +106,10 @@ jobs:
           [ -f "$W/base.mp4" ] || { echo "::error::основа не собралась"; exit 1; }
       - name: Обложка — до наложения, она же первый кадр
         run: |
-          read a b < "$W/cover_iv.txt" || true
-          ffmpeg -v error -y -ss "$a" -to "$b" -i "$W/base.mp4" -c:v libx264 -crf 16 -c:a aac "$W/cv.mp4"
           t=$(python scripts/pick_frame.py "$W/cv.mp4" "$W/pick_tmp.png" | grep -o 'cover frame [0-9.]*' | awk '{print $3}')
           [ -n "$t" ] || t=1.0
-          tt=$(python -c "print(round($a + $t, 2))")
-          ffmpeg -v error -y -ss "$tt" -i "$W/base.mp4" -frames:v 1 "$W/pick.png"
+          ffmpeg -v error -y -ss "$t" -i "$W/cv.mp4" -frames:v 1 "$W/pick.png"
+          tt=$t
           st=$(jq -r .cover.style "$W/spec.json"); top=$(jq -r .cover.top "$W/spec.json"); bot=$(jq -r .cover.bot "$W/spec.json")
           python scripts/cover_new.py "$W/pick.png" "$st" "$top" "$bot" "$W/обложка.jpg"
           echo "::notice::Обложка $st, кадр $tt с"
