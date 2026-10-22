@@ -24,6 +24,10 @@ on:
       bot:
         description: "НИЗ|…"
         required: true
+      clean:
+        description: "y1:y2 — стереть вшитые старые субтитры в этой полосе кадра (inpaint), пусто — не трогать"
+        required: false
+        default: ""
 
 jobs:
   cover:
@@ -43,9 +47,27 @@ jobs:
           ST: ${{ inputs.style }}
           TOP: ${{ inputs.top }}
           BOT: ${{ inputs.bot }}
+          CLEAN: ${{ inputs.clean }}
         run: |
           rclone copyto "montazh:$F/$SRC" v.mp4
           ffmpeg -v error -y -ss "$T" -i v.mp4 -frames:v 1 pick.png
+          if [ -n "$CLEAN" ]; then python - <<'PY'
+          import cv2, numpy as np, os
+          y1, y2 = map(int, os.environ['CLEAN'].split(':'))
+          im = cv2.imread('pick.png'); b = im[y1:y2]
+          hsv = cv2.cvtColor(b, cv2.COLOR_BGR2HSV)
+          dark = (b.max(axis=2) < 70)                                     # чёрная обводка букв
+          yel = (hsv[..., 0] > 15) & (hsv[..., 0] < 40) & (hsv[..., 1] > 120) & (hsv[..., 2] > 150)
+          m = (dark | yel).astype(np.uint8) * 255
+          m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+          ys, xs = np.nonzero(m)
+          mask = np.zeros(im.shape[:2], np.uint8)
+          if len(xs):   # прямоугольник вокруг текста целиком (белые буквы внутри обводки тоже)
+              mask[y1 + max(0, ys.min() - 8):y1 + ys.max() + 8, max(0, xs.min() - 8):xs.max() + 8] = 255
+          cv2.imwrite('pick.png', cv2.inpaint(im, mask, 9, cv2.INPAINT_TELEA))
+          print(f"::notice::Стёрто субтитров: {int((mask > 0).sum())} точек")
+          PY
+          fi
           python scripts/cover_new.py pick.png "$ST" "$TOP" "$BOT" обложка.jpg
           rclone copyto обложка.jpg "montazh:$F/обложка.jpg"
           echo "::notice::Обложка: $F, стиль $ST, кадр $T с"
