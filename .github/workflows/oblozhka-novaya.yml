@@ -24,6 +24,10 @@ on:
       bot:
         description: "НИЗ|…"
         required: true
+      shift:
+        description: "Сдвинуть кадр вниз на столько пикселей (сверху — размытое продолжение), чтобы вшитые субтитры ушли под полосу обложки"
+        required: false
+        default: ""
       clean:
         description: "y1:y2 — стереть вшитые старые субтитры в этой полосе кадра (inpaint), пусто — не трогать"
         required: false
@@ -48,9 +52,13 @@ jobs:
           TOP: ${{ inputs.top }}
           BOT: ${{ inputs.bot }}
           CLEAN: ${{ inputs.clean }}
+          SHIFT: ${{ inputs.shift }}
         run: |
           rclone copyto "montazh:$F/$SRC" v.mp4
           ffmpeg -v error -y -ss "$T" -i v.mp4 -frames:v 1 pick.png
+          if [ -n "$SHIFT" ]; then
+            ffmpeg -v error -y -i pick.png -filter_complex "[0]split[x][y];[x]crop=1080:$SHIFT:0:0,vflip,boxblur=12[t];[y]crop=1080:1920-$SHIFT:0:0[m];[t][m]vstack" p2.png && mv p2.png pick.png
+          fi
           if [ -n "$CLEAN" ]; then python - <<'PY'
           import cv2, numpy as np, os
           y1, y2 = map(int, os.environ['CLEAN'].split(':'))
