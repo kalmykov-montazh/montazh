@@ -35,15 +35,28 @@ d.rounded_rectangle([0, 0, cw - 1, ch - 1], 26, fill=(255, 255, 255, 250))
 d.rounded_rectangle([(cw - lw) // 2, 22, (cw + lw) // 2, 54], 16, fill=(150, 30, 40))
 d.text((cw // 2, 38), LABEL.upper(), font=lf, fill='white', anchor='mm')
 d.text((cw // 2, 22 + 42 + 29), TEXT, font=f, fill=(18, 18, 22), anchor='mm')
+CTA_Y = int(os.environ.get('CTA_Y', '150'))
+if os.environ.get('BIG'):   # закрыть старый призыв из 3 строк (шрифт 82, «Ссылка в описании») целиком — карточка 960×400
+    f2 = ImageFont.truetype(F + 'montserrat-900.ttf', 76); lf2 = ImageFont.truetype(F + 'montserrat-900.ttf', 30)
+    lines = TEXT.split('|'); cw, ch = 960, 400
+    im = Image.new('RGBA', (cw, ch), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, cw - 1, ch - 1], 34, fill=(255, 255, 255, 255))
+    lw2 = int(lf2.getlength(LABEL.upper())) + 36
+    d.rounded_rectangle([(cw - lw2) // 2, 40, (cw + lw2) // 2, 88], 22, fill=(150, 30, 40))
+    d.text((cw // 2, 64), LABEL.upper(), font=lf2, fill='white', anchor='mm')
+    y = 88 + (ch - 88 - 30 - len(lines) * 96) // 2 + 48
+    for l in lines: d.text((cw // 2, y), l, font=f2, fill=(18, 18, 22), anchor='mm'); y += 96
+else:
+    TEXT = TEXT.replace('|', ' ')
 card = shadow_wrap(im); card.save(f'{TMP}/cta_card.png')
-cx, cy = (1080 - card.width) // 2, 150 - card.height // 2
+cx, cy = (1080 - card.width) // 2, CTA_Y - card.height // 2
 Image.open(COVER).convert('RGB').resize((1080, 1920), Image.LANCZOS).save(f'{TMP}/cover_full.png')
 
-t0 = total - 4.0   # старый призыв висел последние 5 с вместе с «пошёл работать», после обрезки — последние 4 с
-vf = (f"[0:v]trim=0:{total:.3f},setpts=PTS-STARTPTS,"
-      f"drawbox=x=0:y=0:w=1080:h=300:color=0x0E1A2A:t=fill:enable='gte(t,{t0 - 0.1:.3f})'[v];"
-      f"[1:v]format=rgba,fade=t=in:st={t0:.3f}:d=0.15:alpha=1[c];"
-      f"[v][c]overlay={cx}:{max(0, cy)}:enable='gte(t,{t0:.3f})'[v2];"
+t0 = float(os.environ['CTA_T0']) if os.environ.get('CTA_T0') else total - 4.0   # старый призыв висел последние 5 с вместе с «пошёл работать», после обрезки — последние 4 с
+BOX = 'null' if os.environ.get('BIG') else f"drawbox=x=0:y=0:w=1080:h=300:color=0x0E1A2A:t=fill:enable='gte(t,{t0 - 0.1:.3f})'"
+vf = (f"[0:v]trim=0:{total:.3f},setpts=PTS-STARTPTS,{BOX}[v];"
+      f"[1:v]format=rgba,fade=t=in:st={t0:.3f}:d={0.001 if os.environ.get('BIG') else 0.12}:alpha=1[c];"
+      f"[v][c]overlay={cx}:{max(0, cy)}:enable='gte(t,{t0 - 0.02:.3f})'[v2];"
       f"[v2][2:v]overlay=0:0:enable='lt(t,0.15)',format=yuv420p[vo];"
       f"[0:a]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={total - 0.03:.3f}:d=0.03[ao]")
 subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', SRC, '-loop', '1', '-framerate', fps, '-t', f'{total:.3f}', '-i', f'{TMP}/cta_card.png',

@@ -18,6 +18,14 @@ on:
         description: "Метка над призывом"
         required: false
         default: "ссылка в шапке профиля"
+      key:
+        description: "Для «ШОРТС Год в Испании»: ключ работы — время и место старого призыва берутся из работа/<ключ>/subs_B.ass, большая карточка, без обрезки конца"
+        required: false
+        default: ""
+      src:
+        description: "Имя исходного файла в папке (пусто — «!!! …mp4»)"
+        required: false
+        default: ""
       pack:
         description: "Новый текст упаковки (пусто — не менять)"
         required: false
@@ -38,13 +46,22 @@ jobs:
           F: ${{ inputs.folder }}
           TEXT: ${{ inputs.text }}
           LABEL: ${{ inputs.label }}
+          KEY: ${{ inputs.key }}
+          SRCN: ${{ inputs.src }}
         run: |
           sudo apt-get install -y -qq ffmpeg > /dev/null; pip install -q pillow
           mkdir -p w
           g=$(rclone lsf "montazh:$F" --files-only --include "!!! *.mp4" | head -1)
           [ -n "$g" ] || { echo "::error::Нет «!!! …mp4» в $F"; exit 1; }
           echo "G=$g" >> "$GITHUB_ENV"
-          rclone copyto "montazh:$F/$g" w/in.mp4; rclone copyto "montazh:$F/обложка.jpg" w/обложка.jpg
+          rclone copyto "montazh:$F/${SRCN:-$g}" w/in.mp4; rclone copyto "montazh:$F/обложка.jpg" w/обложка.jpg
+          if [ -n "$KEY" ]; then
+            rclone copyto "montazh:работа/$KEY/subs_B.ass" w/subs.ass
+            l=$(grep -m1 ',Cta,' w/subs.ass) || { echo "::error::В subs_B.ass нет призыва"; exit 1; }
+            t=$(echo "$l" | cut -d, -f2); y=$(echo "$l" | grep -o 'pos(540,[0-9]*' | cut -d, -f2)
+            export BIG=1 END_SEC=0 CTA_T0=$(python3 -c "h,m,s='$t'.split(':');print(int(h)*3600+int(m)*60+float(s))") CTA_Y=${y:-250}
+            echo "::notice::Старый призыв с $CTA_T0 с, центр $CTA_Y: $(echo "$l" | sed 's/.*}//')"
+          fi
           python scripts/redo_long_short.py w/in.mp4 w/обложка.jpg w/out.mp4 "$TEXT" "$LABEL" | sed 's/^/::notice::/'
           ffmpeg -v error -y -ss 0 -i w/out.mp4 -frames:v 1 w/f0.png
           python - <<'PY'
