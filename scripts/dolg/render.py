@@ -161,7 +161,24 @@ expr = '+'.join(f'between(t,{x0:.3f},{x1 - 0.001:.3f})' for x0, x1 in close) or 
 vf = ''.join(f'[{i}:v]setpts=PTS-STARTPTS,fps=30[v{i}];' for i in range(n))
 vf += ''.join(f'[v{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=0,tpad=stop_mode=clone:stop_duration={TAIL},split=3[va][vb][vc];'
 vf += f'color=c={BG}:s=1080x1920:r=30:d={total_sp + TAIL:.3f}[bg];'
-vf += f'[va]{SLIDE}[sl];[vb]{CAM}[cm];[vc]{CLOSE}[cl];'
+# слайд в лонге переключается на следующую ловушку чуть раньше речи: если смена слайда в последние 8 с — держим прежний слайд
+sch = []; tl0 = 0.0
+for a, b in segs:
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=10,crop=1214:680:68:40,scale=96:54,format=gray',
+                          '-f', 'rawvideo', '-'], capture_output=True).stdout
+    fr = np.frombuffer(raw, np.uint8).reshape(-1, 54, 96).astype(float)
+    for i in range(1, len(fr)):
+        t = tl0 + i / 10
+        both = any(x0 <= t - 0.1 and t < x1 for x0, x1 in iv)
+        if both and np.abs(fr[i] - fr[i - 1]).mean() > 6: sch.append(round(t, 2))
+    tl0 += b - a
+late = [t for t in sch if t > total_sp - 8]
+SLV = SLIDE
+if late:
+    tf = late[0] - 0.15
+    SLV = f'trim=end={tf:.3f},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={total_sp + TAIL - tf + 1:.3f},{SLIDE}'
+    print('смена слайда в конце на', late[0], 'с — держу прежний слайд', flush=True)
+vf += f'[va]{SLV}[sl];[vb]{CAM}[cm];[vc]{CLOSE}[cl];'
 vf += f'[bg][sl]overlay=0:{TOPB}:shortest=1[t1];[t1][cm]overlay=0:{CAM_Y}:shortest=1[t2];'
 vf += f'[t2][cl]overlay=0:{TOPB}:shortest=1:enable=\'{expr}\',format=yuv420p[vo];'
 vf += af.replace('[ac]', '[ac0]') + f';[ac0]apad=pad_dur={TAIL}[ao]'
@@ -195,5 +212,10 @@ for g in spec.get('groups', []):
     t = find(g['items'][0]['at']) or 0
     incl = any(c0 <= t < c1 for c0, c1 in close)
     for it in g['items']: it['dy'] = (470 if incl else 720) - TOPY
+    # плашка уходит до смены слайд/крупно (22.10: в «06» плашка из крупного плана осталась на тексте слайда)
+    sw = next((c1 for c0, c1 in (close if incl else iv) if c0 <= t < c1), None)
+    te = find(g['end'], t + 0.01) if isinstance(g.get('end'), str) else None
+    lim = [x for x in (sw - 0.15 if sw else None, te) if x]
+    if lim: g['end'] = round(min(lim), 2)
 json.dump(spec, open(f'{W}/spec.json', 'w'), ensure_ascii=False)
 print('base ok', round(total_sp + TAIL, 1), 'с; обложка со слайдом из', best, flush=True)
