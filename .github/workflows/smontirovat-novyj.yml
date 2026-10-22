@@ -34,6 +34,10 @@ on:
         description: "JSON вставок (pip.json), файлы — пути внутри «Монтаж!»"
         required: false
         default: ""
+      dup_ok:
+        description: "«1» — найденный повтор проверен Claude глазами, это не дубль (например «не самый сильный… и не самый умный»), класть на Диск"
+        required: false
+        default: ""
       pack:
         description: "Текст упаковки (упаковка.txt)"
         required: false
@@ -150,8 +154,9 @@ jobs:
         env:
           DEST: ${{ inputs.dest }}
           PACK: ${{ inputs.pack }}
+          DUP_OK: ${{ inputs.dup_ok }}
         run: |
-          if grep -q '^ПОВТОР' "$W/dups.txt" 2>/dev/null; then echo "::error::Найден повтор — ролик на Диск НЕ положен, вырезать дубль (fixes/trim) и перемонтировать"; exit 1; fi
+          if [ -z "$DUP_OK" ] && grep -q '^ПОВТОР' "$W/dups.txt" 2>/dev/null; then echo "::error::Найден повтор — ролик на Диск НЕ положен, вырезать дубль (fixes/trim) и перемонтировать"; exit 1; fi
           if [ -n "$PACK" ]; then
             printf '%s' "$PACK" | grep -q 'Монтаж делал в приложении' || echo "::warning::В упаковке нет строки «Монтаж делал в приложении, ссылка на него в шапке профиля»"
             printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"
