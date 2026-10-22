@@ -61,10 +61,10 @@ jobs:
           m = (dark | yel).astype(np.uint8) * 255
           core = (dark | yel).astype(np.uint8)
           core[:, :150] = 0; core[:, 930:] = 0
-          near = cv2.dilate(core, np.ones((15, 15), np.uint8)) > 0
-          white = b.min(axis=2) > 190
+          near = cv2.dilate(core, np.ones((25, 25), np.uint8)) > 0
+          white = b.min(axis=2) > 120
           m = (near & (dark | yel | white)).astype(np.uint8)
-          m = cv2.dilate(m, np.ones((5, 5), np.uint8)) * 255
+          m = cv2.dilate(cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((11, 11), np.uint8)), np.ones((9, 9), np.uint8)) * 255
           mask = np.zeros(im.shape[:2], np.uint8); mask[y1:y2] = m
           cv2.imwrite('pick.png', cv2.inpaint(im, mask, 9, cv2.INPAINT_NS))
           print(f"::notice::Стёрто субтитров: {int((mask > 0).sum())} точек")
