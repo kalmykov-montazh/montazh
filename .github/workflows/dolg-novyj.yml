@@ -58,3 +58,103 @@ jobs:
           git config user.name montazh; git config user.email montazh@users.noreply.github.com
           git checkout --orphan tmp-pics; git rm -rqf .
           cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
+
+  list:
+    if: inputs.mode == 'render'
+    runs-on: ubuntu-24.04
+    outputs:
+      ids: ${{ steps.l.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: l
+        env:
+          TOPIC: ${{ inputs.topic }}
+          IDS: ${{ inputs.ids }}
+        run: |
+          if [ -n "$IDS" ]; then ids=$(printf '%s\n' $IDS | jq -Rcn '[inputs|select(length>0)]')
+          else ids=$(ls "dolg/$TOPIC" | sed 's/\.json$//' | jq -Rcn '[inputs|select(length>0)]'); fi
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"; echo "::notice::Шортсы: $ids"
+
+  render:
+    needs: list
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        id: ${{ fromJSON(needs.list.outputs.ids) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать лонг
+        env:
+          TOPIC: ${{ inputs.topic }}
+        run: rclone copyto "montazh:Готовые!/$TOPIC/!!! $TOPIC.mp4" long.mp4
+      - name: Основа (куски, время слов, раскладка)
+        env:
+          TOPIC: ${{ inputs.topic }}
+          ID: ${{ matrix.id }}
+        run: |
+          J="dolg/$TOPIC/$ID.json"; W="$PWD/w"
+          { echo "J=$J"; echo "W=$W"; echo "FOLDER=$(jq -r .folder "$J")"; } >> "$GITHUB_ENV"
+          python scripts/dolg/render.py long.mp4 "$WMODEL" "$J" "$W" 2>&1 | tail -6 | sed 's/^/::notice::/'
+          [ -f "$W/base.mp4" ] || { echo "::error::основа не собралась"; exit 1; }
+      - name: Обложка — до наложения, она же первый кадр
+        run: |
+          read a b < "$W/cover_iv.txt"
+          ffmpeg -v error -y -ss "$a" -to "$b" -i "$W/base.mp4" -c:v libx264 -crf 16 -c:a aac "$W/cv.mp4"
+          t=$(python scripts/pick_frame.py "$W/cv.mp4" "$W/pick_tmp.png" | grep -o 'cover frame [0-9.]*' | awk '{print $3}')
+          [ -n "$t" ] || t=1.0
+          tt=$(python -c "print(round($a + $t, 2))")
+          ffmpeg -v error -y -ss "$tt" -i "$W/base.mp4" -frames:v 1 "$W/pick.png"
+          st=$(jq -r .cover.style "$W/spec.json"); top=$(jq -r .cover.top "$W/spec.json"); bot=$(jq -r .cover.bot "$W/spec.json")
+          python scripts/cover_new.py "$W/pick.png" "$st" "$top" "$bot" "$W/обложка.jpg"
+          echo "::notice::Обложка $st, кадр $tt с"
+      - name: Субтитры «микс», плашки, надпись, призыв
+        run: |
+          if ! COVER="$W/обложка.jpg" python scripts/overlay.py "$W/base.mp4" "$W/words_out.json" "$W/spec.json" mix "$W/final.mp4" > "$W/overlay.log" 2>&1; then
+            echo "::error::overlay: $(tail -4 "$W/overlay.log" | tr '\n' ' ' | cut -c1-600)"; exit 1; fi
+          echo "::notice::$(tail -2 "$W/overlay.log" | tr '\n' ' ')"
+      - name: Проверки
+        run: |
+          cd "$W"; V=final.mp4
+          vd=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 $V); ad=$(ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 $V)
+          echo "::notice::Длина видео $vd с, звука $ad с, $(du -h $V | cut -f1)"
+          python -c "import sys; sys.exit(0 if abs($vd-$ad)<0.3 else 1)" || echo "::warning::Звук и видео разной длины"
+          mkdir -p k
+          for i in 0 1 2 3 4 5 6 7 8 9; do t=$(python -c "print(round(0.05 + ($vd - 0.3) * $i / 9, 2))")
+            ffmpeg -v error -y -ss "$t" -i $V -frames:v 1 -vf "scale=360:640,drawtext=text='$t':x=8:y=8:fontsize=26:fontcolor=yellow:box=1:boxcolor=black@0.6" "k/$(printf %02d $i).png"; done
+          ffmpeg -v error -y -pattern_type glob -i 'k/*.png' -filter_complex tile=5x2 кадры.jpg
+          ffmpeg -v error -y -ss 0 -i $V -frames:v 1 f0.png
+          python - <<'PY'
+          from PIL import Image, ImageChops, ImageStat
+          a = Image.open('f0.png').convert('RGB').resize((270, 480)); b = Image.open('обложка.jpg').convert('RGB').resize((270, 480))
+          d = sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3
+          print(f"::notice::Первый кадр = обложка ({d:.1f})" if d < 12 else f"::error::Первый кадр не обложка ({d:.1f})")
+          PY
+      - name: На Диск
+        env:
+          TOPIC: ${{ inputs.topic }}
+        run: |
+          DEST="Готовые!/ШОРТС $TOPIC/$FOLDER"
+          jq -r .pack "$J" | rclone rcat "montazh:$DEST/упаковка.txt"
+          rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $FOLDER.mp4"
+          rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
+          rclone copy "$W" "montazh:работа/ШОРТС $TOPIC/$FOLDER" --include words_out.json --include modes.json --include overlay.log --include кадры.jpg --include spec.json
+          echo "::notice::Готово: $DEST"
+      - name: Превью в ветку
+        env:
+          KEY: ${{ inputs.key }}
+          ID: ${{ matrix.id }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C "$W" кадры.jpg обложка.jpg words_out.json modes.json
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan "tmp-dolg-$ID"; git rm -rqf . > /dev/null
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin "tmp-dolg-$ID"
