@@ -14,6 +14,8 @@ TMP = os.path.dirname(os.path.abspath(OUT))
 
 def probe(*a): return subprocess.run(['ffprobe', '-v', 'error', *a, '-of', 'csv=p=0', SRC], capture_output=True, text=True).stdout.strip()
 dur = float(probe('-show_entries', 'format=duration'))
+_sd = [float(x) for x in probe('-show_entries', 'stream=duration').split() if x.replace('.', '', 1).isdigit()]
+dur = min([dur] + _sd)   # по самой короткой дорожке: в старых роликах картинка бывает длиннее звука на ~1 с
 fps = probe('-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate')
 total = dur - END_SEC
 
