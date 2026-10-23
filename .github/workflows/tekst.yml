@@ -51,7 +51,7 @@ jobs:
               print("--- текст (ключ | распознано | правка):")
               for k in sorted(c, key=lambda k: float(k.split('-')[0])):
                   v = c[k]
-                  t = v if isinstance(v, str) else ''.join(x[-1] if isinstance(x, list) else str(x) for x in v)
+                  t = v if isinstance(v, str) else '·'.join((x[-1] if isinstance(x, list) else str(x)).strip() for x in v)
                   f = fx.get(k)
                   print(f"{k} | {t.strip()}" + (f" || ПРАВКА: {f}" if f is not None else ""))
               rest = {k: v for k, v in fx.items() if k not in c}
