@@ -34,6 +34,8 @@ jobs:
           for p in "${paths[@]}"; do
             name=$(basename "$p")
             stem=$(jq -r --arg n "$name" '.[$n] // empty' klyuchi.json)
+            # сырой без папки в «Готовые!»: папка «работа/<ключ>» — ключ = имя папки (23.10.2026)
+            [ -z "$stem" ] && case "$p" in работа/*) stem="$name";; esac
             d="w/$name"; mkdir -p "$d"
             rclone lsf "montazh:$p" --format sp --separator ' | ' > "$d/ls.txt" 2>&1 || true
             rclone copy "montazh:$p" "$d" --include "упаковка.txt" 2>/dev/null || true
