@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "check или fix"
+        description: "check или fix (блок обложки), links-check или links-fix (строки со ссылками)"
         required: true
         default: check
 
@@ -23,7 +23,7 @@ jobs:
           client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
       - name: Скачать тексты
         run: |
-          for d in 'Готовые!' 'К публикации!'; do
+          for d in 'Готовые!' 'К публикации!' 'Проба без ссылок'; do
             rclone copy "montazh:$d" "orig/$d" --include '*.txt' || echo "::warning::Не скачал $d"
           done
           cp -r orig work
@@ -32,7 +32,7 @@ jobs:
           MODE: ${{ inputs.mode }}
         run: python3 scripts/chistka_upakovki.py work "$MODE"
       - name: Залить обратно
-        if: inputs.mode == 'fix'
+        if: inputs.mode == 'fix' || inputs.mode == 'links-fix'
         run: |
           n=0
           while IFS= read -r rel; do
