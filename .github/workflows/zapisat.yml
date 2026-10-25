@@ -1,0 +1,31 @@
+name: Записать текстовый файл на Диск
+
+# Для Claude (25.10.2026): записать текст (например, упаковка.txt) в файл внутри «Монтаж!», поверх старого.
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Путь файла внутри «Монтаж!»"
+        required: true
+      text:
+        description: "Текст целиком"
+        required: true
+
+jobs:
+  write:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Записать
+        env:
+          P: ${{ inputs.path }}
+          T: ${{ inputs.text }}
+        run: |
+          printf '%s' "$T" | rclone rcat "montazh:$P"
+          echo "::notice::Записано: $P ($(rclone size "montazh:$P" --json | python3 -c 'import json,sys;print(json.load(sys.stdin)["bytes"])') байт)"
