@@ -158,9 +158,12 @@ def ic_ban(d, cx, cy, s, c, w=8):
     d.ellipse([cx - 0.5 * s, cy - 0.5 * s, cx + 0.5 * s, cy + 0.5 * s], outline=c, width=w)
     d.line([(cx - 0.35 * s, cy - 0.35 * s), (cx + 0.35 * s, cy + 0.35 * s)], fill=c, width=w)
 def ic_clock0(d, cx, cy, s, c, w=8): ic_clock(d, cx, cy, s * 0.5, c, 2.0, w)
+def ic_flame(d, cx, cy, s, c, w=8):
+    d.line([(cx, cy - 0.6 * s), (cx + 0.35 * s, cy - 0.05 * s), (cx + 0.3 * s, cy + 0.35 * s), (cx, cy + 0.55 * s), (cx - 0.3 * s, cy + 0.35 * s), (cx - 0.35 * s, cy - 0.05 * s), (cx, cy - 0.6 * s)], fill=c, width=w, joint="curve")
+    d.line([(cx, cy + 0.05 * s), (cx + 0.14 * s, cy + 0.3 * s), (cx, cy + 0.45 * s), (cx - 0.14 * s, cy + 0.3 * s), (cx, cy + 0.05 * s)], fill=c, width=w - 3)
 ICONS = {"person": ic_person, "key": ic_key, "house": ic_house, "clock": ic_clock0, "doc": ic_doc, "euro": ic_euro, "bank": ic_bank,
          "cal": ic_cal, "tool": ic_tool, "camera": ic_camera, "door": ic_door, "bolt": ic_bolt, "drop": ic_drop, "bed": ic_bed,
-         "sign": ic_sign, "shield": ic_shield, "chart": ic_chart, "ban": ic_ban}
+         "sign": ic_sign, "flame": ic_flame, "shield": ic_shield, "chart": ic_chart, "ban": ic_ban}
 def icon(d, name, cx, cy, s, c=WH):
     f = ICONS.get(name)
     if f: f(d, cx, cy, s, c)

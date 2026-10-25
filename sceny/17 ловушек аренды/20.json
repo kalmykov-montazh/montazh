@@ -1,0 +1,119 @@
+{
+ "num": "2026",
+ "title": "НОВЫЕ ПРАВИЛА АРЕНДЫ",
+ "cold": {
+  "from": "правила аренды в",
+  "to": "на глазах",
+  "band": "ПРАВИЛА МЕНЯЮТСЯ",
+  "color": "GOLD",
+  "ok": true
+ },
+ "scenes": [
+  {
+   "type": "cards",
+   "from": "люди вышли на",
+   "to": "аренды жилья",
+   "max": 6.5,
+   "kicker": "ВАЛЕНСИЯ, ОКТЯБРЬ 2026",
+   "title": "ПРОТЕСТ",
+   "items": [
+    {
+     "label": "ДОРОГОЕ ЖИЛЬЁ",
+     "icon": "house",
+     "ok": false
+    },
+    {
+     "label": "ДОРОГАЯ АРЕНДА",
+     "icon": "euro",
+     "ok": false,
+     "at": "аренды"
+    }
+   ]
+  },
+  {
+   "type": "doc",
+   "from": "real decreto-ley",
+   "to": "утвердить парламент",
+   "max": 8,
+   "kicker": "ДЕЙСТВУЕТ С 8 ОКТЯБРЯ",
+   "title": "RDL 29/2026",
+   "doc_top": "BOLETÍN OFICIAL DEL ESTADO",
+   "doc_title": "REAL DECRETO-LEY 29/2026",
+   "lines": [
+    "VIVIENDA",
+    null,
+    {
+     "hl": "PENDIENTE DE CONVALIDACIÓN"
+    },
+    null,
+    null
+   ],
+   "hl_at": "парламент",
+   "stamp": "BOE"
+  },
+  {
+   "type": "list",
+   "from": "срок заканчивается",
+   "to": "платит вовремя",
+   "max": 7,
+   "kicker": "ПРОДЛЕНИЕ ДО 2 ЛЕТ",
+   "title": "ЕСЛИ",
+   "items": [
+    {
+     "text": "ДОГОВОР ИСТЕКАЕТ ДО 2029"
+    },
+    {
+     "text": "ЖИЛЕЦ ПЛАТИТ ВОВРЕМЯ",
+     "at": "платит"
+    }
+   ]
+  },
+  {
+   "type": "stamp",
+   "from": "квартира реально нужна",
+   "dur": 4,
+   "kicker": "ИСКЛЮЧЕНИЕ",
+   "title": "НУЖНА ХОЗЯИНУ",
+   "word": "НЕ ДЕЙСТВУЕТ",
+   "color": "GOLD"
+  },
+  {
+   "type": "doc",
+   "from": "называется номер",
+   "to": "15 ноября",
+   "max": 7,
+   "kicker": "С 15 НОЯБРЯ",
+   "title": "RDL 28/2026",
+   "doc_top": "BOLETÍN OFICIAL DEL ESTADO",
+   "doc_title": "REAL DECRETO-LEY 28/2026",
+   "lines": [
+    "ARRENDAMIENTOS",
+    null,
+    {
+     "hl": "PRÓRROGA DE CONTRATOS"
+    },
+    null,
+    null
+   ],
+   "hl_at": "продление",
+   "stamp": "BOE"
+  }
+ ],
+ "bands": [
+  {
+   "at": "проверяйте конечно",
+   "text": "ПРОВЕРЯЙТЕ ПЕРЕД ПОДПИСЬЮ",
+   "color": "GOLD",
+   "ok": true
+  }
+ ],
+ "ask": {
+  "l1": "ВЫ СЛЕДИТЕ",
+  "l2": "ЗА НОВЫМИ ЗАКОНАМИ?"
+ },
+ "fix": {
+  "лао": "LAU"
+ },
+ "pack_q": "А вы следите за изменениями в законах об аренде? Да или нет",
+ "id": "20"
+}

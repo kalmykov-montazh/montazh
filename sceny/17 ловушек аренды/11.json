@@ -1,0 +1,115 @@
+{
+ "num": "ЛОВУШКА №11",
+ "title": "IBI И КОМУНИДАД",
+ "cold": {
+  "from": "на кого прописали",
+  "to": "тот и оплачивает",
+  "band": "КАК В ДОГОВОРЕ",
+  "color": "GOLD",
+  "ok": true
+ },
+ "title_until": "кто за что",
+ "scenes": [
+  {
+   "type": "compare",
+   "from": "ibi это налог",
+   "to": "в наших странах",
+   "max": 7,
+   "title": "ЧТО ЭТО",
+   "left": {
+    "title": "IBI",
+    "icon": "bank",
+    "lines": [
+     "НАЛОГ",
+     "на недвижимость"
+    ],
+    "col": "GOLD"
+   },
+   "right": {
+    "title": "КОМУНИДАД",
+    "icon": "house",
+    "lines": [
+     "ВЗНОС",
+     "за дом"
+    ],
+    "col": "GOLD",
+    "at": "комунидад это"
+   }
+  },
+  {
+   "type": "cards",
+   "from": "оплачивается один раз",
+   "dur": 4.5,
+   "kicker": "ЧАЩЕ ВСЕГО",
+   "title": "IBI ПЛАТИТ",
+   "items": [
+    {
+     "label": "РАЗ В ГОД",
+     "icon": "cal"
+    },
+    {
+     "label": "ХОЗЯИН",
+     "icon": "house",
+     "ok": true,
+     "at": "собственник"
+    }
+   ]
+  },
+  {
+   "type": "doc",
+   "from": "должна стоять",
+   "to": "он оплачивает",
+   "max": 6,
+   "kicker": "ЕСЛИ ПЛАТИТ ЖИЛЕЦ",
+   "title": "ТОЧНАЯ СУММА",
+   "doc_top": "CONTRATO DE ARRENDAMIENTO",
+   "doc_title": "GASTOS",
+   "lines": [
+    "IBI",
+    null,
+    {
+     "hl": "IMPORTE: ___ € AL AÑO"
+    },
+    null,
+    "COMUNIDAD",
+    null
+   ],
+   "hl_at": "сумма",
+   "stamp": "FIRMADO"
+  },
+  {
+   "type": "stamp",
+   "from": "несколько сотен",
+   "dur": 4.5,
+   "kicker": "НЕ ПРОЧИТАЛИ ДОГОВОР",
+   "title": "ЛИШНИЕ РАСХОДЫ",
+   "word": "СОТНИ € В ГОД",
+   "color": "R"
+  }
+ ],
+ "bands": [
+  {
+   "at": "до подписания",
+   "text": "ЧИТАЙТЕ ДО ПОДПИСИ",
+   "color": "GOLD",
+   "ok": true
+  }
+ ],
+ "ask": {
+  "l1": "КТО У ВАС ПЛАТИТ",
+  "l2": "IBI?",
+  "opts": [
+   "ХОЗЯИН",
+   "Я"
+  ],
+  "cols": [
+   "G",
+   "GOLD"
+  ]
+ },
+ "fix": {
+  "ibi": "IBI"
+ },
+ "pack_q": "А у вас IBI и комунидад кто платит, хозяин или вы?",
+ "id": "11"
+}

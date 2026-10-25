@@ -1,0 +1,104 @@
+{
+ "num": "№16",
+ "title": "КВАРТИРА НУЖНА ХОЗЯИНУ",
+ "cold": {
+  "from": "как собственник вы",
+  "to": "права заехать",
+  "band": "РАНЬШЕ ГОДА — НЕЛЬЗЯ",
+  "color": "R",
+  "ok": false
+ },
+ "title_until": "я уже",
+ "freeze": {
+  "before": "два месяца",
+  "after": 55,
+  "q1": "ЗА СКОЛЬКО",
+  "q2": "ПРЕДУПРЕДИТЬ?"
+ },
+ "scenes": [
+  {
+   "type": "cards",
+   "from": "для себя или",
+   "to": "определенным правилам",
+   "max": 6,
+   "kicker": "ВЕРНУТЬ КВАРТИРУ",
+   "title": "ДЛЯ КОГО",
+   "items": [
+    {
+     "label": "ХОЗЯИН",
+     "icon": "house",
+     "ok": true
+    },
+    {
+     "label": "РОДСТВЕННИКИ",
+     "icon": "person",
+     "ok": true,
+     "at": "родственников"
+    }
+   ]
+  },
+  {
+   "type": "doc",
+   "from": "прописано в",
+   "dur": 4.5,
+   "kicker": "ПОМЕТКА ДЛЯ ХОЗЯЕВ",
+   "title": "ПРОПИСАТЬ",
+   "doc_top": "CONTRATO DE ARRENDAMIENTO",
+   "doc_title": "NECESIDAD DEL ARRENDADOR",
+   "lines": [
+    "CLÁUSULA",
+    null,
+    {
+     "hl": "PARA SÍ O SUS FAMILIARES"
+    },
+    null,
+    null
+   ],
+   "hl_at": "контракте",
+   "stamp": "FIRMADO"
+  },
+  {
+   "type": "number",
+   "from": "минимум один год",
+   "dur": 3,
+   "value": 1,
+   "count": false,
+   "suf": " ГОД",
+   "kicker": "СНАЧАЛА ЖИЛЕЦ ЖИВЁТ",
+   "sub": "не меньше",
+   "glow": "GOLD"
+  },
+  {
+   "type": "compare",
+   "from": "арендатор съезжает",
+   "to": "два месяца",
+   "after": 58,
+   "max": 6,
+   "title": "СРОКИ ПРЕДУПРЕЖДЕНИЯ",
+   "left": {
+    "title": "ЖИЛЕЦ",
+    "icon": "person",
+    "lines": [
+     "30 ДНЕЙ"
+    ],
+    "col": "GOLD"
+   },
+   "right": {
+    "title": "ХОЗЯИН",
+    "icon": "house",
+    "lines": [
+     "2 МЕСЯЦА"
+    ],
+    "col": "GOLD",
+    "at": "если собственнику"
+   }
+  }
+ ],
+ "bands": [],
+ "ask": {
+  "l1": "ВАС ПРОСИЛИ",
+  "l2": "СЪЕХАТЬ?"
+ },
+ "pack_q": "А вас когда-нибудь просили съехать раньше срока? Да или нет",
+ "id": "17"
+}
