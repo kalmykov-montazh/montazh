@@ -1,0 +1,58 @@
+name: Кадры конца роликов
+
+# Для Claude (25.10.2026): последние кадры «!!! …mp4» нескольких роликов (секунды до конца) + длительность,
+# зашифрованным архивом в ветку tmp-pics. Чтобы найти, где в ролике вшит призыв.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Папки роликов через ;"
+        required: true
+      offsets:
+        description: "Секунды до конца через пробел"
+        required: false
+        default: "10 8 6 4 2 0.5"
+      key:
+        description: "Пароль для шифрования"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  konec:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Кадры
+        env:
+          FS: ${{ inputs.folders }}
+          T: ${{ inputs.offsets }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          mkdir -p out; i=0
+          IFS=';' read -ra fs <<< "$FS"
+          for f in "${fs[@]}"; do
+            i=$((i+1)); g=$(rclone lsf "montazh:$f" --files-only --include "!!! *.mp4" | head -1)
+            [ -n "$g" ] || { echo "::error::Нет !!! в $f"; continue; }
+            rclone copyto "montazh:$f/$g" v.mp4; mkdir -p "out/$i"; echo "$f" > "out/$i/name.txt"
+            d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 v.mp4); echo "$d" > "out/$i/dur.txt"
+            for t in $T; do ffmpeg -v error -y -sseof "-$t" -i v.mp4 -frames:v 1 -vf scale=432:768 "out/$i/e_$t.jpg"; done
+            echo "::notice::$i $f: $d с"
+          done
+      - name: Зашифровать и положить в ветку tmp-pics
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
