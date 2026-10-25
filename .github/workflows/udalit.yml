@@ -1,0 +1,32 @@
+name: Удалить папку на Диске (в корзину)
+
+# Для Claude (25.10.2026): удалить папки внутри «Монтаж!» — только по прямой просьбе Евгения.
+# Удаляет в корзину Google Диска (rclone по умолчанию use_trash), 30 дней можно восстановить.
+
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: "Папки внутри «Монтаж!» через ;"
+        required: true
+
+jobs:
+  del:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Удалить
+        env:
+          P: ${{ inputs.paths }}
+        run: |
+          IFS=';' read -ra ps <<< "$P"
+          for p in "${ps[@]}"; do
+            p=$(printf '%s' "$p" | sed 's/^ *//;s/ *$//')
+            case "$p" in ""|/|.|Готовые!|"К публикации!"|Сырые!|работа|скрипты) echo "::error::Эту папку удалять нельзя: $p"; continue;; esac
+            if rclone purge "montazh:$p" --drive-use-trash=true 2>err.txt; then echo "::notice::В корзину: $p"; else echo "::error::Не вышло: $p: $(tail -1 err.txt)"; fi
+          done
