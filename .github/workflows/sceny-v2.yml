@@ -1,0 +1,47 @@
+name: 5Д. Шортс из лонга со сценами v2
+
+# 25.10.2026: утверждённый вариант «02 Сдаёт не хозяин — сцены v2». Нужна основа (задача 5С).
+# Сцены ролика — sceny/<тема>/<NN>.json, движок — scripts/sceny/engine.py, порядок — scripts/sceny/run.sh.
+# Кладёт «!!! <NN Название> — сцены v2.mp4» и «упаковка — сцены.txt» рядом со старым роликом, старый не трогает.
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Тема лонга"
+        required: true
+      ids:
+        description: "Номера через пробел, например 03 04 05"
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      ids: ${{ steps.m.outputs.ids }}
+    steps:
+      - id: m
+        env:
+          IDS: ${{ inputs.ids }}
+        run: echo "ids=$(python3 -c 'import json,os;print(json.dumps(os.environ["IDS"].split()))')" >> "$GITHUB_OUTPUT"
+  render:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 19
+      matrix:
+        id: ${{ fromJson(needs.plan.outputs.ids) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Монтаж
+        env:
+          TOPIC: ${{ inputs.topic }}
+          ID: ${{ matrix.id }}
+        run: bash scripts/sceny/run.sh "$TOPIC" "$ID"
