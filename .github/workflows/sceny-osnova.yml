@@ -1,0 +1,46 @@
+name: 5С. Основа шортса из лонга для сцен (без субтитров)
+
+# 25.10.2026: пилот «анимированные сцены». Собирает только основу (раскладка «Штрафов», без субтитров и плашек)
+# через scripts/dolg/render.py и кладёт её на Диск в «работа/Сцены/<тема>/<NN>/» — дальше Claude накладывает
+# маленькие субтитры и сцены у себя. Готовые шортсы в «Готовые!» эта задача НЕ трогает.
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Тема лонга (папка в Готовые!)"
+        required: true
+      id:
+        description: "Номер шортса, например 02"
+        required: true
+
+jobs:
+  base:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать лонг
+        env:
+          TOPIC: ${{ inputs.topic }}
+        run: rclone copyto "montazh:Готовые!/$TOPIC/!!! $TOPIC.mp4" long.mp4
+      - name: Основа
+        env:
+          TOPIC: ${{ inputs.topic }}
+          ID: ${{ inputs.id }}
+        run: |
+          python scripts/dolg/render.py long.mp4 "$WMODEL" "dolg/$TOPIC/$ID.json" "$PWD/w" 2>&1 | tail -6 | sed 's/^/::notice::/'
+          [ -f w/base.mp4 ] || { echo "::error::основа не собралась"; exit 1; }
+          echo "::notice::$(du -h w/base.mp4 | cut -f1), $(ffprobe -v error -show_entries format=duration -of csv=p=0 w/base.mp4) с"
+      - name: На Диск
+        env:
+          TOPIC: ${{ inputs.topic }}
+          ID: ${{ inputs.id }}
+        run: |
+          rclone copy w "montazh:работа/Сцены/$TOPIC/$ID" --include base.mp4 --include words_out.json --include modes.json --include spec.json --include cover_iv.txt
+          echo "::notice::Готово: работа/Сцены/$TOPIC/$ID"
