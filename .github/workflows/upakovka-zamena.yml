@@ -1,0 +1,33 @@
+name: Заменить упаковку на «сцены v2»
+
+# Для Claude (25.10.2026, просьба Евгения): в папках шортсов старую «упаковка.txt» — в корзину Диска,
+# «упаковка — сцены.txt» переименовать в «упаковка.txt». Только там, где есть «упаковка — сцены.txt».
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка с шортсами внутри «Монтаж!»"
+        required: true
+
+jobs:
+  swap:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Заменить
+        env:
+          F: ${{ inputs.folder }}
+        run: |
+          rclone lsf "montazh:$F" --dirs-only | sed 's#/$##' | while read -r d; do
+            p="montazh:$F/$d"
+            rclone lsf "$p" --files-only > ls.txt
+            grep -qx "упаковка — сцены.txt" ls.txt || { echo "::notice::пропуск (нет новой): $d"; continue; }
+            if grep -qx "упаковка.txt" ls.txt; then rclone deletefile "$p/упаковка.txt" --drive-use-trash=true || { echo "::error::не удалил: $d"; continue; }; fi
+            rclone moveto "$p/упаковка — сцены.txt" "$p/упаковка.txt" && echo "::notice::OK: $d" || echo "::error::не переименовал: $d"
+          done
