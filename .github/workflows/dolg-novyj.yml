@@ -140,6 +140,8 @@ jobs:
           TOPIC: ${{ inputs.topic }}
         run: |
           DEST="Готовые!/ШОРТС $TOPIC/$FOLDER"
+          # 25.10.2026: никаких ссылок и отсылок к ним — ни в упаковке, ни в призыве
+          if jq -r '.pack, (.spec.cta // {} | tostring)' "$J" | grep -qiE 'ссылк|в шапке|в описани|полное видео|полном видео|монтаж делал в приложени'; then echo "::error::В упаковке или призыве ссылка / «полное видео» — убрать из $J"; exit 1; fi
           jq -r .pack "$J" | rclone rcat "montazh:$DEST/упаковка.txt"
           rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $FOLDER.mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"

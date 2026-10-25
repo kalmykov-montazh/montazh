@@ -13,11 +13,11 @@ on:
       text:
         description: "Текст призыва"
         required: false
-        default: "Полное видео на YouTube"
+        default: "А вы что думаете?"
       label:
         description: "Метка над призывом"
         required: false
-        default: "ссылка в шапке профиля"
+        default: "напишите в комментариях"
       key:
         description: "Для «ШОРТС Год в Испании»: ключ работы — время и место старого призыва берутся из работа/<ключ>/subs_B.ass, большая карточка, без обрезки конца"
         required: false
