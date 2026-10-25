@@ -3,7 +3,9 @@
 python3 redo_long_short.py in.mp4 обложка.jpg out.mp4 "Полное видео на YouTube" "ссылка в шапке профиля"
 - отрезает последнюю 1,0 с — приклеенное «Всё, пошёл работать» (build.py клеил его ровно 1,0 с);
 - старый призыв в верхней полосе закрывается фоном полосы, вместо него белая карточка нового стиля;
-- обложка первым кадром на 0,15 с (TikTok через автопубликатор берёт кадр с 0 с)."""
+- обложка первым кадром на 0,15 с (TikTok через автопубликатор берёт кадр с 0 с).
+25.10.2026: NOCARD=1 — без карточки, верхняя полоса просто заливается фоном (убрать «Полное видео / ссылка»);
+с BIG=1 карточка — вопрос в комментарии вместо призыва (TEXT строки через |, LABEL — метка)."""
 import json, os, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -56,9 +58,10 @@ Image.open(COVER).convert('RGB').resize((1080, 1920), Image.LANCZOS).save(f'{TMP
 
 t0 = float(os.environ['CTA_T0']) if os.environ.get('CTA_T0') else total - 4.0   # старый призыв висел последние 5 с вместе с «пошёл работать», после обрезки — последние 4 с
 BOX = 'null' if os.environ.get('BIG') else f"drawbox=x=0:y=0:w=1080:h=300:color=0x0E1A2A:t=fill:enable='gte(t,{t0 - 0.1:.3f})'"
+CARD = "[v]null[v2];[c]nullsink;" if os.environ.get('NOCARD') else f"[v][c]overlay={cx}:{max(0, cy)}:enable='gte(t,{t0 - 0.02:.3f})'[v2];"
 vf = (f"[0:v]trim=0:{total:.3f},setpts=PTS-STARTPTS,{BOX}[v];"
       f"[1:v]format=rgba,fade=t=in:st={t0:.3f}:d={0.001 if os.environ.get('BIG') else 0.12}:alpha=1[c];"
-      f"[v][c]overlay={cx}:{max(0, cy)}:enable='gte(t,{t0 - 0.02:.3f})'[v2];"
+      f"{CARD}"
       f"[v2][2:v]overlay=0:0:enable='lt(t,0.15)',format=yuv420p[vo];"
       f"[0:a]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={total - 0.03:.3f}:d=0.03[ao]")
 subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', SRC, '-loop', '1', '-framerate', fps, '-t', f'{total:.3f}', '-i', f'{TMP}/cta_card.png',

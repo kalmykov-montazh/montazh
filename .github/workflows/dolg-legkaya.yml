@@ -30,6 +30,18 @@ on:
         description: "Новый текст упаковки (пусто — не менять)"
         required: false
         default: ""
+      dest:
+        description: "Куда положить (пусто — в ту же папку, поверх «!!!»). Для пробы — другая папка, туда же копируются обложка и упаковка"
+        required: false
+        default: ""
+      nocard:
+        description: "1 — без карточки: верхняя полоса заливается фоном (ВНЖ, Штрафы)"
+        required: false
+        default: ""
+      endsec:
+        description: "Сколько секунд отрезать с конца (пусто — 1,0; 0 — не резать)"
+        required: false
+        default: ""
 
 jobs:
   redo:
@@ -48,7 +60,10 @@ jobs:
           LABEL: ${{ inputs.label }}
           KEY: ${{ inputs.key }}
           SRCN: ${{ inputs.src }}
+          NOCARD: ${{ inputs.nocard }}
+          ENDS: ${{ inputs.endsec }}
         run: |
+          [ -n "$ENDS" ] && export END_SEC=$ENDS
           sudo apt-get install -y -qq ffmpeg > /dev/null; pip install -q pillow
           mkdir -p w
           g=$(rclone lsf "montazh:$F" --files-only --include "!!! *.mp4" | head -1)
@@ -76,7 +91,10 @@ jobs:
         env:
           F: ${{ inputs.folder }}
           PACK: ${{ inputs.pack }}
+          DEST: ${{ inputs.dest }}
         run: |
-          rclone copyto w/out.mp4 "montazh:$F/$G"
-          [ -n "$PACK" ] && printf '%s' "$PACK" | rclone rcat "montazh:$F/упаковка.txt"
-          echo "::notice::Готово: $F"
+          D=${DEST:-$F}
+          if [ "$D" != "$F" ]; then rclone copyto "montazh:$F/обложка.jpg" "montazh:$D/обложка.jpg"; rclone copyto "montazh:$F/упаковка.txt" "montazh:$D/упаковка.txt"; fi
+          rclone copyto w/out.mp4 "montazh:$D/$G"
+          [ -n "$PACK" ] && printf '%s' "$PACK" | rclone rcat "montazh:$D/упаковка.txt"
+          echo "::notice::Готово: $D"
