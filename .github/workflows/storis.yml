@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       src:
-        description: "Сырой внутри «Монтаж!», например Сырые!/20261016_224658.mp4"
+        description: "Сырой внутри «Монтаж!», например Брокер/Сырые/Шортсы/20261016_224658.mp4"
         required: true
       dest:
-        description: "Папка результата, например Готовые!/СТОРИС Жим ногами 170 кг"
+        description: "Папка результата, например Брокер/Готовые/Шортсы/СТОРИС/СТОРИС Жим ногами 170 кг"
         required: true
       segs:
         description: "JSON [[начало, конец, скорость], ...]"
@@ -70,7 +70,7 @@ jobs:
         run: |
           rclone copyto final.mp4 "montazh:$DEST/!!! $(basename "$DEST").mp4"
           rclone copyto out/кадры.jpg "montazh:$DEST/кадры.jpg"
-          rest="${SRC#Сырые!/}"
+          rest="${SRC#Брокер/Сырые/Шортсы/}"
           if [ "$rest" != "$SRC" ] && [ "${rest#*/}" = "$rest" ]; then
             rclone moveto "montazh:$SRC" "montazh:$DEST/$(basename "$DEST").${rest##*.}" && echo "::notice::Сырой перенесён в $DEST"
           fi

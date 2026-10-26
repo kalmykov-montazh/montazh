@@ -9,7 +9,7 @@ on:
       folders:
         description: "Папки внутри «Монтаж!», где искать видео.mp4, через ;"
         required: true
-        default: "Готовые!;К публикации!"
+        default: "Брокер/Готовые;Брокер/К публикации"
 
 jobs:
   find:

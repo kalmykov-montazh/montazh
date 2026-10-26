@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       dest:
-        description: "Папка на Диске внутри «Монтаж!», например Готовые!/Тема/сток"
+        description: "Папка на Диске внутри «Монтаж!», например Брокер/Готовые/Шортсы/Тема/сток"
         required: true
       queries:
         description: "Запросы через ; в виде имя=запрос на английском, например car=car highway;docs=documents desk"

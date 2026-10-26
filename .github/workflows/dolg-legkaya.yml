@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       folder:
-        description: "Папка ролика, например Готовые!/ШОРТС ВНЖ после защиты/07 ПМЖ с защиты"
+        description: "Папка ролика, например Брокер/Готовые/Шортсы/ВНЖ после защиты/07 ПМЖ с защиты"
         required: true
       text:
         description: "Текст призыва"
@@ -71,7 +71,7 @@ jobs:
           echo "G=$g" >> "$GITHUB_ENV"
           rclone copyto "montazh:$F/${SRCN:-$g}" w/in.mp4; rclone copyto "montazh:$F/обложка.jpg" w/обложка.jpg
           if [ -n "$KEY" ]; then
-            rclone copyto "montazh:работа/$KEY/subs_B.ass" w/subs.ass
+            rclone copyto "montazh:Брокер/работа/$KEY/subs_B.ass" w/subs.ass
             l=$(grep -m1 ',Cta,' w/subs.ass) || { echo "::error::В subs_B.ass нет призыва"; exit 1; }
             t=$(echo "$l" | cut -d, -f2); y=$(echo "$l" | grep -o 'pos(540,[0-9]*' | cut -d, -f2)
             export BIG=1 END_SEC=0 CTA_T0=$(python3 -c "h,m,s='$t'.split(':');print(int(h)*3600+int(m)*60+float(s))") CTA_Y=${y:-250}

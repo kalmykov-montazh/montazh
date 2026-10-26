@@ -46,8 +46,8 @@ runs:
       shell: bash
       run: |
         mkdir -p models
-        [ -f models/ggml-small-q8_0.bin ] || rclone copy montazh: models --include ggml-small-q8_0.bin
-        [ -f models/haar.xml ] || rclone copy 'montazh:скрипты' models --include haar.xml
+        [ -f models/ggml-small-q8_0.bin ] || rclone copyto 'montazh:Общее/ggml-small-q8_0.bin' models/ggml-small-q8_0.bin
+        [ -f models/haar.xml ] || rclone copy 'montazh:Брокер/скрипты' models --include haar.xml
         [ -f models/lbf.yaml ] || curl -fsSL -o models/lbf.yaml https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/lbfmodel.yaml
         ls -la models
         cp models/haar.xml models/lbf.yaml scripts/

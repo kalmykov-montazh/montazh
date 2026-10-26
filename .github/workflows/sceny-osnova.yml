@@ -2,13 +2,13 @@ name: 5С. Основа шортса из лонга для сцен (без с�
 
 # 25.10.2026: пилот «анимированные сцены». Собирает только основу (раскладка «Штрафов», без субтитров и плашек)
 # через scripts/dolg/render.py и кладёт её на Диск в «работа/Сцены/<тема>/<NN>/» — дальше Claude накладывает
-# маленькие субтитры и сцены у себя. Готовые шортсы в «Готовые!» эта задача НЕ трогает.
+# маленькие субтитры и сцены у себя. Готовые шортсы в «Брокер/Готовые/Шортсы» эта задача НЕ трогает.
 
 on:
   workflow_dispatch:
     inputs:
       topic:
-        description: "Тема лонга (папка в Готовые!)"
+        description: "Тема лонга (папка в Брокер/Готовые/Лонги)"
         required: true
       id:
         description: "Номер шортса, например 02"
@@ -28,7 +28,7 @@ jobs:
       - name: Скачать лонг
         env:
           TOPIC: ${{ inputs.topic }}
-        run: rclone copyto "montazh:Готовые!/$TOPIC/!!! $TOPIC.mp4" long.mp4
+        run: rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
       - name: Основа
         env:
           TOPIC: ${{ inputs.topic }}
@@ -42,5 +42,5 @@ jobs:
           TOPIC: ${{ inputs.topic }}
           ID: ${{ inputs.id }}
         run: |
-          rclone copy w "montazh:работа/Сцены/$TOPIC/$ID" --include base.mp4 --include words_out.json --include modes.json --include spec.json --include cover_iv.txt
+          rclone copy w "montazh:Брокер/работа/Сцены/$TOPIC/$ID" --include base.mp4 --include words_out.json --include modes.json --include spec.json --include cover_iv.txt
           echo "::notice::Готово: работа/Сцены/$TOPIC/$ID"

@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       src:
-        description: "Сырой ролик внутри «Монтаж!», например Сырые!/20261003_152124_1.mp4"
+        description: "Сырой ролик внутри «Монтаж!», например Брокер/Сырые/Шортсы/20261003_152124_1.mp4"
         required: true
       dest:
-        description: "Куда положить, например Готовые!/Тема в 3-4 словах 20261003_152124"
+        description: "Куда положить, например Брокер/Готовые/Шортсы/Тема в 3-4 словах 20261003_152124"
         required: true
       cover:
         description: "Надпись обложки: СТРОКА1|СТРОКА2|СТРОКА3"
@@ -67,7 +67,7 @@ jobs:
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           { echo "STEM=$stem"; echo "W=$W"; echo "RAW=$PWD/raw/$name"; } >> "$GITHUB_ENV"
           rclone copyto "montazh:$SRC" "raw/$name"
-          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include plan.json
+          rclone copy "montazh:Брокер/работа/$stem" "$W" --include asr_cache.json --include plan.json
           [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$stem — сначала этап 1"; exit 1; }
           printf '%s' "$FIXES" | jq . > "$W/fixes.json"
           # плашки (06.10.2026): фото для карточек — с Диска (строки ["photo", путь] в spec.json), PNG рисуются здесь
@@ -160,21 +160,21 @@ jobs:
           else
             rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
           fi
-          rclone copy "$W" "montazh:работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
+          rclone copy "$W" "montazh:Брокер/работа/$STEM" --include fixes.json --include face.json --include subs_B.ass --include sync.txt \
             --include кадры.jpg --include montage.log --include align.log --include pick.png
           echo "::notice::Готово: $DEST"
 
       - name: Перенести сырой в папку готового ролика
-        # Вместо склейщика на компьютере: сырой уезжает из «Сырые!» в папку ролика (перенос внутри Диска).
-        # Только одиночный файл прямо в «Сырые!»; подпапки и переделки не трогаем.
+        # Вместо склейщика на компьютере: сырой уезжает из «Брокер/Сырые/Шортсы» в папку ролика (перенос внутри Диска).
+        # Только одиночный файл прямо в «Брокер/Сырые/Шортсы»; подпапки и переделки не трогаем.
         if: ${{ success() }}
         env:
           SRC: ${{ inputs.src }}
           DEST: ${{ inputs.dest }}
         run: |
-          rest="${SRC#Сырые!/}"
-          if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Сырые!» — не переношу"; exit 0; fi
+          rest="${SRC#Брокер/Сырые/Шортсы/}"
+          if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Брокер/Сырые/Шортсы» — не переношу"; exit 0; fi
           # сырой получает то же название, что папка ролика
           to="$DEST/$(basename "$DEST").${rest##*.}"
-          if [ -n "$(rclone lsf "montazh:$to" 2>/dev/null)" ]; then echo "::warning::Уже есть $to — сырой оставлен в «Сырые!»"; exit 0; fi
+          if [ -n "$(rclone lsf "montazh:$to" 2>/dev/null)" ]; then echo "::warning::Уже есть $to — сырой оставлен в «Брокер/Сырые/Шортсы»"; exit 0; fi
           if rclone moveto "montazh:$SRC" "montazh:$to"; then echo "::notice::Сырой перенесён: $SRC → $to"; else echo "::warning::Не удалось перенести сырой $SRC"; fi

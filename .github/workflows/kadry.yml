@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       folder:
-        description: "Папка ролика (Готовые!/Тема) или сырой файл (Сырые!/x.mp4)"
+        description: "Папка ролика (Брокер/Готовые/Шортсы/Тема) или сырой файл (Брокер/Сырые/Шортсы/x.mp4)"
         required: true
       times:
         description: "Секунды через пробел, например 0.1 7 13.2"

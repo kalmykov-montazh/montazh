@@ -1,6 +1,6 @@
 name: 1. Распознать новые ролики
 
-# Смотрит «Сырые!», на каждый новый ролик — отдельная машина: распознаёт речь и кладёт
+# Смотрит «Брокер/Сырые/Шортсы», на каждый новый ролик — отдельная машина: распознаёт речь и кладёт
 # текст по кускам в «Монтаж!/работа/<имя ролика>/». Монтаж (этап 2) — после проверки текста Claude.
 
 on:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       file:
-        description: "Путь внутри «Монтаж!», например Сырые!/20261003_152124_1.mp4 (пусто — все новые)"
+        description: "Путь внутри «Монтаж!», например Брокер/Сырые/Шортсы/20261003_152124_1.mp4 (пусто — все новые)"
         required: false
 
 concurrency:
@@ -36,14 +36,14 @@ jobs:
           if [ -n "$ONE" ]; then
             files=$(jq -cn --arg f "$ONE" '[$f]')
           else
-            # видео в «Сырые!» и подпапках; папки «…опубликован…» пропускаем; чужие вставки (VID_, «из тел») — тоже
-            raws=$(rclone lsf 'montazh:Сырые!' -R --files-only --max-size 3G \
+            # видео в «Брокер/Сырые/Шортсы» и подпапках; папки «…опубликован…» пропускаем; чужие вставки (VID_, «из тел») — тоже
+            raws=$(rclone lsf 'montazh:Брокер/Сырые/Шортсы' -R --files-only --max-size 3G \
               | grep -iE '\.(mp4|mov|m4v|mkv)$' | grep -viE 'опубликован' \
               | grep -viE '(^|/)(VID_|IMG_|из тел|screen|скрин|video_|telegram)' || true)
             # чужие вставки для «картинки в картинке» в счёт роликов не входят: основной ролик — с телефона Евгения
             # (имя 20261004_184218_1.mp4) или переименованный им по теме; вставки — VID_/IMG_/«из тел…»
-            done_work=$(rclone lsf montazh:работа --dirs-only 2>/dev/null | sed 's:/$::' || true)
-            ready=$(rclone lsf 'montazh:Готовые!' -R --dirs-only --max-depth 2 | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
+            done_work=$(rclone lsf montazh:Брокер/работа --dirs-only 2>/dev/null | sed 's:/$::' || true)
+            ready=$(rclone lsf 'montazh:Брокер/Готовые/Шортсы' -R --dirs-only --max-depth 3 | sed 's:/$::' | tr '[:upper:]' '[:lower:]')
             list=()
             while IFS= read -r r; do
               [ -z "$r" ] && continue
@@ -51,7 +51,7 @@ jobs:
               base=$(basename "${r%.*}"); num=$(printf '%s' "${base%_[0-9]}" | tr '[:upper:]' '[:lower:]')
               if printf '%s\n' "$done_work" | grep -qxF "$key"; then continue; fi
               if printf '%s\n' "$ready" | grep -qF "$num"; then continue; fi
-              list+=("Сырые!/$r")
+              list+=("Брокер/Сырые/Шортсы/$r")
             done <<< "$raws"
             files=$(printf '%s\n' "${list[@]}" | head -30 | jq -Rcn '[inputs | select(length>0)]')
           fi
@@ -94,5 +94,5 @@ jobs:
 
       - name: Положить текст на Диск
         run: |
-          rclone copy "work/$STEM" "montazh:работа/$STEM" --include asr_cache.json --include plan.json --include текст.txt
+          rclone copy "work/$STEM" "montazh:Брокер/работа/$STEM" --include asr_cache.json --include plan.json --include текст.txt
           echo "::notice::Текст: $(cut -f2,3 "work/$STEM/текст.txt" | tr '\n' ' ' | cut -c1-3500)"

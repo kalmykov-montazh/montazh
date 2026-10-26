@@ -1,8 +1,8 @@
 name: 4Н. Шортсы из горизонтального лонга — новый стиль
 
-# 22.10.2026, «17 ловушек аренды». Источник — готовый лонг «Готовые!/<тема>/!!! <тема>.mp4».
+# 22.10.2026, «17 ловушек аренды». Источник — готовый лонг «Брокер/Готовые/Лонги/<тема>/!!! <тема>.mp4».
 # mode=razbor: распознать весь лонг, кадры каждые 5 с, тишины -> работа/Лонг <тема>/ + зашифрованно в ветку tmp-pics.
-# mode=render: shorts из dolg/<тема>/NN.json (куски, раскладка, плашки, обложка) -> Готовые!/ШОРТС <тема>/NN Название.
+# mode=render: shorts из dolg/<тема>/NN.json (куски, раскладка, плашки, обложка) -> Брокер/Готовые/Шортсы/<тема>/NN Название.
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
         required: true
         default: razbor
       topic:
-        description: "Тема лонга (папка в Готовые!), например 17 ловушек аренды"
+        description: "Тема лонга (папка в Брокер/Готовые/Лонги), например 17 ловушек аренды"
         required: true
       ids:
         description: "render: номера шортсов через пробел (пусто — все)"
@@ -42,7 +42,7 @@ jobs:
         env:
           TOPIC: ${{ inputs.topic }}
         run: |
-          rclone copyto "montazh:Готовые!/$TOPIC/!!! $TOPIC.mp4" long.mp4
+          rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
           echo "::notice::$(du -h long.mp4 | cut -f1), $(ffprobe -v error -show_entries format=duration:stream=width,height,r_frame_rate -of compact=p=0 long.mp4 | tr '\n' ' ')"
       - name: Разбор
         run: python scripts/dolg/razbor.py long.mp4 "$WMODEL" out | tail -3
@@ -52,7 +52,7 @@ jobs:
           KEY: ${{ inputs.key }}
         run: |
           echo "::add-mask::$KEY"
-          rclone copy out "montazh:работа/Лонг $TOPIC" --include asr.json --include text.txt --include silence.txt
+          rclone copy out "montazh:Брокер/работа/Лонг $TOPIC" --include asr.json --include text.txt --include silence.txt
           tar czf p.tgz -C out asr.json text.txt silence.txt $(cd out; ls sheet_*.jpg)
           openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
           git config user.name montazh; git config user.email montazh@users.noreply.github.com
@@ -94,7 +94,7 @@ jobs:
       - name: Скачать лонг
         env:
           TOPIC: ${{ inputs.topic }}
-        run: rclone copyto "montazh:Готовые!/$TOPIC/!!! $TOPIC.mp4" long.mp4
+        run: rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
       - name: Основа (куски, время слов, раскладка)
         env:
           TOPIC: ${{ inputs.topic }}
@@ -139,13 +139,13 @@ jobs:
         env:
           TOPIC: ${{ inputs.topic }}
         run: |
-          DEST="Готовые!/ШОРТС $TOPIC/$FOLDER"
+          DEST="Брокер/Готовые/Шортсы/$TOPIC/$FOLDER"
           # 25.10.2026: никаких ссылок и отсылок к ним — ни в упаковке, ни в призыве
           if jq -r '.pack, (.spec.cta // {} | tostring)' "$J" | grep -qiE 'ссылк|в шапке|в описани|полное видео|полном видео|монтаж делал в приложени'; then echo "::error::В упаковке или призыве ссылка / «полное видео» — убрать из $J"; exit 1; fi
           jq -r .pack "$J" | rclone rcat "montazh:$DEST/упаковка.txt"
           rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $FOLDER.mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
-          rclone copy "$W" "montazh:работа/ШОРТС $TOPIC/$FOLDER" --include words_out.json --include modes.json --include overlay.log --include кадры.jpg --include spec.json
+          rclone copy "$W" "montazh:Брокер/работа/ШОРТС $TOPIC/$FOLDER" --include words_out.json --include modes.json --include overlay.log --include кадры.jpg --include spec.json
           echo "::notice::Готово: $DEST"
       - name: Превью в ветку
         env:

@@ -7,7 +7,7 @@ on:
         description: "Сырой ролик внутри «Монтаж!»"
         required: true
       dest:
-        description: "Папка ролика, например Готовые!/Тема номер"
+        description: "Папка ролика, например Брокер/Готовые/Шортсы/Тема номер"
         required: true
       cover:
         description: "Надпись обложки: СТРОКА1|СТРОКА2"
@@ -51,12 +51,12 @@ jobs:
           name=$(basename "$SRC"); rel="${SRC#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g'); [ -n "$WORK" ] && stem="$WORK"
           W="$PWD/work/$stem"; mkdir -p raw "$W"
           rclone copyto "montazh:$SRC" "raw/$name"
-          rclone copy "montazh:работа/$stem" "$W" --include asr_cache.json --include face.json --include pick.png
+          rclone copy "montazh:Брокер/работа/$stem" "$W" --include asr_cache.json --include face.json --include pick.png
           [ -f "$W/face.json" ] || FACE_ONLY=1 python scripts/montage.py "raw/$name" "$W" > /dev/null
           if [ -n "$FRAME" ]; then rm -f "$W/pick.png"; case "$FRAME" in auto) ;; *) export PICK_T="$FRAME";; esac; fi
           [ -f "$W/pick.png" ] || echo "::notice::$(python scripts/pick_frame.py "raw/$name" "$W/pick.png" | tail -1)"
           out=$(FACE_JSON="$W/face.json" python scripts/cover.py "$W/pick.png" "$COVER" "$COVER_HL" "$W/обложка.jpg" 2)
           echo "::notice::$out"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
-          rclone copy "$W" "montazh:работа/$stem" --include face.json --include pick.png --include кандидаты.jpg
+          rclone copy "$W" "montazh:Брокер/работа/$stem" --include face.json --include pick.png --include кандидаты.jpg
           echo "::notice::Обложка готова: $DEST"

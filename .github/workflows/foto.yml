@@ -1,16 +1,16 @@
 name: Фото для вставок
 
-# Для Claude (06.10.2026): переносит фото из «Сырые!» в папку ролика (подпапка «фото»),
+# Для Claude (06.10.2026): переносит фото из «Брокер/Сырые/Шортсы» в папку ролика (подпапка «фото»),
 # поворачивает по EXIF (телефонные снимки), отдаёт уменьшенные копии зашифрованным архивом в ветку tmp-pics.
 
 on:
   workflow_dispatch:
     inputs:
       files:
-        description: "Фото внутри «Сырые!» через ;"
+        description: "Фото внутри «Брокер/Сырые/Шортсы» через ;"
         required: true
       dest:
-        description: "Папка ролика, например Готовые!/НОВ Тема — фото лягут в <dest>/фото"
+        description: "Папка ролика, например Брокер/Готовые/Шортсы/НОВ/НОВ Тема — фото лягут в <dest>/фото"
         required: true
       key:
         description: "Пароль для шифрования"
@@ -37,7 +37,7 @@ jobs:
           pip install -q pillow
           mkdir -p src rot out
           IFS=';' read -ra fs <<< "$FILES"
-          for f in "${fs[@]}"; do rclone copyto "montazh:Сырые!/$f" "src/$f"; done
+          for f in "${fs[@]}"; do rclone copyto "montazh:Брокер/Сырые/Шортсы/$f" "src/$f"; done
           python3 - <<'PY'
           import glob, os
           from PIL import Image, ImageOps
@@ -50,7 +50,7 @@ jobs:
           PY
           rclone copy rot "montazh:$DEST/фото"
           for f in "${fs[@]}"; do
-            if rclone lsf "montazh:$DEST/фото/$f" | grep -q .; then rclone deletefile "montazh:Сырые!/$f"; fi
+            if rclone lsf "montazh:$DEST/фото/$f" | grep -q .; then rclone deletefile "montazh:Брокер/Сырые/Шортсы/$f"; fi
           done
           echo "::notice::Фото: $(ls rot | wc -l) → $DEST/фото"
       - name: Зашифровать и положить в ветку tmp-pics
