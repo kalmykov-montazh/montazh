@@ -28,5 +28,8 @@ jobs:
           for p in "${ps[@]}"; do
             p=$(printf '%s' "$p" | sed 's/^ *//;s/ *$//')
             case "$p" in ""|/|.|Брокер|Крипто|Общее|Брокер/Готовые|Брокер/Готовые/Шортсы|Брокер/Готовые/Лонги|"Брокер/К публикации"|Брокер/Сырые|Брокер/Сырые/Шортсы|Брокер/работа|Брокер/скрипты|Брокер/Опубликованные|Брокер/Посты) echo "::error::Эту папку удалять нельзя: $p"; continue;; esac
+            if rclone lsf "montazh:$p" --max-depth 0 --files-only 2>/dev/null | grep -q . && ! rclone lsf "montazh:$p/" --max-depth 1 >/dev/null 2>&1; then
+              if rclone deletefile "montazh:$p" --drive-use-trash=true 2>err.txt; then echo "::notice::Файл в корзину: $p"; else echo "::error::Не вышло: $p: $(tail -1 err.txt)"; fi; continue
+            fi
             if rclone purge "montazh:$p" --drive-use-trash=true 2>err.txt; then echo "::notice::В корзину: $p"; else echo "::error::Не вышло: $p: $(tail -1 err.txt)"; fi
           done
