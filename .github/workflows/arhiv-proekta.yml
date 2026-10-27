@@ -1,0 +1,49 @@
+name: Архив проекта на Диск
+
+# Для Claude (27.10.2026): разложить зашифрованный архив из ветки tmp-arhiv
+# в папку внутри «Монтаж!» (по умолчанию «Общее/Архив проекта»), показать что легло, удалить ветку.
+
+on:
+  workflow_dispatch:
+    inputs:
+      key:
+        description: "Пароль архива"
+        required: true
+      dest:
+        description: "Папка внутри «Монтаж!»"
+        required: false
+        default: "Общее/Архив проекта"
+
+permissions:
+  contents: write
+
+jobs:
+  arhiv:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Достать и расшифровать
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          git fetch -q --depth 1 origin tmp-arhiv
+          git show origin/tmp-arhiv:a.enc > /tmp/a.enc
+          openssl enc -d -aes-256-cbc -pbkdf2 -in /tmp/a.enc -out /tmp/a.tgz -pass env:KEY
+          mkdir -p /tmp/arh && tar xzf /tmp/a.tgz -C /tmp/arh
+          echo "::notice::В архиве файлов: $(find /tmp/arh -type f | wc -l)"
+      - name: Положить на Диск
+        env:
+          D: ${{ inputs.dest }}
+        run: |
+          rclone copy /tmp/arh "montazh:$D" --transfers 8
+          rclone check /tmp/arh "montazh:$D" --one-way && echo "::notice::Проверка: все файлы на Диске совпадают с архивом"
+          ( cd /tmp/arh && for d in */; do d=${d%/}; n=$(rclone lsf "montazh:$D/$d" --files-only | wc -l); b=$(rclone size "montazh:$D/$d" --json | jq .bytes); echo "::notice::$D/$d — файлов на Диске: $n, байт: $b"; done )
+      - name: Удалить временную ветку
+        if: always()
+        run: git push -q origin --delete tmp-arhiv || true
