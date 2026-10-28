@@ -152,6 +152,7 @@ def T(v, after=0.0):
 TOP_Y = spec.get('top_y', 330)   # центр ряда плашек
 for GI, g in enumerate(spec.get('groups', [])):
     items = g['items']
+    GY = g.get('y', TOP_Y)   # своя высота группы — соседние группы на разных местах (28.10.2026)
     t_end = T(g['end']) if 'end' in g else None
     # готовим картинки
     built = []
@@ -190,8 +191,8 @@ for GI, g in enumerate(spec.get('groups', [])):
     for k_, (it, im, t0) in enumerate(row):
         gap = gl[k_]
         dy = it.get('dy', 0)
-        y = TOP_Y - im.height / 2 + dy
-        if it['type'] == 'arrow': y = TOP_Y - im.height / 2
+        y = GY - im.height / 2 + dy
+        if it['type'] == 'arrow': y = GY - im.height / 2
         px, py = clampxy(im, x + im.width / 2, y + im.height / 2)
         EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind=it['type'], g=GI))
         if it['type'] == 'card': cards_t.append((len(EL) - 1, t0))
@@ -202,7 +203,7 @@ for GI, g in enumerate(spec.get('groups', [])):
     for it, im, t0 in built:
         if it['type'] == 'stamp':
             cx = W / 2 + off + it.get('dx', 0)
-            px, py = clampxy(im, cx, TOP_Y + rowmaxh / 2 * sc - 14 + it.get('dy', 0))
+            px, py = clampxy(im, cx, GY + rowmaxh / 2 * sc - 14 + it.get('dy', 0))
             EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind='stamp', g=GI))
 
 
