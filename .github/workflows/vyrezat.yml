@@ -1,0 +1,42 @@
+name: Вырезать куски из готового ролика по фразам
+
+# Для Claude (28.10.2026): обрезать вводную связку, хвост, отсылки к другим видео в готовом «!!! …mp4».
+# Сначала raspoznat.yml на этот файл (нужен plan.json в «Брокер/работа/<ключ>»). Старая версия — в работа/<ключ>/до правки.mp4.
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Готовый ролик внутри «Монтаж!»"
+        required: true
+      key:
+        description: "Ключ работы (папка в Брокер/работа) от raspoznat.yml"
+        required: true
+      cuts:
+        description: 'JSON: {"cut":[{"from":"…","to":"…"}],"end_after":"…","start_at":"…"}'
+        required: true
+
+jobs:
+  cut:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Вырезать
+        env:
+          F: ${{ inputs.file }}
+          K: ${{ inputs.key }}
+          C: ${{ inputs.cuts }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          rclone copyto "montazh:$F" in.mp4
+          rclone copyto "montazh:Брокер/работа/$K/plan.json" plan.json
+          printf '%s' "$C" > cuts.json
+          python3 scripts/vyrezat.py in.mp4 plan.json cuts.json out.mp4 | sed 's/^/::notice::/'
+          rclone copyto in.mp4 "montazh:Брокер/работа/$K/до правки.mp4"
+          rclone copyto out.mp4 "montazh:$F"
+          echo "::notice::Готово: $F ($(ffprobe -v error -show_entries format=duration -of csv=p=0 out.mp4) с)"
