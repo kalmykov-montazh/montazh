@@ -1,0 +1,42 @@
+name: Поиск строк в файле на Диске
+
+# Для Claude (28.10.2026): grep по текстовым файлам на Диске, вывод заметками.
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Файлы внутри «Монтаж!» через ;"
+        required: true
+      pattern:
+        description: "Регулярное выражение (grep -E)"
+        required: true
+      ctx:
+        description: "Строк контекста"
+        required: false
+        default: "2"
+
+jobs:
+  g:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Искать
+        env:
+          P: ${{ inputs.path }}
+          R: ${{ inputs.pattern }}
+          C: ${{ inputs.ctx }}
+        run: |
+          IFS=';' read -ra ps <<< "$P"; : > all.txt
+          for p in "${ps[@]}"; do rclone copyto "montazh:$p" f.txt || { echo "::error::нет $p"; continue; }
+            echo "##### $p" >> all.txt; grep -nE -C "$C" -- "$R" f.txt >> all.txt || echo "(нет совпадений)" >> all.txt; done
+          python3 - <<'PY'
+          t = open('all.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+          for i in range(0, min(len(t), 30000), 3000):
+              print(f"::notice title=[{i // 3000 + 1}]::{t[i:i + 3000]}")
+          PY
