@@ -18,6 +18,7 @@ cp "sceny/$TOPIC/$ID.json" $W/config.json
 cd $W
 python ../scripts/sceny/engine.py info | tee info.txt | grep -E "::" || true
 python ../scripts/sceny/engine.py audio
+python ../scripts/tekst_proverka.py words_out.json || true   # 28.10.2026: текст, связки в начале, хвосты, отсылки
 NP=$(nproc); python ../scripts/sceny/engine.py render "out.mp4" $NP
 # проверки
 D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 out.mp4)
