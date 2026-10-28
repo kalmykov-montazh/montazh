@@ -2,7 +2,7 @@ name: Снять ролики из очереди (Blotato + план робот
 
 # Для Claude (28.10.2026): снимает уже разложенные ролики. dry=yes — только показать, что будет удалено.
 # Удаляет посты Blotato (DELETE /v2/schedules/:id) по времени ролика из _blotato.json,
-# убирает ролики из _план.json и _blotato.json и переносит папки в «Брокер/На проверке» (без номера в начале).
+# убирает ролики из _план.json, _blotato.json и их файлы-задания FB и переносит папки в «Брокер/На проверке» (без номера в начале).
 # Запускать сразу после захода робота (ЧЧ:х4), чтобы не пересечься с его записью файлов.
 
 on:
@@ -88,6 +88,10 @@ jobs:
           PY
           if [ "$DRY" = "no" ]; then
             rclone copyto plan.json "$Z/_план.json"; rclone copyto bl.json "$Z/_blotato.json"
+            # файлы-задания FB этих роликов — в архив, иначе робот ночью всё равно поставит их в Facebook (урок 28.10.2026)
+            IFS=';' read -ra fs0 <<< "$F"
+            for f in "${fs0[@]}"; do f="$(echo "$f" | sed 's/^ *//;s/ *$//')"
+              rclone lsf "$Z" --max-depth 1 --files-only --include "*_fb_${f}.json" | while IFS= read -r jf; do rclone moveto "$Z/$jf" "$Z/архив/$jf" && echo "::notice::Задание FB в архив: $jf"; done; done
             rclone copyto plan.bak.json "$Z/архив/_план до снятия $(date +%H%M).json"; rclone copyto bl.bak.json "$Z/архив/_blotato до снятия $(date +%H%M).json"
             IFS=';' read -ra fs <<< "$F"
             for f in "${fs[@]}"; do f="$(echo "$f" | sed 's/^ *//;s/ *$//')"; n="$(echo "$f" | sed -E 's/^[0-9]+ //')"
