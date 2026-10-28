@@ -509,7 +509,7 @@ def draw(fr, t):
 
 
 t_to = min(T_TO, total)
-# 28.10.2026 (Евгений): лёгкие «вжух» и щелчки на наездах, плашках и переходах — тише голоса (пик около −24 дБ), музыки нет
+# 28.10.2026 (Евгений): лёгкие «вжух» и щелчки на наездах, плашках и переходах — тише голоса (пик около −18 дБ, Евгений 28.10.2026: прошлые −24 почти не слышно), музыки нет
 SFX = None
 if os.environ.get('SFX', '1') != '0' and not LAYOUT_ONLY:
     import numpy as np, wave
@@ -536,7 +536,7 @@ if os.environ.get('SFX', '1') != '0' and not LAYOUT_ONLY:
     for t, k in ev:
         if t < 0.2 or t > total - 0.5 or t - last_ < 0.4: continue
         s_ = wh if k == 'w' else cl; i0 = int(t * SR)
-        buf_[i0:i0 + len(s_)] += s_[:len(buf_) - i0] * (0.063 if k == 'w' else 0.05); last_ = t; nev += 1
+        buf_[i0:i0 + len(s_)] += s_[:len(buf_) - i0] * (0.13 if k == 'w' else 0.1); last_ = t; nev += 1
     SFX = OUT + '.sfx.wav'
     with wave.open(SFX, 'wb') as wf:
         wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(SR)
