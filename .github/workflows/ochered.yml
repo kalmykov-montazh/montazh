@@ -1,0 +1,37 @@
+name: Правка очереди робота (_задания)
+
+# Для Claude (28.10.2026): скачивает файлы «Брокер/К публикации/_задания» (без архива и шагов),
+# выполняет python-код из поля code (base64) в этой папке, заливает изменённые и новые файлы обратно.
+# Удалить файл: код пишет его имя строкой в _удалить.txt — файл уезжает в «_задания/архив».
+# Запускать между заходами робота (не в ЧЧ:х4).
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "python-код в base64"
+        required: true
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Править
+        env:
+          CODE: ${{ inputs.code }}
+        run: |
+          Z="montazh:Брокер/К публикации/_задания"
+          mkdir q && rclone copy "$Z" q --max-depth 1 --exclude "журнал.txt"
+          cd q && find . -type f -exec md5sum {} + | sort > ../before.txt
+          echo "$CODE" | base64 -d > ../fix.py
+          python3 ../fix.py 2>&1 | head -c 2800 | python3 -c "import sys; t=sys.stdin.read().replace('%','%25').replace('\n','%0A'); print('::notice title=вывод::'+t)"
+          find . -type f -exec md5sum {} + | sort > ../after.txt
+          comm -13 ../before.txt ../after.txt | sed 's/^[0-9a-f]*  \.\///' | grep -v '^_удалить.txt$' > ../changed.txt || true
+          while IFS= read -r f; do [ -n "$f" ] && rclone copyto "$f" "$Z/$f" && echo "::notice::залит: $f"; done < ../changed.txt
+          if [ -f _удалить.txt ]; then while IFS= read -r f; do [ -n "$f" ] && rclone moveto "$Z/$f" "$Z/архив/$f" && echo "::notice::в архив: $f"; done < _удалить.txt; fi
