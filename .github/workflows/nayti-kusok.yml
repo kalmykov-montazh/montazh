@@ -1,0 +1,36 @@
+name: Найти кусок шортса в лонге (по звуку)
+
+on:
+  workflow_dispatch:
+    inputs:
+      long:
+        description: "Лонг внутри «Монтаж!»"
+        required: true
+      shorts:
+        description: "Шортсы через ; (готовые ролики)"
+        required: true
+      speed:
+        description: "Ускорение шортса"
+        required: false
+        default: "1.2"
+
+jobs:
+  f:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Искать
+        env:
+          L: ${{ inputs.long }}
+          S: ${{ inputs.shorts }}
+          SP: ${{ inputs.speed }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          rclone copyto "montazh:$L" long.mp4
+          IFS=';' read -ra ss <<< "$S"
+          for s in "${ss[@]}"; do rclone copyto "montazh:$s" s.mp4; echo "::notice title=$(basename "$s")::$(python3 scripts/nayti_kusok.py long.mp4 s.mp4 "$SP")"; done
