@@ -33,4 +33,4 @@ jobs:
           sudo apt-get install -y -qq ffmpeg > /dev/null
           rclone copyto "montazh:$L" long.mp4
           IFS=';' read -ra ss <<< "$S"
-          for s in "${ss[@]}"; do rclone copyto "montazh:$s" s.mp4; echo "::notice title=$(basename "$s")::$(python3 scripts/nayti_kusok.py long.mp4 s.mp4 "$SP")"; done
+          for s in "${ss[@]}"; do rclone copyto "montazh:$s" s.mp4; r=$(python3 scripts/nayti_kusok.py long.mp4 s.mp4 "$SP" 2>&1 | tail -2 | tr "\n" " "); echo "::notice::$(basename "$s"): $r"; done
