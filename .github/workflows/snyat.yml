@@ -1,0 +1,95 @@
+name: Снять ролики из очереди (Blotato + план робота)
+
+# Для Claude (28.10.2026): снимает уже разложенные ролики. dry=yes — только показать, что будет удалено.
+# Удаляет посты Blotato (DELETE /v2/schedules/:id) по времени ролика из _blotato.json,
+# убирает ролики из _план.json и _blotato.json и переносит папки в «Брокер/На проверке» (без номера в начале).
+# Запускать сразу после захода робота (ЧЧ:х4), чтобы не пересечься с его записью файлов.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Имена папок в «Брокер/К публикации» через ;"
+        required: true
+      dry:
+        description: "yes — только показать"
+        required: true
+        default: "yes"
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Снять
+        env:
+          F: ${{ inputs.folders }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          Z="montazh:Брокер/К публикации/_задания"
+          rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
+          rclone copyto "$Z/_план.json" plan.json
+          rclone copyto "$Z/_blotato.json" bl.json
+          cp plan.json plan.bak.json; cp bl.json bl.bak.json
+          python3 - <<'PY'
+          import json, os, urllib.request, datetime, zoneinfo
+          key = open('key.txt', encoding='utf-8-sig').read().strip()
+          dry = os.environ['DRY'].strip().lower() != 'no'
+          folders = [f.strip() for f in os.environ['F'].split(';') if f.strip()]
+          bl = json.load(open('bl.json', encoding='utf-8')); plan = json.load(open('plan.json', encoding='utf-8'))
+          tz = zoneinfo.ZoneInfo('Europe/Madrid')
+          times, ids = set(), set()
+          for f in folders:
+              e = bl.get(f) or {}
+              if e.get('at'):
+                  t = datetime.datetime.strptime(e['at'], '%Y-%m-%d %H:%M').replace(tzinfo=tz).astimezone(datetime.timezone.utc)
+                  times.add(t.strftime('%Y-%m-%dT%H:%M'))
+              for p in (e.get('posts') or {}).values():
+                  if isinstance(p, dict) and p.get('id'): ids.add(p['id'])
+          def api(method, path):
+              r = urllib.request.Request('https://backend.blotato.com' + path, method=method, headers={'blotato-api-key': key, 'accept': 'application/json'})
+              with urllib.request.urlopen(r, timeout=60) as resp:
+                  b = resp.read(); return resp.status, (json.loads(b) if b else None)
+          items, cur = [], None
+          for _ in range(20):
+              st, d = api('GET', '/v2/schedules?limit=50' + (f'&cursor={cur}' if cur else ''))
+              items += d.get('items', []); cur = d.get('cursor')
+              if not cur: break
+          print(f"::notice::Расписание Blotato: {len(items)} шт., ищу время {sorted(times)} и {len(ids)} id")
+          hits = []
+          for it in items:
+              s = json.dumps(it, ensure_ascii=False)
+              if any(i in s for i in ids) or any(t in s for t in times): hits.append(it)
+          out = []
+          for it in hits:
+              sid = it.get('id'); short = json.dumps(it, ensure_ascii=False)[:260]
+              if dry: out.append(f"БУДЕТ УДАЛЕНО {sid}: {short}")
+              else:
+                  try: st, _ = api('DELETE', f'/v2/schedules/{sid}'); out.append(f"УДАЛЕНО {sid} ({st})")
+                  except Exception as ex: out.append(f"ОШИБКА {sid}: {ex}")
+          if not hits and items: out.append('Пример записи: ' + json.dumps(items[0], ensure_ascii=False)[:600])
+          for i in range(0, len(out), 6):
+              print('::notice::' + ' %0A'.join(o.replace('%', '%25') for o in out[i:i+6]))
+          if not dry:
+              for f in folders:
+                  plan.pop(f, None); bl.pop(f, None)
+              for k in ('_x', '_bs', '_li'):
+                  if isinstance(bl.get(k), dict):
+                      for d, lst in bl[k].items():
+                          if isinstance(lst, list): bl[k][d] = [x for x in lst if x not in folders]
+              json.dump(plan, open('plan.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+              json.dump(bl, open('bl.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+              print('::notice::Убрано из плана и учёта Blotato: ' + ', '.join(folders))
+          PY
+          if [ "$DRY" = "no" ]; then
+            rclone copyto plan.json "$Z/_план.json"; rclone copyto bl.json "$Z/_blotato.json"
+            rclone copyto plan.bak.json "$Z/архив/_план до снятия $(date +%H%M).json"; rclone copyto bl.bak.json "$Z/архив/_blotato до снятия $(date +%H%M).json"
+            IFS=';' read -ra fs <<< "$F"
+            for f in "${fs[@]}"; do f="$(echo "$f" | sed 's/^ *//;s/ *$//')"; n="$(echo "$f" | sed -E 's/^[0-9]+ //')"
+              rclone moveto "montazh:Брокер/К публикации/$f" "montazh:Брокер/На проверке/$n" && echo "::notice::Папка → На проверке/$n"; done
+          fi
