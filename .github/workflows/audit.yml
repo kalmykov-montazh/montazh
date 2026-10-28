@@ -49,7 +49,7 @@ jobs:
           R="Брокер/Готовые/Шортсы"
           rclone lsf "montazh:$R" -R --files-only --include "!!! *.mp4" > finals.txt
           : > report.tsv
-          while IFS= read -r f; do
+          while IFS= read -r -u 3 f; do
             dir=$(dirname "$f"); name=$(basename "$dir")
             if [ -n "$ONLY" ]; then printf '%s' ";$ONLY;" | grep -qF ";$dir;" || continue; fi
             case "$dir" in 17\ ловушек*) continue ;; esac
@@ -57,14 +57,14 @@ jobs:
             if [ -n "$PFX" ]; then case "$dir" in "$PFX"*) ;; *) continue ;; esac; [ -z "$key" ] && key="-"
             else [ -z "$key" ] && continue; [ -f "novyj/$key.json" ] || continue; fi
             D="$R/$dir"; T=$(mktemp -d)
-            rclone copyto "montazh:$D/$(basename "$f")" "$T/v.mp4" || { printf '%s\t%s\tНЕТ ВИДЕО\n' "$dir" "$key" >> report.tsv; continue; }
-            rclone copyto "montazh:$D/обложка.jpg" "$T/c.jpg" 2>/dev/null || true
-            rclone copyto "montazh:$D/упаковка.txt" "$T/u.txt" 2>/dev/null || touch "$T/u.txt"
+            rclone copyto -q "montazh:$D/$(basename "$f")" "$T/v.mp4" || { printf '%s\t%s\tНЕТ ВИДЕО\n' "$dir" "$key" >> report.tsv; continue; }
+            rclone copyto -q "montazh:$D/обложка.jpg" "$T/c.jpg" 2>/dev/null || true
+            rclone copyto -q "montazh:$D/упаковка.txt" "$T/u.txt" 2>/dev/null || touch "$T/u.txt"
             rclone copy "montazh:Брокер/работа/$key" "$T/w" --include overlay.log --include words_out.json --include spec.json 2>/dev/null || true
             vd=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 "$T/v.mp4")
             ad=$(ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$T/v.mp4")
-            ffmpeg -v error -y -ss 0.05 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f0.png"
-            ffmpeg -v error -y -ss 1.0 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f1.png"
+            ffmpeg -nostdin -v error -y -ss 0.05 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f0.png"
+            ffmpeg -nostdin -v error -y -ss 1.0 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f1.png"
             safe=$(printf '%s' "$dir" | tr '/' '_')
             cp "$T/f1.png" "out/f/$safe.png"; [ -f "$T/c.jpg" ] && cp "$T/c.jpg" "out/c/$safe.jpg"
             cov=$(python3 - "$T" <<'PY'
@@ -85,10 +85,10 @@ jobs:
             if [ -f "$T/w/words_out.json" ] && [ -f "novyj/$key.json" ]; then
               lay=$(LAYOUT_ONLY=1 TOTAL="$vd" python3 scripts/overlay.py none "$T/w/words_out.json" "novyj/$key.json" mix none 2>&1 | grep -E 'RAW_OVERLAPS|OFFSCREEN|Error|нет фразы|плашки перекрываются' | tr '\n' ' ' | cut -c1-300)
             fi
-            printf '%s\t%s\tвидео %.1f звук %.1f\tобложка в 0с: %s\tприложение: %s\tссылки: %s\tпошёл работать: %s\tрендер с защитой: %s\t%s\n' \
-              "$dir" "$key" "$vd" "$ad" "$cov" "$app" "$lnk" "$fin" "$prot" "$lay" >> report.tsv
+            printf '%s\t%s\tвидео %.1f звук %.1f\tобложка в 0с: %s\tссылки: %s\tпошёл работать: %s\tрендер с защитой: %s\t%s\n' \
+              "$dir" "$key" "$vd" "$ad" "$cov" "$lnk" "$fin" "$prot" "$lay" >> report.tsv
             rm -rf "$T"
-          done < finals.txt
+          done 3< finals.txt
           cp report.tsv out/
           python3 - <<'PY'
           import os
