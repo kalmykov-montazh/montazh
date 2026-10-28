@@ -22,7 +22,8 @@ if isinstance(words, list) and words and 'keep' in words[0]:   # plan.json: сл
 spec = json.load(open(SPEC))
 def _dur(*a): return [float(x) for x in subprocess.run(['ffprobe', '-v', 'error', *a, '-of', 'csv=p=0', BASE], capture_output=True, text=True).stdout.split() if x.replace('.', '', 1).isdigit()]
 # длина по видео, а не по контейнеру: звук бывает длиннее на 1–3 с, и призыв в конце тогда не показывался (21.10.2026)
-total = min(_dur('-select_streams', 'v:0', '-show_entries', 'stream=duration') + _dur('-show_entries', 'format=duration'))
+LAYOUT_ONLY = os.environ.get('LAYOUT_ONLY')   # проверка раскладки плашек без видео (аудит 28.10.2026)
+total = (float(os.environ.get('TOTAL') or 0) or words[-1]['e'] + 1.0) if LAYOUT_ONLY else min(_dur('-select_streams', 'v:0', '-show_entries', 'stream=duration') + _dur('-show_entries', 'format=duration'))
 FIXW = spec.get('fix', {})
 for w in words:
     k = w['w']
@@ -289,7 +290,18 @@ def resolve_overlaps():
                 if min(a['t1'], b['t1']) + 0.25 > t:
                     raise SystemExit(f"плашки перекрываются: группа {a['g']} и {b['g']} на {t:.1f} с")
     print(f'наложения плашек: сдвинуто вбок {moved}, новая ждёт старую {waited[0]}, старая ушла раньше {cut}')
+if LAYOUT_ONLY:   # как было бы без защиты: пары плашек разных групп одновременно в одном месте
+    raw = set()
+    for a in EL:
+        for b in EL:
+            if a is not b and a['g'] != b['g'] and a['t0'] < b['t1'] and b['t0'] < a['t1'] and _hit(_box([a]), _box([b]), 0):
+                raw.add((str(min(a['g'], b['g'], key=str)), str(max(a['g'], b['g'], key=str)), round(max(a['t0'], b['t0']), 1)))
+    print('RAW_OVERLAPS', json.dumps(sorted(raw), ensure_ascii=False))
 resolve_overlaps()
+if LAYOUT_ONLY:
+    for e in EL:
+        if not (e['x'] >= 0 and e['y'] >= 0 and e['x'] + e['img'].width <= W and e['y'] + e['img'].height <= H): print('OFFSCREEN', e['kind'], e['g'])
+    print('LAYOUT_OK'); sys.exit(0)
 EL.sort(key=lambda e: {'card': 0, 'big': 0, 'arrow': 1, 'stamp': 2}[e['kind']])
 # проверка: всё в кадре
 for e in EL:

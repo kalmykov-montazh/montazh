@@ -1,0 +1,107 @@
+name: Аудит готовых шортсов
+
+# Для Claude (28.10.2026): по каждому ролику нового стиля в «Брокер/Готовые/Шортсы» — первый кадр = обложка?,
+# длина видео и звука, упаковка (строка про приложение, нет ссылок), «Всё, пошёл работать» в тексте,
+# раскладка плашек (наложения без защиты, был ли рендер с защитой). Обложки и первые кадры — сеткой.
+# Всё зашифрованным архивом в ветку tmp-audit.
+
+on:
+  workflow_dispatch:
+    inputs:
+      key:
+        description: "Пароль для шифрования"
+        required: true
+      only:
+        description: "Только эти папки роликов через ; (пусто — все)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Проверка
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install -q pillow numpy
+          mkdir -p out/f out/c
+          R="Брокер/Готовые/Шортсы"
+          rclone lsf "montazh:$R" -R --files-only --include "!!! *.mp4" > finals.txt
+          : > report.tsv
+          while IFS= read -r f; do
+            dir=$(dirname "$f"); name=$(basename "$dir")
+            if [ -n "$ONLY" ]; then printf '%s' ";$ONLY;" | grep -qF ";$dir;" || continue; fi
+            key=$(jq -r --arg n "$name" '.[$n] // empty' klyuchi.json)
+            [ -z "$key" ] && continue
+            [ -f "novyj/$key.json" ] || continue
+            D="$R/$dir"; T=$(mktemp -d)
+            rclone copyto "montazh:$D/$(basename "$f")" "$T/v.mp4" || { printf '%s\t%s\tНЕТ ВИДЕО\n' "$dir" "$key" >> report.tsv; continue; }
+            rclone copyto "montazh:$D/обложка.jpg" "$T/c.jpg" 2>/dev/null || true
+            rclone copyto "montazh:$D/упаковка.txt" "$T/u.txt" 2>/dev/null || touch "$T/u.txt"
+            rclone copy "montazh:Брокер/работа/$key" "$T/w" --include overlay.log --include words_out.json --include spec.json 2>/dev/null || true
+            vd=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 "$T/v.mp4")
+            ad=$(ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$T/v.mp4")
+            ffmpeg -v error -y -ss 0.05 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f0.png"
+            ffmpeg -v error -y -ss 1.0 -i "$T/v.mp4" -frames:v 1 -vf scale=270:480 "$T/f1.png"
+            safe=$(printf '%s' "$dir" | tr '/' '_')
+            cp "$T/f1.png" "out/f/$safe.png"; [ -f "$T/c.jpg" ] && cp "$T/c.jpg" "out/c/$safe.jpg"
+            cov=$(python3 - "$T" <<'PY'
+          import sys, os
+          from PIL import Image, ImageChops, ImageStat
+          T = sys.argv[1]
+          if not os.path.exists(T + '/c.jpg'): print('нет обложки'); sys.exit()
+          a = Image.open(T + '/f0.png').convert('RGB').resize((270, 480)); b = Image.open(T + '/c.jpg').convert('RGB').resize((270, 480))
+          d = sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3
+          print('да' if d < 12 else f'НЕТ ({d:.0f})')
+          PY
+          )
+            app=$(grep -qiE 'монтаж.*приложени|приложени.*монтаж' "$T/u.txt" && echo да || echo НЕТ)
+            lnk=$(grep -qiE 'http|t\.me|ссылк|в шапке' "$T/u.txt" && echo ЕСТЬ || echo нет)
+            fin=$( [ -f "$T/w/words_out.json" ] && jq -r '[.[].w] | join(" ")' "$T/w/words_out.json" 2>/dev/null | grep -qi 'пошёл работать\|пошел работать' && echo ЕСТЬ || echo нет)
+            prot=$(grep -q 'наложения плашек' "$T/w/overlay.log" 2>/dev/null && echo да || echo НЕТ)
+            lay="-"
+            if [ -f "$T/w/words_out.json" ]; then
+              lay=$(LAYOUT_ONLY=1 TOTAL="$vd" python3 scripts/overlay.py none "$T/w/words_out.json" "novyj/$key.json" mix none 2>&1 | grep -E 'RAW_OVERLAPS|OFFSCREEN|Error|нет фразы|плашки перекрываются' | tr '\n' ' ' | cut -c1-300)
+            fi
+            printf '%s\t%s\tвидео %.1f звук %.1f\tобложка в 0с: %s\tприложение: %s\tссылки: %s\tпошёл работать: %s\tрендер с защитой: %s\t%s\n' \
+              "$dir" "$key" "$vd" "$ad" "$cov" "$app" "$lnk" "$fin" "$prot" "$lay" >> report.tsv
+            rm -rf "$T"
+          done < finals.txt
+          cp report.tsv out/
+          python3 - <<'PY'
+          import os
+          from PIL import Image, ImageDraw
+          for sub in ('c', 'f'):
+              fs = sorted(os.listdir('out/' + sub))
+              for p in range(0, len(fs), 20):
+                  part = fs[p:p + 20]; cols = 5; rows = (len(part) + cols - 1) // cols
+                  g = Image.new('RGB', (cols * 270, rows * 510), 'white'); d = ImageDraw.Draw(g)
+                  for i, n in enumerate(part):
+                      im = Image.open(f'out/{sub}/{n}').convert('RGB').resize((270, 480))
+                      x, y = i % cols * 270, i // cols * 510; g.paste(im, (x, y)); d.text((x + 4, y + 484), n[:44], fill='black')
+                  g.save(f'out/grid_{sub}_{p // 20 + 1}.jpg', quality=80)
+          PY
+          rm -rf out/c out/f
+          echo "::notice::Роликов проверено: $(wc -l < report.tsv)"
+      - name: Зашифровать и положить в ветку tmp-audit
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-audit; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-audit
