@@ -9,6 +9,9 @@ on:
         description: "Файлы внутри «Монтаж!» через ;"
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   v:
     runs-on: ubuntu-24.04
@@ -26,8 +29,8 @@ jobs:
           mkdir out; IFS=';' read -ra ps <<< "$P"; i=0
           for p in "${ps[@]}"; do i=$((i+1)); d="out/$(printf %02d $i)"; mkdir -p "$d"; echo "$p" > "$d/_path.txt"
             rclone copyto "montazh:$p" "$d/$(basename "$p")" || echo "::error::нет $p"; done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: vygruzka
-          path: out
-          retention-days: 2
+      - name: В ветку vygruzka
+        run: |
+          cd out; git init -q; git checkout -q -b vygruzka; git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "vygruzka $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka
