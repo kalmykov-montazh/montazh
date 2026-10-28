@@ -48,6 +48,8 @@ while txt.endswith("."): txt = txt[:-1]
 open("упаковка — сцены.txt", "w", encoding="utf-8").write(txt + "\n")
 print(txt)
 PY
-rclone copyto out.mp4 "montazh:$SH/$FOLDER/$NAME"
-rclone copyto "упаковка — сцены.txt" "montazh:$SH/$FOLDER/упаковка — сцены.txt"
-rclone lsl "montazh:$SH/$FOLDER" | sed 's/^/::notice::/'
+# 28.10.2026 (Евгений): новое — сначала «На проверке»; перемонтаж уже одобренного (файл сцен v2 есть) — на место
+if [ -n "$(rclone lsf "montazh:$SH/$FOLDER/$NAME" 2>/dev/null)" ]; then DST="$SH/$FOLDER"; else DST="Брокер/На проверке/Шортс $TOPIC $FOLDER"; rclone copyto обложка.jpg "montazh:$DST/обложка.jpg"; fi
+rclone copyto out.mp4 "montazh:$DST/$NAME"
+rclone copyto "упаковка — сцены.txt" "montazh:$DST/упаковка — сцены.txt"
+rclone lsl "montazh:$DST" | sed 's/^/::notice::/'
