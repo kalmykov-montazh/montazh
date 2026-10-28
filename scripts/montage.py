@@ -116,6 +116,14 @@ kept = [p for p in plan if p['keep']]
 # 3б. Утверждено 05.10.2026 (Евгений, после пробы на «Выборы и аренда»): голос с первого кадра и обрыв сразу после «работать» — всегда.
 # Слова для цвета и наезда — файл slova.json в папке работы (Claude кладёт slova/<ключ>.json в хранилище перед рендером).
 PROBA = json.load(open(f'{OUT}/slova.json')) if os.path.exists(f'{OUT}/slova.json') else {}
+# 28.10.2026 (Евгений): новый стиль (2Н) — настройки ролика из novyj/<ключ>.json (SPEC):
+# "zoom" — базовое увеличение только для этого ролика (по умолчанию 1.0, кадр как снят);
+# "punch" — слова для резких наездов (по умолчанию — "keys")
+SPECJ = json.load(open(os.environ['SPEC'], encoding='utf-8')) if os.environ.get('SPEC') and os.path.exists(os.environ['SPEC']) else {}
+if SPECJ and not PROBA.get('punch'):
+    PROBA['punch'] = [str(k).lower() for k in (SPECJ.get('punch') or SPECJ.get('keys') or [])]
+if SPECJ.get('zoom') and not os.environ.get('ZMAX'):
+    os.environ['ZMAX'] = str(SPECJ['zoom'])
 if os.environ.get('NO_TRIM_EDGES'): kept_edges = False
 else: kept_edges = True
 if kept_edges and kept:
@@ -167,9 +175,14 @@ else:
     CX, EYE, CHIN = 0.5, 0.40, 0.55
 HN = st_.median(a[3] for a in fx) if fx else 0.25   # высота лица в долях кадра
 EYE_T = 0.40                                  # куда ставим глаза
-ZB = min(float(os.environ.get('ZMAX', '1.15')), max(1.0, (1 - 0.45) / max(0.05, 1 - EYE)))   # базовая крупность (больше 1.15 — мыло)
+# 28.10.2026 (Евгений): базового увеличения нет — кадр как снят, лицо не двигаем насильно (NATURAL).
+# Увеличение только по просьбе для конкретного ролика: ZMAX / "zoom" в novyj — тогда по-старому, глаза на 40%.
+NATURAL = not os.environ.get('ZMAX')
+ZB = 1.0 if NATURAL else min(float(os.environ['ZMAX']), max(1.0, (1 - 0.45) / max(0.05, 1 - EYE)))   # больше 1.15 — мыло
+ANC = min(CHIN + 0.02, 0.95)   # NATURAL: приближаем к точке под подбородком — лицо растёт вверх, субтитры не наезжают
+SWAY = float(os.environ.get('SWAY', '0.03'))   # NATURAL: камера «ходит» влево-вправо, доля ширины при полном приближении
 LEVELS = [ZB, ZB * 1.06, ZB * 1.12]
-def ycrop(z): return min(max(EYE * z - EYE_T, 0), z - 1)
+def ycrop(z): return min(max((ANC * (z - 1)) if NATURAL else (EYE * z - EYE_T), 0), z - 1)
 chin_out = max(CHIN * z - ycrop(z) for z in LEVELS)
 SUB_MV = int(max(int(H * 0.25), H * (1 - chin_out - 0.03) - 110))   # низ субтитров не ниже 75% высоты: ниже надписи TikTok
 HEAD_PX = (max(0.0, EYE - 0.72 * HN) * ZB - ycrop(ZB)) * H   # макушка С ВОЛОСАМИ в первом кадре, px (04.10.2026: было 0.54 — надпись садилась на волосы)
@@ -290,7 +303,7 @@ for i, ws in enumerate(phr):
 
 
 # 5б. зум волнами: плавно приблизил за N секунд, плавно вернул за M (как ключи в CapCut)
-WAVES = [(5, 1.09), (3, 1.0), (8, 1.12), (4, 1.0), (6, 1.08), (3, 1.0), (7, 1.11), (4, 1.0)]   # кадрирование как в утверждённом стиле (Евгений 03.10.2026: «верни кадрирование»); чёткость держит CRF 16
+WAVES = [(5, 1.09), (3, 1.0), (8, 1.12), (4, 1.0), (6, 1.08), (3, 1.0), (7, 1.11), (4, 1.0)] if not NATURAL else [(4, 1.10), (3, 1.02), (6, 1.13), (3, 1.0), (5, 1.08), (3, 1.03), (6, 1.12), (4, 1.0)]   # кадрирование как в утверждённом стиле (Евгений 03.10.2026: «верни кадрирование»); чёткость держит CRF 16
 keys = [(0.0, ZB)]   # (время, крупность)
 k = 0
 while keys[-1][0] < total:
@@ -556,8 +569,14 @@ while True:
     ex, ey = fxs[min(n, NF - 1)], fys[min(n, NF - 1)]
     t = n / FPS
     z = zoom_at(t) * punch_at(t)
-    tx =min(0, max(W - z * W, W / 2 - z * ex))
-    ty = min(0, max(H - z * H, EYE_T * H - z * ey))
+    if NATURAL:   # лицо остаётся где снято; при приближении растёт вверх от подбородка и чуть «ходит» вбок
+        ay = ey + (ANC - EYE) * H
+        sw = SWAY * W * math.sin(2 * math.pi * t / 9.0) * min(1.0, (z - 1) / 0.12)
+        tx = min(0, max(W - z * W, ex - z * ex + sw))
+        ty = min(0, max(H - z * H, ay - z * ay))
+    else:
+        tx = min(0, max(W - z * W, W / 2 - z * ex))
+        ty = min(0, max(H - z * H, EYE_T * H - z * ey))
     M = np.float32([[z, 0, tx], [0, z, ty]])
     o = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REPLICATE)
     if n == 0:
