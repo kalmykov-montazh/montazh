@@ -95,6 +95,7 @@ for a, b in segs:
     fr = np.frombuffer(raw, np.uint8).reshape(-1, 4, 1600, 3).astype(float)
     sat = (fr.max(3) - fr.min(3)).mean((1, 2))   # у слайдов сверху цветная полоса (насыщенность ~200), у крупного плана ~18
     sl = (sat > 100).astype(int)
+    if job.get('always_slide'): sl[:] = 1   # 28.10.2026: «Штрафы» — у слайдов нет цветной полосы, крупных планов нет
     sm = sl.copy()   # одиночные кадры-выбросы (1–2 кадра) убираем, границы остаются точными
     for i in range(2, len(sl) - 2):
         if sl[i - 2] == sl[i + 2] != sl[i] and (sl[i - 1] == sl[i - 2] or sl[i + 1] == sl[i + 2]): sm[i] = sl[i - 2]
@@ -119,7 +120,8 @@ SLIDE = 'crop=1214:680:68:40,scale=1080:604:flags=lanczos'           # слай�
 CAM_Y = TOPB + 604 + 6
 # крупный план: лицо по центру, плашка лонга (y>850) отрезана
 import cv2
-fc = cv2.CascadeClassifier(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'haar.xml'))
+_hx = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'haar.xml')
+fc = cv2.CascadeClassifier(_hx if os.path.exists(_hx) else cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')   # 28.10.2026: haar.xml в хранилище нет
 def tl2src(t):
     acc = 0.0
     for a, b in segs:
