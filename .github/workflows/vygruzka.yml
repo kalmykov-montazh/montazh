@@ -1,0 +1,33 @@
+name: Выгрузить файлы с Диска для Claude (артефакт)
+
+# 29.10.2026: Claude скачивает текстовые/малые файлы с Диска к себе через артефакт задачи.
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Файлы внутри «Монтаж!» через ;"
+        required: true
+
+jobs:
+  v:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать
+        env:
+          P: ${{ inputs.path }}
+        run: |
+          mkdir out; IFS=';' read -ra ps <<< "$P"; i=0
+          for p in "${ps[@]}"; do i=$((i+1)); d="out/$(printf %02d $i)"; mkdir -p "$d"; echo "$p" > "$d/_path.txt"
+            rclone copyto "montazh:$p" "$d/$(basename "$p")" || echo "::error::нет $p"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vygruzka
+          path: out
+          retention-days: 2
