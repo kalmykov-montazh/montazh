@@ -723,6 +723,8 @@ if __name__ == "__main__":
             ps = [mp.Process(target=render_part, args=(bnd[k], bnd[k + 1], f"part{k}.mp4")) for k in range(npr)]
             for p in ps: p.start()
             for p in ps: p.join()
+            bad = [k for k, p in enumerate(ps) if p.exitcode != 0]   # 29.10.2026: упавшая часть давала укороченный ролик без ошибки
+            if bad: sys.exit(f"рендер: упали части {bad}")
             open("parts.txt", "w").write("".join(f"file 'part{k}.mp4'\n" for k in range(npr)))
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", "parts.txt", "-c", "copy", "video.mp4"], check=True)
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "video.mp4", "-i", "mix.wav", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",

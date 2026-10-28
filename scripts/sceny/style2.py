@@ -23,6 +23,8 @@ def bg_from(video, t):
 
 def glass(dst, box, r=36, border=GOLD, alpha=110):
     x0, y0, x1, y1 = box
+    if x1 - x0 < 4 or y1 - y0 < 4: return   # 29.10.2026: на первом кадре появления карточка нулевая — падал процесс рендера
+    r = min(r, (x1 - x0) // 2, (y1 - y0) // 2)
     sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).rounded_rectangle([x0 + 8, y0 + 18, x1 + 8, y1 + 18], r, fill=(0, 0, 0, 120))
     dst.alpha_composite(sh.filter(ImageFilter.GaussianBlur(22)))
     reg = dst.crop(box).filter(ImageFilter.GaussianBlur(18))
