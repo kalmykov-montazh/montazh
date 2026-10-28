@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # Шортс из лонга «со сценами v2» (утверждён на «02 Сдаёт не хозяин», 25.10.2026).
 # Вход в рабочей папке: base.mp4 + words_out.json (задача 5С), cover.jpg, config.json (сцены ролика).
-# !!! 25.10.2026 Евгений: субтитры v2 (тёмная плашка, золото) больше не использовать. Для следующих лонгов
-# заменить draw_sub на прежний «микс» (белые и жёлтые, бегущие), но мельче, чем в обычных шортсах.
+# 28.10.2026: субтитры — «микс» (белые и жёлтые, по слову), мельче обычных шортсов; тёмная плашка v2 убрана.
 # Режимы: info | frames t1 t2 … | audio | render out.mp4 [процессов]
 import sys, os, json, math, re, subprocess, random
 import numpy as np
@@ -522,23 +521,56 @@ def build_subs():
 SUBS = build_subs()
 SUBY_FACE, SUBY_SCENE = 1490, 1440
 _cache = {}
+# 28.10.2026 Евгений: вместо тёмной плашки v2 — «микс» как в обычных шортсах (белые и жёлтые, слова по одному,
+# разные шрифты по кругу), но мельче — шортсы из лонга, крупные закрывают его на треть.
+_FD = os.path.join(HERE, "..", "..", "fonts") + "/"
+from PIL import ImageFont
+def _mf(n, sz): return ImageFont.truetype(_FD + n, sz)
+MIXK = 0.68
+MIXSTY = [dict(fn="oswald-700.ttf", sz=118, col=(255, 214, 0), up=True, al="l"),
+          dict(fn="montserrat-900.ttf", sz=64, col=(255, 255, 255), up=False, al="c"),
+          dict(fn="unbounded-800.ttf", sz=74, col=(255, 255, 255), up=True, al="r"),
+          dict(fn="playfair-display-800.ttf", sz=86, col=(255, 214, 0), up=False, al="c")]
+MIXKEYS = set(nw(k) for k in CFG.get("keys", []))
+def _iskey(w): return nw(w) in MIXKEYS or bool(re.search(r"\d", w))
+def _mix_img(ci, c, upto):
+    k = ("m", ci, upto)
+    if k in _cache: return _cache[k]
+    st = MIXSTY[ci % len(MIXSTY)]
+    toks = [((w[1] if st["up"] else w[1].capitalize() if j == 0 else w[1].lower()), _iskey(w[1])) for j, w in enumerate(c)]
+    maxw = W - 240; lines, cur, curw = [], [], 0
+    for t_, kk in toks:
+        f = _mf(st["fn"], max(46, int(st["sz"] * MIXK * (1.25 if kk else 1))))
+        while f.getlength(t_) > maxw and f.size > 24: f = _mf(st["fn"], f.size - 4)
+        ww = f.getlength(t_ + " ")
+        if cur and curw + ww > maxw: lines.append(cur); cur, curw = [], 0
+        cur.append((t_, kk, f)); curw += ww
+    if cur: lines.append(cur)
+    hh = sum(max(f.size for _, _, f in l) * 1.05 for l in lines)
+    im = Image.new("RGBA", (W, int(hh) + 30), (0, 0, 0, 0)); d = ImageDraw.Draw(im); y = 15; n = 0
+    for l in lines:
+        lw = sum(f.getlength(t_ + " ") for t_, _, f in l)
+        x = {"l": 120, "c": (W - lw) / 2, "r": W - 120 - lw}[st["al"]]; x = max(100, min(x, W - 100 - lw))
+        lh = max(f.size for _, _, f in l) * 1.05
+        for t_, kk, f in l:
+            if n <= upto:
+                col = (255, 214, 0) if kk and st["col"] == (255, 255, 255) else ((255, 255, 255) if kk else st["col"])
+                d.text((x, y + lh * 0.82), t_, font=f, fill=col, anchor="ls", stroke_width=max(3, f.size // 16), stroke_fill=(0, 0, 0))
+            x += f.getlength(t_ + " "); n += 1
+        y += lh
+    bb = im.getbbox() or (0, 0, 1, 1); im = im.crop(bb)
+    sh = Image.new("RGBA", (im.width + 40, im.height + 40), (0, 0, 0, 0)); a_ = im.split()[3].point(lambda v: int(v * 0.45))
+    blk = Image.new("RGBA", im.size, (0, 0, 0, 255)); blk.putalpha(a_); sh.alpha_composite(blk, (20, 26)); sh = sh.filter(ImageFilter.GaussianBlur(8))
+    sh.alpha_composite(im, (20, 20)); _cache[k] = sh; return sh
+MIX_DY = [0, -30, 20, -15]
 def draw_sub(dst, t, y):
-    for (a, b, c) in SUBS:
+    for ci, (a, b, c) in enumerate(SUBS):
         if a <= t < b:
-            ws = [w[1] for w in c]; cur = max([i for i, w in enumerate(c) if w[0] <= t + 0.04] or [0])
-            sz = 60; f = F(sz); txt = " ".join(ws)
-            while f.getlength(txt) > W - 200: sz -= 4; f = F(sz)
-            k = (txt, cur, sz)
-            if k not in _cache:
-                tw = f.getlength(txt); im = Image.new("RGBA", (int(tw) + 64, sz + 50), (0, 0, 0, 0)); dd = ImageDraw.Draw(im)
-                dd.rounded_rectangle([0, 0, im.width - 1, im.height - 1], 20, fill=(20, 10, 6, 195))
-                x = 32
-                for i, w_ in enumerate(ws):
-                    dd.text((x, im.height / 2), w_, font=f, fill=GOLD if i == cur else WH, anchor="lm"); x += f.getlength(w_ + " ")
-                _cache[k] = im
-            im = _cache[k]; s = 0.92 + 0.08 * ease_back((t - a) / 0.12)
-            if abs(s - 1) > 0.005: im = im.resize((int(im.width * s), int(im.height * s)), Image.BILINEAR)
-            dst.alpha_composite(im, (int(W / 2 - im.width / 2), int(y - im.height / 2))); return
+            cur = max([i for i, w in enumerate(c) if w[0] <= t + 0.04] or [0])
+            im = _mix_img(ci, c, cur)
+            yy = y + MIX_DY[ci % len(MIX_DY)] - im.height / 2
+            yy = max(150, min(yy, H - 380 - im.height + 40))
+            dst.alpha_composite(im, (int(W / 2 - im.width / 2), int(yy))); return
 
 # ---- кадры основы ----
 NB = None

@@ -6,7 +6,7 @@ TOPIC="$1"; ID="$2"; W=work; mkdir -p $W
 first() { for p in "$@"; do if rclone lsf "montazh:$p" --max-depth 1 >/dev/null 2>&1 && [ -n "$(rclone lsf "montazh:$p" --max-depth 1 2>/dev/null | head -1)" ]; then echo "$p"; return; fi; done; }
 WORK=$(first "работа/Сцены/$TOPIC/$ID" "Брокер/работа/Сцены/$TOPIC/$ID")
 [ -n "$WORK" ] || { echo "::error::нет основы для $ID — сначала задача 5С"; exit 1; }
-SH=$(first "Готовые!/ШОРТС $TOPIC" "Брокер/Готовые/Шортсы/$TOPIC" "Брокер/Готовые/Шортсы/ШОРТС $TOPIC")
+SH=$(first "Брокер/Готовые/Шортсы/Шортс $TOPIC" "Брокер/Готовые/Шортсы/$TOPIC" "Брокер/Готовые/Шортсы/ШОРТС $TOPIC" "Готовые!/ШОРТС $TOPIC")
 [ -n "$SH" ] || { echo "::error::не нашёл папку шортсов «$TOPIC»"; exit 1; }
 FOLDER=$(rclone lsf "montazh:$SH" --dirs-only | sed 's#/$##' | grep "^$ID " | head -1)
 [ -n "$FOLDER" ] || { echo "::error::нет папки $ID в $SH"; exit 1; }
