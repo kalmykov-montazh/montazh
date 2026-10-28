@@ -599,6 +599,31 @@ def src_of(t):
     return min(SPL + (t - tB), END + 1.0)
 
 EVS = evs()
+# 28.10.2026 (из «Всё о крипте», Евгений): резкие наезды +8% на первом слове и 3–5 ключевых словах (не чаще раза в 5 с),
+# вход 0,12 с, держать 0,4 с, отъезд 0,25 с, на каждом — «вжух»; «дыхание» сцен дольше 2 с: 1,00 → 1,04
+PUNCHT = []
+_ks = set(nw(k) for k in CFG.get("punch", CFG.get("keys", [])))
+_ws = [x for x in WORDS if x["s"] < END]
+if _ws and os.environ.get("PUNCH", "1") != "0":
+    PUNCHT.append(m(_ws[0]["s"]))
+    for x in _ws:
+        if len(PUNCHT) >= 6: break
+        tt = m(x["s"])
+        if tt > A_END - 2.5: break
+        if (nw(x["w"]) in _ks or re.search(r"\d", x["w"])) and tt - PUNCHT[-1] >= 5.0: PUNCHT.append(tt)
+EVS += [(tp, "whoosh") for tp in PUNCHT[1:]]
+def punch_z(t):
+    for tp in PUNCHT:
+        d = t - tp
+        if 0 <= d < 0.12: return 1 + 0.08 * ease_out(d / 0.12)
+        if 0.12 <= d < 0.52: return 1.08
+        if 0.52 <= d < 0.77: return 1 + 0.08 * (1 - ease_out((d - 0.52) / 0.25))
+    return 1.0
+def zoom_layer(layer, z, cy=H / 2):
+    if z < 1.001: return layer
+    L = layer.resize((int(W * z), int(H * z)), Image.BILINEAR)
+    x0 = (L.width - W) // 2; y0 = int(max(0, min(L.height - H, cy * z - cy)))
+    return L.crop((x0, y0, x0 + W, y0 + H))
 def frame(t):
     global _frz
     sg = next((s for s in TL if s[0] <= t < s[1] and s[2] != "band"), None) or next((s for s in TL if s[0] <= t < s[1]), None)
@@ -611,6 +636,8 @@ def frame(t):
         if u < 0.2:
             s = 1.07 - 0.07 * ease_out(u / 0.2); bg_ = layer.resize((int(W * s), int(H * s)), Image.BILINEAR)
             layer = bg_.crop(((bg_.width - W) // 2, (bg_.height - H) // 2, (bg_.width - W) // 2 + W, (bg_.height - H) // 2 + H))
+        dur_ = sg[1] - sg[0]
+        if dur_ > 2.0: layer = zoom_layer(layer, 1 + 0.04 * clamp(u / dur_), 740)   # «дыхание»: к центру сцены (зона 220–1260)
         suby = SUBY_SCENE; sub = t < A_END
     elif kind == "freeze":
         if _frz is None: _frz = SRC.get(SPL - 0.3)
@@ -623,6 +650,8 @@ def frame(t):
         if k == "boom" and 0 <= t - te < 0.35:
             amp = 14 * (1 - (t - te) / 0.35); r = random.Random(int(t * 1000))
             base = Image.new("RGBA", (W, H), (10, 5, 3, 255)); base.paste(layer, (int(r.uniform(-amp, amp)), int(r.uniform(-amp, amp)))); layer = base
+    pz = punch_z(t)
+    if pz > 1.001 and kind != "freeze": layer = zoom_layer(layer, pz, 740 if kind == "scene" else H * 0.45)
     if sub: draw_sub(layer, t, suby)
     return layer.convert("RGB")
 
@@ -642,7 +671,7 @@ def build_audio(out="mix.wav"):
     else: parts += [cut(0, END, 0.005, 0.08)]
     y = np.concatenate(parts)
     n = int(TT * SR); mix = np.zeros((n, 2)); mix[:min(n, len(y))] += y[:n]
-    lv = {"whoosh": 0.22, "click": 0.25, "boom": 0.30, "pop": 0.25, "ding": 0.2, "alarm": 0.18, "cash": 0.24}
+    lv = {"whoosh": 0.22, "click": 0.25, "boom": 0.20, "pop": 0.25, "ding": 0.2, "alarm": 0.16, "cash": 0.24}   # 28.10.2026: бум и тревога мягче (не выше 0,20)
     fx = np.zeros(n)
     for te, k in [(s[0], s[4]) for s in TL if s[4]] + EVS:
         if k not in lv: continue
