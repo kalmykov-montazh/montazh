@@ -1,0 +1,61 @@
+name: Вставки по ссылкам (видео из соцсетей)
+
+# Для Claude (28.10.2026): скачивает видео/фото по ссылкам (X, YouTube и др. через yt-dlp) на Диск
+# в папку вставок, отдаёт кадры зашифрованно в ветку tmp-pics, длину — заметками.
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "имя=ссылка через ;"
+        required: true
+      dest:
+        description: "Папка внутри «Монтаж!», например Брокер/Вставки/Авария Урда"
+        required: true
+      key:
+        description: "Пароль для шифрования кадров"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  get:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скачать
+        env:
+          U: ${{ inputs.urls }}
+          D: ${{ inputs.dest }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install -q -U yt-dlp
+          mkdir -p dl out
+          IFS=';' read -ra us <<< "$U"
+          for p in "${us[@]}"; do
+            n="${p%%=*}"; url="${p#*=}"
+            if ! yt-dlp -q --no-warnings -f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b" --merge-output-format mp4 -o "dl/$n.%(ext)s" "$url"; then echo "::error::Не скачалось: $n $url"; continue; fi
+            f=$(ls dl/$n.* | head -1)
+            info=$(ffprobe -v error -show_entries format=duration:stream=width,height -of compact=p=0 "$f" | tr '\n' ' ')
+            echo "::notice title=$n::$info"
+            d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -d. -f1); d=${d:-1}
+            for s in $(seq 0 2 $d); do ffmpeg -v error -y -ss $s -i "$f" -frames:v 1 -vf scale=320:-2 "out/${n}_$(printf %03d $s).jpg" || true; done
+          done
+          rclone copy dl "montazh:$D"
+          echo "::notice::На Диске: $(rclone lsf "montazh:$D" | tr '\n' ' ')"
+      - name: Зашифровать кадры
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-pics; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-pics
