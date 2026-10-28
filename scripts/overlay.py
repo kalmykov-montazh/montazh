@@ -208,6 +208,28 @@ for GI, g in enumerate(spec.get('groups', [])):
             EL.append(dict(img=im, x=px, y=py, t0=t0, t1=t_end, kind='stamp', g=GI))
 
 
+# ---------- вставки на весь экран (28.10.2026): строгая тёмная карточка 2–3 с, голос за кадром, субтитры поверх ----------
+# spec "full": [{"at": "фраза", "text": "до 2 000 €", "top": "Штраф", "label": "за просрочку", "sec": 2.5}]
+FULL = []
+def full_img(top, text, label):
+    im = Image.new('RGBA', (W, H), (14, 22, 38, 238)); d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, W, 10], fill=(240, 190, 0, 255))
+    y = H * 0.36
+    if top:
+        ft = font(M8, 60); d.text((W / 2, y - 150), top.upper(), font=ft, fill=(200, 210, 225), anchor='mm')
+    sz = 170
+    fb = font(M9, sz)
+    while fb.getlength(text) > W - 140 and sz > 70: sz -= 8; fb = font(M9, sz)
+    d.text((W / 2, y), text, font=fb, fill=(255, 205, 40), anchor='mm')
+    if label:
+        fl = font(M8, 56); lines = wrap(label, fl, W - 200)
+        for k, ln in enumerate(lines): d.text((W / 2, y + sz * 0.75 + k * 70), ln, font=fl, fill=(255, 255, 255), anchor='mm')
+    return im
+for it in spec.get('full', []):
+    t0 = T(it['at'])
+    FULL.append(dict(img=full_img(it.get('top', ''), it['text'], it.get('label', '')), t0=t0, t1=t0 + float(it.get('sec', 2.5))))
+
+
 # ---------- надпись в начале и призыв в конце (21.10.2026) ----------
 def stack(ims, gap=10):
     w_ = max(i.width for i in ims); h_ = sum(i.height for i in ims) + gap * (len(ims) - 1)
@@ -432,6 +454,12 @@ def sub_mix(ph, idx, upto):
 PH = phrases(26 if STYLE == 'redkey' else 22)
 PHT = [(p[0]['s'], (PH[i + 1][0]['s'] if i + 1 < len(PH) and PH[i + 1][0]['s'] - p[-1]['e'] < 0.6 else p[-1]['e'] + 0.25), p) for i, p in enumerate(PH)]
 MIX_Y = spec.get('mix_y', [1420, 1380, 1460, 1400])   # микс: под подбородком, на груди (21.10.2026, «Чаевые»); у каждого ролика можно задать свои
+# 28.10.2026 (Евгений): высота субтитров — сама по подбородку из montage.py (sub.json), лицо не закрывать важнее зоны TikTok
+_sj = os.path.join(os.path.dirname(os.path.abspath(WORDS)), 'sub.json')
+if 'mix_y' not in spec and os.path.exists(_sj):
+    _b = int(min(1660, max(1380, json.load(open(_sj))['chin_px'] + 100)))
+    MIX_Y = [_b, _b - 20, _b + 20, _b - 8]
+    print('субтитры по подбородку', MIX_Y)
 
 
 def ease_back(x):
@@ -452,7 +480,11 @@ def paste(fr, im, x, y, alpha=1.0, scale=1.0):
 
 
 def draw(fr, t):
-    for e in EL:
+    fu = [f for f in FULL if f['t0'] <= t < f['t1']]
+    for f in fu:   # вставка на весь экран: плавно 0,15 с, лёгкое «дыхание» масштаба
+        a = min(1, (t - f['t0']) / 0.15, (f['t1'] - t) / 0.15)
+        paste(fr, f['img'], 0, 0, a, 1.03 - 0.03 * min(1, (t - f['t0']) / 0.4))
+    for e in ([] if fu else EL):
         if not (e['t0'] <= t < e['t1'] + 0.2): continue
         a = min(1, (t - e['t0']) / 0.12)
         if t > e['t1']: a *= max(0, 1 - (t - e['t1']) / 0.2)
@@ -477,11 +509,47 @@ def draw(fr, t):
 
 
 t_to = min(T_TO, total)
+# 28.10.2026 (Евгений): лёгкие «вжух» и щелчки на наездах, плашках и переходах — тише голоса (пик около −24 дБ), музыки нет
+SFX = None
+if os.environ.get('SFX', '1') != '0' and not LAYOUT_ONLY:
+    import numpy as np, wave
+    SR = 48000
+    rng = np.random.default_rng(7)
+    def _whoosh(d=0.34):
+        n_ = int(SR * d); x = rng.standard_normal(n_)
+        y = np.zeros(n_); a_ = 0.0
+        for i in range(n_):   # фильтр с плавающей частотой: низ → верх → низ
+            fc = 300 + 2600 * math.sin(math.pi * i / n_) ** 2
+            k = 1 - math.exp(-2 * math.pi * fc / SR); a_ += k * (x[i] - a_); y[i] = a_
+        env = np.sin(np.pi * np.linspace(0, 1, n_)) ** 1.6
+        return y * env / (np.abs(y * env).max() + 1e-9)
+    def _click(d=0.05):
+        n_ = int(SR * d); x = rng.standard_normal(n_); x = np.diff(np.concatenate([[0], x]))
+        return x * np.exp(-np.linspace(0, 9, n_)) / (np.abs(x).max() + 1e-9)
+    wh, cl = _whoosh(), _click()
+    ev = []
+    pj = os.path.join(os.path.dirname(os.path.abspath(WORDS)), 'punch.json')
+    if os.path.exists(pj): ev += [(t - 0.12, 'w') for t in json.load(open(pj))]
+    ev += [(e['t0'] - 0.05, 'c' if e['kind'] == 'stamp' else 'w') for e in EL if e['kind'] in ('card', 'big', 'stamp')]
+    ev += [(f['t0'] - 0.1, 'w') for f in FULL]
+    ev.sort(); buf_ = np.zeros(int(SR * (total + 1))); last_ = -9; nev = 0
+    for t, k in ev:
+        if t < 0.2 or t > total - 0.5 or t - last_ < 0.4: continue
+        s_ = wh if k == 'w' else cl; i0 = int(t * SR)
+        buf_[i0:i0 + len(s_)] += s_[:len(buf_) - i0] * (0.063 if k == 'w' else 0.05); last_ = t; nev += 1
+    SFX = OUT + '.sfx.wav'
+    with wave.open(SFX, 'wb') as wf:
+        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(SR)
+        wf.writeframes((np.clip(buf_, -1, 1) * 32767).astype('<i2').tobytes())
+    print('звуки', nev)
 dec = subprocess.Popen(['ffmpeg', '-v', 'error', '-ss', str(T_FROM), '-to', str(t_to), '-i', BASE, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], stdout=subprocess.PIPE)
 enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
-                        '-ss', str(T_FROM), '-to', str(t_to), '-i', BASE, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', os.environ.get('PRESET', 'medium'), '-crf', os.environ.get('CRF264', '17'),
+                        '-ss', str(T_FROM), '-to', str(t_to), '-i', BASE,
+                        *(['-ss', str(T_FROM), '-to', str(t_to), '-i', SFX, '-filter_complex', '[1:a][2:a]amix=inputs=2:normalize=0:duration=first[a]', '-map', '0:v', '-map', '[a]', '-c:a', 'aac', '-b:a', '192k']
+                          if SFX else ['-map', '0:v', '-map', '1:a', '-c:a', 'copy']),
+                        '-c:v', 'libx264', '-preset', os.environ.get('PRESET', 'medium'), '-crf', os.environ.get('CRF264', '17'),
                         '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-                        '-c:a', 'copy', '-movflags', '+faststart', '-shortest', OUT], stdin=subprocess.PIPE)
+                        '-movflags', '+faststart', '-shortest', OUT], stdin=subprocess.PIPE)
 # обложка на долю секунды в самом начале — TikTok через автопубликатор берёт кадр с 0 с (Евгений 22.10.2026)
 COVER = os.environ.get('COVER', '')
 COVER_SEC = float(os.environ.get('COVER_SEC', '0.15'))

@@ -185,6 +185,7 @@ LEVELS = [ZB, ZB * 1.06, ZB * 1.12]
 def ycrop(z): return min(max((ANC * (z - 1)) if NATURAL else (EYE * z - EYE_T), 0), z - 1)
 chin_out = max(CHIN * z - ycrop(z) for z in LEVELS)
 SUB_MV = int(max(int(H * 0.25), H * (1 - chin_out - 0.03) - 110))   # низ субтитров не ниже 75% высоты: ниже надписи TikTok
+json.dump({'chin_px': round((CHIN * ZB - ycrop(ZB)) * H), 'natural': NATURAL}, open(f'{OUT}/sub.json', 'w'))   # overlay.py ставит субтитры под подбородок
 HEAD_PX = (max(0.0, EYE - 0.72 * HN) * ZB - ycrop(ZB)) * H   # макушка С ВОЛОСАМИ в первом кадре, px (04.10.2026: было 0.54 — надпись садилась на волосы)
 CTA_Y = int(os.environ.get('CTA_Y', '250'))   # центр плашки-призыва: высоко над головой, лоб и очки не закрывать
 json.dump({'CX': float(CX), 'EYE': float(EYE), 'HN': float(HN), 'n': len(fx)}, open(f'{OUT}/face.json', 'w'))   # для cover.py, если там лицо не найдётся
@@ -312,6 +313,8 @@ while keys[-1][0] < total:
 
 # Утверждено 05.10.2026: резкий наезд +8% за 0,15 с на 3–5 ключевых словах, держится до конца фразы (~1 с), потом плавно назад
 PUNCH = []
+if words and words[0]['os'] < 1.0 and os.environ.get('FIRST_PUNCH', '1') != '0':   # 28.10.2026: резкий наезд на первом слове хука
+    PUNCH.append((words[0]['os'] + 0.02, words[0]['os'] + 0.9))
 if PROBA.get('punch'):
     pend = {id(w): ws[-1]['oe'] for ws in phr for w in ws}
     for w in words:
@@ -321,6 +324,7 @@ if PROBA.get('punch'):
         if PUNCH and w['os'] - PUNCH[-1][0] < 5: continue
         PUNCH.append((w['os'], min(max(w['os'] + 0.8, pend[id(w)]), w['os'] + 1.4)))
     print('punch', [(round(a, 1), round(b, 1)) for a, b in PUNCH])
+json.dump([round(a, 3) for a, b in PUNCH], open(f'{OUT}/punch.json', 'w'))   # для звуков «вжух» в overlay.py
 def punch_at(t):
     for a, b in PUNCH:
         if a <= t <= b: return 1 + 0.08 * min(1, (t - a) / 0.15)
@@ -479,9 +483,18 @@ p1 = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
     '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], stdout=subprocess.PIPE)
 det = []
 n = 0
+_prev = None; _mv = [(0.0, 0.0)]   # 28.10.2026: стабилизация — сдвиг кадра к кадру (фазовая корреляция по маленьким кадрам)
+_win = None
 while True:
     buf = p1.stdout.read(SW * SH_)
     if len(buf) < SW * SH_: break
+    _g32 = np.frombuffer(buf, np.uint8).reshape(SH_, SW).astype(np.float32)
+    if _prev is not None:
+        if _win is None: _win = cv2.createHanningWindow((SW, SH_), cv2.CV_32F)
+        (_dx, _dy), _resp = cv2.phaseCorrelate(_prev, _g32, _win)
+        if _resp < 0.05 or abs(_dx) > SW * 0.08 or abs(_dy) > SH_ * 0.08: _dx = _dy = 0.0   # не верим: смена сцены, блик
+        _mv.append((_mv[-1][0] + _dx * 4, _mv[-1][1] + _dy * 4))
+    _prev = _g32
     if n % 3 == 0:
         g = np.frombuffer(buf, np.uint8).reshape(SH_, SW)
         f = cc.detectMultiScale(g, 1.1, 5, minSize=(20, 20))
@@ -493,6 +506,19 @@ while True:
 p1.wait()
 NF = n
 fxs = np.full(NF, CX * W); fys = np.full(NF, EYE * H)
+# стабилизация (Евгений 28.10.2026: включена всегда, нужна — сглаживаем): тряска = путь камеры минус плавный путь (~1,2 с)
+STX = np.zeros(NF); STY = np.zeros(NF); STAB_Z = 1.0
+if os.environ.get('STAB', '1') != '0' and len(_mv) == NF and NF > FPS * 2:
+    _tr = np.array(_mv)
+    _s = FPS * 1.2; _k = np.exp(-0.5 * (np.arange(-3 * int(_s), 3 * int(_s) + 1) / _s) ** 2); _k /= _k.sum(); _p = len(_k) // 2
+    _sm = np.stack([np.convolve(np.pad(_tr[:, i], _p, mode='edge'), _k, mode='valid') for i in (0, 1)], 1)
+    _c = _sm - _tr
+    _jit = float(np.sqrt((_c ** 2).sum(1)).mean())
+    if _jit > 2.0:   # пикселей полного кадра: штатив ~0,5, с рук на ходу 4–15
+        _c = np.clip(_c, -W * 0.02, W * 0.02)
+        STX, STY = _c[:, 0], _c[:, 1]
+        STAB_Z = 1 + min(0.04, 2 * float(np.percentile(np.abs(_c), 98)) / W + 0.004)
+    print('stab', round(_jit, 1), 'px', 'вкл' if STAB_Z > 1 else 'не нужна', round(STAB_Z, 3))
 if det:
     dn = np.array([d[0] for d in det]); dx = np.array([d[1] for d in det]); dy = np.array([d[2] for d in det])
     # выбрасываем выбросы (ошибки детектора)
@@ -505,11 +531,38 @@ if det:
     fxs = np.convolve(np.pad(fxs, pad, mode='edge'), kx, mode='valid')
     fys = np.convolve(np.pad(fys, pad, mode='edge'), kx, mode='valid')
 
+# 28.10.2026: баланс белого и яркость — по 8 кадрам ролика, мягко (в разумных пределах), COLOR=0 — выключить
+CLUT = None
+if os.environ.get('COLOR', '1') != '0':
+    try:
+        _sw, _sh = 216, 384
+        _pc = subprocess.run(['ffmpeg', '-v', 'error', '-i', RAW, '-vf', f"fps={8 / max(dur, 1):.4f},{TM}scale={_sw}:{_sh}:force_original_aspect_ratio=increase,crop={_sw}:{_sh}",
+                              '-frames:v', '8', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-'], capture_output=True).stdout
+        _a = np.frombuffer(_pc, np.uint8).reshape(-1, 3).astype(np.float32)
+        _l = _a.mean(1); _m = (_l > 30) & (_l < 225)
+        if _m.sum() > 1000:
+            _mean = _a[_m].mean(0); _gray = _mean.mean()
+            _gain = np.clip(1 + 0.5 * (_gray / _mean - 1), 0.94, 1.06)        # серый мир наполовину, не больше ±6%
+            _L = float(np.clip(_l[_m].mean() / 255, 0.05, 0.95))
+            _gm = float(np.clip(np.log(0.47) / np.log(_L), 0.88, 1.12))       # яркость к середине, мягко
+            _x = np.arange(256, dtype=np.float32) / 255
+            CLUT = np.stack([np.clip(255 * np.clip(_x * _gain[c], 0, 1) ** _gm, 0, 255) for c in range(3)], 1).astype(np.uint8).reshape(256, 1, 3)
+            print('color', [round(float(g), 3) for g in _gain], 'gamma', round(_gm, 3))
+    except Exception as e_:
+        print('color skip', e_)
 dec = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', RAW, '-filter_complex',
     f"[0:v]fps={FPS},select='{sel}',setpts=N/FRAME_RATE/TB,setpts=PTS/{SPEED},fps={FPS},"
     f"{TM}scale={W}:{H}:force_original_aspect_ratio=increase:in_color_matrix=bt709,crop={W}:{H}[v]", '-map', '[v]',
     '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-'], stdout=subprocess.PIPE)
-aud = f"[1:a]aselect='{sel}',asetpts=N/SR/TB,atempo={SPEED},loudnorm=I=-14:TP=-1.5:LRA=11[a]"
+# 28.10.2026: ветер и гул — срез ниже 70 Гц всегда; мягкое шумоподавление (6 дБ) только если фон громкий. Голос не трогаем
+_nf = None
+try:
+    _st = subprocess.run(['ffmpeg', '-v', 'info', '-i', RAW, '-vn', '-af', 'astats=measure_overall=Noise_floor:measure_perchannel=none', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    _nf = float(re.findall(r'Noise floor dB: (-?[\d.]+)', _st)[-1])
+except Exception: pass
+DENOISE = 'afftdn=nr=6:nf=-45:tn=1,' if (_nf is not None and _nf > -55 and os.environ.get('DENOISE', '1') != '0') else ''
+print('noise', _nf, 'шумодав' if DENOISE else 'без шумодава')
+aud = f"[1:a]aselect='{sel}',asetpts=N/SR/TB,atempo={SPEED},highpass=f=70,{DENOISE}loudnorm=I=-14:TP=-1.5:LRA=11[a]"
 CRF = os.environ.get('CRF', '16')   # сжатие по качеству (~15-20 Мбит/с, как Edits/CapCut), Евгений одобрил 03.10.2026; 5-8 Мбит/с размазывали кожу
 VBR = os.environ.get('VBR', '8000k')   # постоянное качество; большой файл режется на куски (send_parts.py), склейщик собирает на компьютере
 print('crf', CRF)
@@ -568,15 +621,17 @@ while True:
     fr = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
     ex, ey = fxs[min(n, NF - 1)], fys[min(n, NF - 1)]
     t = n / FPS
-    z = zoom_at(t) * punch_at(t)
+    z = zoom_at(t) * punch_at(t) * STAB_Z
+    if CLUT is not None: fr = cv2.LUT(fr, CLUT)
+    _i = min(n, NF - 1); sx_, sy_ = STX[_i] * z, STY[_i] * z
     if NATURAL:   # лицо остаётся где снято; при приближении растёт вверх от подбородка и чуть «ходит» вбок
         ay = ey + (ANC - EYE) * H
         sw = SWAY * W * math.sin(2 * math.pi * t / 9.0) * min(1.0, (z - 1) / 0.12)
-        tx = min(0, max(W - z * W, ex - z * ex + sw))
-        ty = min(0, max(H - z * H, ay - z * ay))
+        tx = min(0, max(W - z * W, ex - z * ex + sw + sx_))
+        ty = min(0, max(H - z * H, ay - z * ay + sy_))
     else:
-        tx = min(0, max(W - z * W, W / 2 - z * ex))
-        ty = min(0, max(H - z * H, EYE_T * H - z * ey))
+        tx = min(0, max(W - z * W, W / 2 - z * ex + sx_))
+        ty = min(0, max(H - z * H, EYE_T * H - z * ey + sy_))
     M = np.float32([[z, 0, tx], [0, z, ty]])
     o = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REPLICATE)
     if n == 0:
