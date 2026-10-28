@@ -7,6 +7,10 @@ name: 4Н. Шортсы из горизонтального лонга — но�
 on:
   workflow_dispatch:
     inputs:
+      long:
+        description: "Путь к лонгу внутри «Монтаж!» (пусто — Брокер/Готовые/Шортсы/<тема>/!!! <тема>.mp4)"
+        required: false
+        default: ""
       mode:
         description: "razbor или render"
         required: true
@@ -41,8 +45,9 @@ jobs:
       - name: Скачать лонг
         env:
           TOPIC: ${{ inputs.topic }}
+          LONG: ${{ inputs.long }}
         run: |
-          rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
+          rclone copyto "montazh:${LONG:-Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4}" long.mp4
           echo "::notice::$(du -h long.mp4 | cut -f1), $(ffprobe -v error -show_entries format=duration:stream=width,height,r_frame_rate -of compact=p=0 long.mp4 | tr '\n' ' ')"
       - name: Разбор
         run: python scripts/dolg/razbor.py long.mp4 "$WMODEL" out | tail -3
@@ -94,7 +99,8 @@ jobs:
       - name: Скачать лонг
         env:
           TOPIC: ${{ inputs.topic }}
-        run: rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
+          LONG: ${{ inputs.long }}
+        run: rclone copyto "montazh:${LONG:-Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4}" long.mp4
       - name: Основа (куски, время слов, раскладка)
         env:
           TOPIC: ${{ inputs.topic }}

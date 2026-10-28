@@ -7,6 +7,10 @@ name: 5С. Основа шортса из лонга для сцен (без с�
 on:
   workflow_dispatch:
     inputs:
+      long:
+        description: "Путь к лонгу внутри «Монтаж!» (пусто — Брокер/Готовые/Шортсы/<тема>/!!! <тема>.mp4)"
+        required: false
+        default: ""
       topic:
         description: "Тема лонга (папка в Брокер/Готовые/Лонги)"
         required: true
@@ -28,7 +32,8 @@ jobs:
       - name: Скачать лонг
         env:
           TOPIC: ${{ inputs.topic }}
-        run: rclone copyto "montazh:Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4" long.mp4
+          LONG: ${{ inputs.long }}
+        run: rclone copyto "montazh:${LONG:-Брокер/Готовые/Шортсы/$TOPIC/!!! $TOPIC.mp4}" long.mp4
       - name: Основа
         env:
           TOPIC: ${{ inputs.topic }}
