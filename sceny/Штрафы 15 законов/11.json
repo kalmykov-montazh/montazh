@@ -13,7 +13,8 @@
    "kicker": "ВАЛЕНСИЯ",
    "sub": "новые правила чистоты",
    "glow": "R",
-   "color": "R"
+   "color": "R",
+   "max": 4
   },
   {
    "type": "stamp",
@@ -23,7 +24,8 @@
    "title": "СМЫТЬ ВОДОЙ",
    "word": "ОБЯЗАТЕЛЬНО",
    "color": "GOLD",
-   "stamp_at": "обязанностью"
+   "stamp_at": "обязанностью",
+   "max": 4
   },
   {
    "type": "stamp",
@@ -33,7 +35,8 @@
    "title": "С 15 ИЮНЯ 2026",
    "word": "УЖЕ ДЕЙСТВУЕТ",
    "color": "GOLD",
-   "stamp_at": "15"
+   "stamp_at": "15",
+   "max": 4
   }
  ],
  "bands": [],
