@@ -42,6 +42,10 @@ on:
         description: "Ключ работы (папка в «работа/»), когда сырой назван не уникально, например видео.mp4 в папке ролика"
         required: false
         default: ""
+      ready:
+        description: "«1» — сразу в «Готовые» (перемонтаж уже одобренного). Иначе новый ролик идёт в «Брокер/На проверке» (Евгений 28.10.2026)"
+        required: false
+        default: ""
       pack:
         description: "Текст упаковки (упаковка.txt)"
         required: false
@@ -164,6 +168,16 @@ jobs:
           PY
           grep -o 'наложения плашек.*' overlay.log | sed 's/^/::notice::/' || true
 
+      - name: Текст готового ролика и проверка связок, хвоста, отсылок (Евгений 28.10.2026)
+        if: ${{ !cancelled() && hashFiles('work/**/final.mp4') != '' }}
+        env:
+          DEST: ${{ inputs.dest }}
+          READY: ${{ inputs.ready }}
+        run: |
+          case "$DEST" in Брокер/Готовые/Шортсы/*) [ "$READY" = "1" ] || DEST="Брокер/На проверке/$(basename "$DEST")";; esac
+          echo "DEST_REAL=$DEST" >> "$GITHUB_ENV"
+          python3 scripts/tekst_proverka.py "$W/words_out.json"
+
       - name: Положить на Диск
         if: ${{ !cancelled() && hashFiles('work/**/final.mp4') != '' }}
         env:
@@ -171,6 +185,7 @@ jobs:
           PACK: ${{ inputs.pack }}
           DUP_OK: ${{ inputs.dup_ok }}
         run: |
+          DEST="${DEST_REAL:-$DEST}"
           if [ -z "$DUP_OK" ] && grep -q '^ПОВТОР' "$W/dups.txt" 2>/dev/null; then echo "::error::Найден повтор — ролик на Диск НЕ положен, вырезать дубль (fixes/trim) и перемонтировать"; exit 1; fi
           if [ -n "$PACK" ]; then
             printf '%s' "$PACK" | grep -qiE 'ссылк|в шапке|в описани|полное видео|полном видео|монтаж делал в приложени' && echo "::warning::В упаковке есть ссылка или отсылка к ссылке — с 25.10.2026 так нельзя, убрать"
@@ -189,6 +204,7 @@ jobs:
           SRC: ${{ inputs.src }}
           DEST: ${{ inputs.dest }}
         run: |
+          DEST="${DEST_REAL:-$DEST}"
           rest="${SRC#Брокер/Сырые/Шортсы/}"
           if [ "$rest" = "$SRC" ] || [ "${rest#*/}" != "$rest" ]; then echo "::notice::Сырой не из корня «Брокер/Сырые/Шортсы» — не переношу"; exit 0; fi
           to="$DEST/$(basename "$DEST").${rest##*.}"
