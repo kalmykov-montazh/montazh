@@ -1,0 +1,36 @@
+name: Кадры готового ролика в полном размере (для Claude)
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Видео внутри «Монтаж!»"
+        required: true
+      t:
+        description: "Секунды через пробел"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  k:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Кадры
+        env:
+          F: ${{ inputs.file }}
+          T: ${{ inputs.t }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          rclone copyto "montazh:$F" v.mp4; mkdir out
+          for t in $T; do ffmpeg -v error -y -ss "$t" -i v.mp4 -frames:v 1 -vf scale=540:-2 "out/k_$t.jpg"; done
+          cd out; git init -q; git checkout -q -b vygruzka; git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "kadr $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka
