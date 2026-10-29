@@ -186,6 +186,7 @@ late = [t - 0.15 for t in sch if t > total_sp - 8]
 for k in range(1, len(iv)):
     if iv[k][0] > total_sp - 8 and iv[k][0] < total_sp: late.append(iv[k - 1][1] - 0.15)
 late.sort()
+if job.get('hold_slide') is not None: late = [float(job['hold_slide'])]   # 29.10.2026: «Ловушки 18» — держать слайд с этой секунды до конца
 SLV = SLIDE
 if late:
     tf = late[0]
