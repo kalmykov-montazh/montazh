@@ -1,0 +1,49 @@
+name: Правка файла на Диске (python)
+
+# Для Claude (29.10.2026): скачивает файл, кладёт копию «<файл>.bak<суффикс>» рядом (если такой ещё нет),
+# выполняет python-код (base64) над переменной s (текст файла), заливает обратно, если изменился. Показывает diff.
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Путь к файлу внутри «Монтаж!»"
+        required: true
+      code:
+        description: "python-код в base64; меняет s"
+        required: true
+      bak:
+        description: "суффикс бэкапа, например 29"
+        required: true
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Править
+        env:
+          P: ${{ inputs.path }}
+          CODE: ${{ inputs.code }}
+          B: ${{ inputs.bak }}
+        run: |
+          rclone copyto "montazh:$P" orig.txt
+          if [ -z "$(rclone lsf "montazh:$P.bak$B" 2>/dev/null)" ]; then rclone copyto orig.txt "montazh:$P.bak$B" && echo "::notice::бэкап $P.bak$B"; fi
+          echo "$CODE" | base64 -d > code.py
+          python3 - <<'PY'
+          raw = open('orig.txt', 'rb').read()
+          bom = raw.startswith(b'\xef\xbb\xbf'); s = raw.decode('utf-8-sig')
+          crlf = '\r\n' in s; s = s.replace('\r\n', '\n')
+          exec(open('code.py', encoding='utf-8').read())
+          if crlf: s = s.replace('\n', '\r\n')
+          open('new.txt', 'wb').write((b'\xef\xbb\xbf' if bom else b'') + s.encode('utf-8'))
+          PY
+          if cmp -s orig.txt new.txt; then echo "::warning::без изменений"; exit 0; fi
+          if [[ "$P" == *.py ]]; then python3 -m py_compile new.txt 2>err.txt || { echo "::error::синтаксис: $(tail -2 err.txt | tr '\n' ' ')"; exit 1; }; fi
+          diff -u orig.txt new.txt | head -c 2800 | python3 -c "import sys; t=sys.stdin.read().replace('%','%25').replace('\r','').replace('\n','%0A'); print('::notice title=diff::'+t)"
+          rclone copyto new.txt "montazh:$P" && echo "::notice::залит $P"
