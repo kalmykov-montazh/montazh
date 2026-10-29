@@ -1,0 +1,79 @@
+name: Исходник лонга вне «Монтаж!» — распознать и найти старые шортсы
+
+# 29.10.2026: «Год в Испании» и «Соцсети» — исходники лежат в «Резерв с компьютера/Ютуб» (вне «Монтаж!», 13–16 ГБ).
+# Файл не скачивается: rclone serve http отдаёт его ffmpeg кусками. Делает:
+#  - сведения о видео и 6 кадров;
+#  - распознавание всего звука (montage.py ASR_ONLY) → asr_cache.json, plan.json, текст.txt;
+#  - где в исходнике каждый старый шортс из папки shorts (по звуку, speed);
+# Всё кладёт в «Брокер/работа/Исходник - <name>/» и в ветку vygruzka (для Claude).
+
+on:
+  workflow_dispatch:
+    inputs:
+      src:
+        description: "Путь от корня Диска, например Резерв с компьютера/Ютуб/Шортсы Год в Испании/год в Испании.mp4"
+        required: true
+      name:
+        description: "Короткое имя, например Год в Испании"
+        required: true
+      shorts:
+        description: "Папка старых шортсов внутри «Монтаж!» (пусто — не искать)"
+        required: false
+        default: ""
+      speed:
+        description: "Ускорение старых шортсов"
+        required: false
+        default: "1.2"
+
+permissions:
+  contents: write
+
+jobs:
+  a:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Раздать исходник по http
+        env:
+          SRC: ${{ inputs.src }}
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          D=$(dirname "$SRC")
+          nohup rclone serve http "ves:$D" --addr 127.0.0.1:8088 --read-only --buffer-size 64M > serve.log 2>&1 &
+          sleep 8
+          F=$(basename "$SRC"); U="http://127.0.0.1:8088/$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$F")"
+          echo "U=$U" >> "$GITHUB_ENV"
+          ffprobe -v error -show_entries format=duration,size:stream=codec_type,codec_name,width,height,r_frame_rate,color_transfer -of compact "$U" | sed 's/^/::notice::/'
+      - name: Кадры
+        run: |
+          mkdir -p out/kadry; D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$U")
+          for k in 1 2 3 4 5 6; do t=$(python3 -c "print($D*$k/7)"); ffmpeg -v error -y -ss $t -i "$U" -frames:v 1 -vf scale=640:-2 out/kadry/k$k.jpg; done
+      - name: Распознать
+        run: |
+          mkdir -p w; ASR_ONLY=1 python scripts/montage.py "$U" "$PWD/w" > asr.log 2>&1 || { tail -20 asr.log; exit 1; }
+          cp w/asr_cache.json w/plan.json w/текст.txt out/
+          echo "::notice::кусков $(wc -l < w/текст.txt)"
+      - name: Найти старые шортсы
+        if: inputs.shorts != ''
+        env:
+          SH: ${{ inputs.shorts }}
+          SP: ${{ inputs.speed }}
+        run: |
+          : > out/mesta.txt
+          rclone lsf "montazh:$SH" -R --files-only --include '!!! *.mp4' | while read -r f; do
+            rclone copyto "montazh:$SH/$f" s.mp4
+            r=$(python3 scripts/nayti_kusok.py w/a.wav s.mp4 "$SP" 2>&1 | tail -1); echo "$f | $r" >> out/mesta.txt; echo "::notice::$f: $r"; done
+      - name: На Диск и в ветку
+        env:
+          NAME: ${{ inputs.name }}
+        run: |
+          rclone copy out "montazh:Брокер/работа/Исходник - $NAME" --exclude 'kadry/**'
+          cd out; git init -q; git checkout -q -b vygruzka; git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "istochnik $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka
