@@ -122,6 +122,8 @@ PROBA = json.load(open(f'{OUT}/slova.json')) if os.path.exists(f'{OUT}/slova.jso
 SPECJ = json.load(open(os.environ['SPEC'], encoding='utf-8')) if os.environ.get('SPEC') and os.path.exists(os.environ['SPEC']) else {}
 if SPECJ and not PROBA.get('punch'):
     PROBA['punch'] = [str(k).lower() for k in (SPECJ.get('punch') or SPECJ.get('keys') or [])]
+# "waves": 0…1 — сила волн и наездов (29.10.2026: «Год в Испании» в полный рост — при волне голова уходила под плашки, ставим 0)
+WSCALE = float(SPECJ.get('waves', 1)) if SPECJ else 1.0
 if SPECJ.get('zoom') and not os.environ.get('ZMAX'):
     os.environ['ZMAX'] = str(SPECJ['zoom'])
 if os.environ.get('NO_TRIM_EDGES'): kept_edges = False
@@ -327,8 +329,8 @@ if PROBA.get('punch'):
 json.dump([round(a, 3) for a, b in PUNCH], open(f'{OUT}/punch.json', 'w'))   # для звуков «вжух» в overlay.py
 def punch_at(t):
     for a, b in PUNCH:
-        if a <= t <= b: return 1 + 0.08 * min(1, (t - a) / 0.15)
-        if b < t < b + 0.45: return 1 + 0.08 * (1 - ease((t - b) / 0.45))
+        if a <= t <= b: return 1 + 0.08 * WSCALE * min(1, (t - a) / 0.15)
+        if b < t < b + 0.45: return 1 + 0.08 * WSCALE * (1 - ease((t - b) / 0.45))
     return 1.0
 
 # картинка в картинке: PIP=pip.json {"from": raw_t, "to": raw_t, "segs": [{"file","ss","crop","credit"}]}
@@ -468,6 +470,8 @@ TRANS = 0.5   # длительность плавного перехода кр�
 def ease(x):
     x = min(1, max(0, x)); return 0.5 - 0.5 * math.cos(math.pi * x)
 def zoom_at(t):
+    return 1 + (_zoom_at(t) - 1) * WSCALE
+def _zoom_at(t):
     for (t0, z0), (t1, z1) in zip(keys, keys[1:]):
         if t <= t1:
             return z0 + (z1 - z0) * ease((t - t0) / (t1 - t0))
