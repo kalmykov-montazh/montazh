@@ -5,7 +5,7 @@ name: Исходник лонга вне «Монтаж!» — распозна�
 #  - сведения о видео и 6 кадров;
 #  - распознавание всего звука (montage.py ASR_ONLY) → asr_cache.json, plan.json, текст.txt;
 #  - где в исходнике каждый старый шортс из папки shorts (по звуку, speed);
-# Всё кладёт в «Брокер/работа/Исходник - <name>/» и в ветку vygruzka (для Claude).
+# Всё кладёт в «Брокер/работа/Исходник - <name>/» и в ветку ist-<номер запуска> (для Claude).
 
 on:
   workflow_dispatch:
@@ -76,4 +76,4 @@ jobs:
           rclone copy out "montazh:Брокер/работа/Исходник - $NAME" --exclude 'kadry/**'
           cd out; git init -q; git checkout -q -b vygruzka; git config user.name bot; git config user.email bot@x
           git add -A; git commit -qm "istochnik $GITHUB_RUN_ID"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka:ist-$GITHUB_RUN_ID
