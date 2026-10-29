@@ -36,9 +36,12 @@ jobs:
         run: |
           sudo apt-get install -y -qq ffmpeg > /dev/null
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
-          nohup rclone serve http "ves:$(dirname "$SRC")" --addr 127.0.0.1:8088 --read-only --buffer-size 64M > serve.log 2>&1 &
-          sleep 8
-          export U="http://127.0.0.1:8088/$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$(basename "$SRC")")"
+          # 29.10.2026: чтение по http с перемоткой шло часами — освобождаем место на машине и качаем файл целиком (быстро)
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost 2>/dev/null || true
+          df -h / | tail -1 | sed 's/^/::notice::место /'
+          s=$(date +%s); rclone copyto "ves:$SRC" src.mp4 --multi-thread-streams 8 --multi-thread-cutoff 64M
+          echo "::notice::скачано за $(( $(date +%s) - s )) с, $(du -h src.mp4 | cut -f1)"
+          export U="$PWD/src.mp4"
           python3 - <<'PY'
           import json, os, subprocess
           U = os.environ['U']; segs = json.loads(os.environ['SEGS']); name = os.environ['NAME']
@@ -50,8 +53,8 @@ jobs:
                   fl += f'[{i}:v]fps=30,setpts=PTS-STARTPTS[v{i}];[{i}:a]asetpts=PTS-STARTPTS,afade=t=in:d=0.015,afade=t=out:st={d - 0.02:.3f}:d=0.02[a{i}];'
               n = len(ss); fl += ''.join(f'[v{i}][a{i}]' for i in range(n)) + f'concat=n={n}:v=1:a=1[v][a]'
               out = f'{name} {k}.mp4'
-              r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-filter_complex', fl, '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-preset', 'fast',
-                                  '-crf', '15', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', out], capture_output=True, text=True)
+              r = subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-filter_complex', fl, '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-preset', 'veryfast',
+                                  '-crf', '16', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', out], capture_output=True, text=True)
               if r.returncode: print(f'::error::{k}: {r.stderr[-400:]}'); continue
               du = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out], capture_output=True, text=True).stdout.strip()
               subprocess.run(['rclone', 'copyto', out, f'montazh:Брокер/Куски/{out}'], check=True, stdin=subprocess.DEVNULL)
