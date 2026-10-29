@@ -96,6 +96,11 @@ for a, b in segs:
     sat = (fr.max(3) - fr.min(3)).mean((1, 2))   # у слайдов сверху цветная полоса (насыщенность ~200), у крупного плана ~18
     sl = (sat > 100).astype(int)
     if job.get('always_slide'): sl[:] = 1   # 28.10.2026: «Штрафы» — у слайдов нет цветной полосы, крупных планов нет
+    if job.get('slide_dark'):   # 29.10.2026: «Штрафы» — слайд узнаём по тёмно-синему фону слева сверху; светлая стена = камера на весь экран
+        raw2 = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{a:.3f}', '-to', f'{b:.3f}', '-i', LONG, '-vf', 'fps=30,crop=900:300:120:120,scale=90:30,format=gray',
+                               '-f', 'rawvideo', '-'], capture_output=True).stdout
+        lum = np.frombuffer(raw2, np.uint8).reshape(-1, 30, 90).astype(float).mean((1, 2))
+        k = min(len(lum), len(sl)); sl[:k] = (lum[:k] < 90).astype(int); print(f'яркость слева сверху: мин {lum.min():.0f} макс {lum.max():.0f}, слайд {sl.mean():.0%}', flush=True)
     sm = sl.copy()   # одиночные кадры-выбросы (1–2 кадра) убираем, границы остаются точными
     for i in range(2, len(sl) - 2):
         if sl[i - 2] == sl[i + 2] != sl[i] and (sl[i - 1] == sl[i - 2] or sl[i + 1] == sl[i + 2]): sm[i] = sl[i - 2]

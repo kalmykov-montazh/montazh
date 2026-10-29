@@ -43,5 +43,5 @@
    "bot": "ПРИШЁЛ ШТРАФ?|ПЛАТИТЕ ВДВОЕ МЕНЬШЕ"
   }
  },
- "always_slide": true
+ "slide_dark": true
 }

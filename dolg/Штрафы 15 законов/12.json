@@ -43,5 +43,5 @@
    "bot": "МУСОР|МИМО КОНТЕЙНЕРА"
   }
  },
- "always_slide": true
+ "slide_dark": true
 }
