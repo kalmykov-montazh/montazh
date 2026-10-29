@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 # Стиль v2: без мультяшных эмодзи. Фон — размытый кадр самого ролика, стеклянные карточки,
 # линейные иконки, документ «как настоящий», маркер, кольцо-таймер, блик.
@@ -7,11 +8,23 @@ W, H = 1080, 1920
 BLK = "/usr/share/fonts/opentype/inter/Inter-Black.otf"
 BLD = "/usr/share/fonts/opentype/inter/Inter-Bold.otf"
 SB = "/usr/share/fonts/opentype/inter/Inter-SemiBold.otf"
-GOLD = (240, 190, 90); WH = (255, 250, 242); TERRA = (226, 110, 60); G = (60, 200, 130); R = (235, 70, 60)
+GOLD = (245, 196, 40);  # 29.10.2026 Евгений выбрал фон №1: тёмно-синий + жёлтый (было 240,190,90)
+WH = (255, 250, 242); TERRA = (226, 110, 60); G = (60, 200, 130); R = (235, 70, 60)
 INK = (40, 28, 22); PAPER = (250, 246, 236)
 def F(s, p=BLK): return ImageFont.truetype(p, s)
 
+def navy_bg():
+    """фон сцен с 29.10.2026 (Евгений, вариант 1): тёмно-синий, тонкие линии, жёлтая полоса сверху, края темнее"""
+    im = Image.new("RGBA", (W, H), (14, 27, 52, 255)); d = ImageDraw.Draw(im)
+    for y in range(0, H, 12): d.line([(0, y), (W, y)], fill=(17, 31, 59, 255), width=3)
+    v = Image.new("L", (W // 4, H // 4), 0); ImageDraw.Draw(v).ellipse([-120, 60, W // 4 + 120, H // 4 - 60], fill=255)
+    v = v.filter(ImageFilter.GaussianBlur(70)).resize((W, H))
+    im = Image.composite(im, Image.new("RGBA", (W, H), (7, 14, 30, 255)), v)
+    ImageDraw.Draw(im).rectangle([0, 0, W, 22], fill=(*GOLD, 255))
+    return im
+
 def bg_from(video, t):
+    if os.environ.get("SCENE_BG", "navy") == "navy": return navy_bg()
     raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", video, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
                          capture_output=True).stdout
     im = Image.frombytes("RGB", (W, H), raw).filter(ImageFilter.GaussianBlur(38)).convert("RGBA")
@@ -31,7 +44,7 @@ def glass(dst, box, r=36, border=GOLD, alpha=110):
     m = Image.new("L", reg.size, 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, reg.width - 1, reg.height - 1], r, fill=255)
     dst.paste(reg, box[:2], m)
     ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
-    d.rounded_rectangle(box, r, fill=(255, 240, 220, 26), outline=(*border, alpha + 80), width=3)
+    d.rounded_rectangle(box, r, fill=(8, 18, 38, 215), outline=(*border, alpha + 80), width=3)
     dst.alpha_composite(ov)
 
 def sweep(dst, box, u):   # блик по карточке

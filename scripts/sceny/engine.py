@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 # Шортс из лонга «со сценами v2» (утверждён на «02 Сдаёт не хозяин», 25.10.2026).
 # Вход в рабочей папке: base.mp4 + words_out.json (задача 5С), cover.jpg, config.json (сцены ролика).
@@ -8,7 +9,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 from snd import snd
-from style2 import (W, H, F, BLK, BLD, SB, GOLD, WH, TERRA, G, R, INK, PAPER, glass, sweep, edge_glow, text, kicker,
+from style2 import (navy_bg, W, H, F, BLK, BLD, SB, GOLD, WH, TERRA, G, R, INK, PAPER, glass, sweep, edge_glow, text, kicker,
                     ic_person, ic_key, ic_house, ic_clock, check, cross, badge, nota)
 
 FPS = 30
@@ -79,6 +80,8 @@ _bg = {}
 def scene_bg(src_t):
     k = round(src_t, 1)
     if k in _bg: return _bg[k]
+    if os.environ.get("SCENE_BG", "navy") == "navy":   # 29.10.2026 вариант 1 Евгения — синий фон вместо размытого коричневого кадра
+        _bg[k] = navy_bg(); return _bg[k]
     raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{max(0, src_t):.2f}", "-i", BASE, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
                          capture_output=True).stdout
     if len(raw) < W * H * 3: raw = b"\x00" * (W * H * 3)
