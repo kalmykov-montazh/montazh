@@ -106,6 +106,8 @@ for a, b in segs:
         if sl[i - 2] == sl[i + 2] != sl[i] and (sl[i - 1] == sl[i - 2] or sl[i + 1] == sl[i + 2]): sm[i] = sl[i - 2]
     for i, v in enumerate(sm): modes.append((round(tl + i / 30, 3), int(v)))
     tl += b - a
+if job.get('close_after') is not None:   # 29.10.2026: «Ловушки 18» — в конце куска слайд пустой, дальше крупный план
+    modes = [(t, 0 if t >= float(job['close_after']) else v) for t, v in modes]
 json.dump(modes, open(f'{W}/modes.json', 'w'))
 iv = []; cur = None
 for t, v in modes:
