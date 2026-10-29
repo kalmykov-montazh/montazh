@@ -62,10 +62,11 @@
    "shift": -40,
    "items": [
     {
-     "type": "big",
+     "type": "card",
      "at": "B1",
-     "text": "B1|испанский",
-     "size": 40
+     "text": "B1 испанский",
+     "size": 38,
+     "maxw": 900
     }
    ],
    "end": "потом уже"
