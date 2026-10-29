@@ -1,0 +1,41 @@
+name: Покадровые листы готовых роликов (проверка Claude)
+
+# 29.10.2026 (правило Евгения): перед «На проверке» Claude смотрит КАЖДЫЙ ролик целиком — лист 2 кадра в секунду
+# с номерами секунд. Листы кладутся в ветку vygruzka, Claude открывает их у себя.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Папки внутри «Монтаж!» через ; (ищет !!! *.mp4)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  l:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Листы
+        env:
+          P: ${{ inputs.folders }}
+        run: |
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core > /dev/null
+          mkdir out; IFS=';' read -ra ps <<< "$P"; i=0
+          for p in "${ps[@]}"; do
+            rclone lsf "montazh:$p" -R --files-only --include '!!! *.mp4' | while read -r f; do i=$((i+1))
+              rclone copyto "montazh:$p/$f" v.mp4; n=$(printf %02d $RANDOM); b=$(basename "$f" .mp4)
+              ffmpeg -v error -y -i v.mp4 -vf "fps=2,scale=135:240,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t*2/2\:d}.%{eif\:mod(t*2\,2)*5\:d}':x=3:y=3:fontsize=18:fontcolor=yellow:box=1:boxcolor=black,tile=20x8" "out/${b}_%02d.jpg"
+              echo "$p/$f" > "out/${b}.txt"; done
+          done
+          cd out; git init -q; git checkout -q -b vygruzka; git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "listy $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" vygruzka
