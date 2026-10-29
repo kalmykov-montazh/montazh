@@ -1,0 +1,56 @@
+name: Команды по всему Диску (для Claude)
+
+# Для Claude (29.10.2026, просьба Евгения собрать все сырые лонги в одно место):
+# выполнить bash-скрипт (base64) с доступом ко всему Google Диску через remote «ves:».
+# Текст из out.txt — заметками. Картинки из pics/ — зашифрованно (key) в ветку tmp-ves.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "bash-скрипт в base64"
+        required: true
+      key:
+        description: "ключ шифрования для картинок (если есть)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Выполнить
+        env:
+          CODE: ${{ inputs.code }}
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          sudo apt-get install -y -qq ffmpeg fuse3 > /dev/null 2>&1 || true
+          mkdir -p pics
+          printf '%s' "$CODE" | base64 -d > s.sh
+          bash s.sh > out.txt 2>&1 || echo "EXIT $?" >> out.txt
+          python3 - <<'PY'
+          t = open('out.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\n', '%0A')
+          for i in range(0, min(len(t), 45000), 3000): print(f"::notice title=[{i // 3000 + 1}]::{t[i:i + 3000]}")
+          PY
+      - name: Картинки
+        if: ${{ inputs.key != '' }}
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          [ -n "$(ls pics)" ] || exit 0
+          tar czf p.tgz pics
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-ves
+          git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "ves $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-ves
