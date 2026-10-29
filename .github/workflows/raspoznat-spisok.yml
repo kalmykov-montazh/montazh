@@ -1,0 +1,60 @@
+name: 1С. Распознать список роликов (для Claude)
+
+# 29.10.2026: несколько файлов сразу, без общей очереди задачи 1 (там новый запуск отменяет ожидающий).
+
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: "Пути внутри «Монтаж!» через ;"
+        required: true
+
+jobs:
+  find:
+    runs-on: ubuntu-24.04
+    outputs:
+      files: ${{ steps.f.outputs.files }}
+    steps:
+      - id: f
+        env:
+          F: ${{ inputs.files }}
+        run: echo "files=$(python3 -c 'import json,os;print(json.dumps([x for x in os.environ["F"].split(";") if x]))')" >> "$GITHUB_OUTPUT"
+
+  asr:
+    needs: find
+    if: needs.find.outputs.files != '[]' && needs.find.outputs.files != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJSON(needs.find.outputs.files) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+
+      - name: Скачать сырой ролик
+        env:
+          F: ${{ matrix.file }}
+        run: |
+          name=$(basename "$F"); rel="${F#*/}"; stem=$(printf '%s' "${rel%.*}" | sed 's:/: - :g')
+          echo "STEM=$stem" >> "$GITHUB_ENV"
+          mkdir -p raw "work/$stem"
+          rclone copyto "montazh:$F" "raw/$name"
+          echo "RAW=$PWD/raw/$name" >> "$GITHUB_ENV"
+          echo "::notice::$name: $(du -h "raw/$name" | cut -f1), $(ffprobe -v error -show_entries format=duration -of csv=p=0 "raw/$name") с, $(ffprobe -v error -select_streams v -show_entries stream=width,height,color_transfer:stream_side_data=rotation -of csv=p=0 "raw/$name" | tr '\n' ' ')"
+
+      - name: Распознать речь
+        run: |
+          start=$(date +%s)
+          ASR_ONLY=1 python scripts/montage.py "$RAW" "work/$STEM"
+          echo "::notice::Распознано за $(( $(date +%s) - start )) с, кусков: $(wc -l < "work/$STEM/текст.txt")"
+
+      - name: Положить текст на Диск
+        run: |
+          rclone copy "work/$STEM" "montazh:Брокер/работа/$STEM" --include asr_cache.json --include plan.json --include текст.txt
+          echo "::notice::Текст: $(cut -f2,3 "work/$STEM/текст.txt" | tr '\n' ' ' | cut -c1-3500)"
