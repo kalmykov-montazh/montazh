@@ -58,18 +58,21 @@ jobs:
         run: |
           mkdir -p w; ASR_ONLY=1 python scripts/montage.py "$U" "$PWD/w" > asr.log 2>&1 || { tail -20 asr.log; exit 1; }
           cp w/asr_cache.json w/plan.json w/текст.txt out/
+          rclone copy out "montazh:Брокер/работа/Исходник - ${{ inputs.name }}" --exclude 'kadry/**' < /dev/null
           echo "::notice::кусков $(wc -l < w/текст.txt)"
       - name: Найти старые шортсы
         if: inputs.shorts != ''
+        continue-on-error: true
         env:
           SH: ${{ inputs.shorts }}
           SP: ${{ inputs.speed }}
         run: |
           : > out/mesta.txt
           rclone lsf "montazh:$SH" -R --files-only --include '!!! *.mp4' | while read -r f; do
-            rclone copyto "montazh:$SH/$f" s.mp4
-            r=$(python3 scripts/nayti_kusok.py w/a.wav s.mp4 "$SP" 2>&1 | tail -1); echo "$f | $r" >> out/mesta.txt; echo "::notice::$f: $r"; done
+            rclone copyto "montazh:$SH/$f" s.mp4 < /dev/null
+            r=$(python3 scripts/nayti_kusok.py w/a.wav s.mp4 "$SP" < /dev/null 2>&1 | tail -1 || true); echo "$f | $r" >> out/mesta.txt; echo "::notice::$f: $r"; done
       - name: На Диск и в ветку
+        if: always()
         env:
           NAME: ${{ inputs.name }}
         run: |
