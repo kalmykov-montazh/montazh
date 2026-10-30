@@ -92,6 +92,11 @@ for k_, n_ in json.loads(os.environ.get('TRIM', '{}')).items():
             p['b'] = p['words'][n_]['s'] - 0.04
             p['words'] = p['words'][:n_]
             p['text'] = ' '.join(w['w'] for w in p['words'])
+        # 31.10.2026: отрицательное N — срезать первые |N| слов куска (связка или кусок без контекста в начале)
+        elif p['keep'] and f"{p['a']:.3f}-{p['b']:.3f}" == k_ and n_ < 0 and -n_ < len(p['words']):
+            p['a'] = max(p['a'], p['words'][-n_]['s'] - 0.04)
+            p['words'] = p['words'][-n_:]
+            p['text'] = ' '.join(w['w'] for w in p['words'])
 
 # 3. оговорки: кусок, который начинается так же, как следующий, = неудачный дубль
 def norm(t):
