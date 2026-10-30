@@ -72,7 +72,11 @@ tA = (CO_LEN + GAP) if CO_LEN > 0 else COV
 tB = tA + SPL + FRZ
 A_END = tB + (END - SPL) if fz else tA + END
 ASK = CFG.get("ask")
-TT = A_END + (3.6 if ASK else 0.4)
+# 30.10.2026 (Евгений): опрос в конце — не отдельная пауза после речи, а поверх последних ~3 с речи;
+# ролик обрывается сразу после последнего слова (END = последнее слово + 0,25 с, плюс 0,1 с)
+ASK_LEAD = 3.0
+TT = A_END + 0.1 if ASK else A_END + 0.4
+ASK_A = max(A_END - ASK_LEAD, tA + 1.0)
 def m(s): return tA + s if s < SPL else tB + (s - SPL)
 
 # ---- фон сцены ----
@@ -460,7 +464,10 @@ for bd in CFG.get("bands", []):
     if a is None: warn(f"плашка «{bd['text']}» не найдена"); continue
     c = col(bd.get("color", "G")); ok = bd.get("ok", bd.get("color", "G") != "R")
     add(m(a), m(a) + bd.get("dur", 2.0), "band", (lambda dst, u, t0, sc, txt=bd["text"], c=c, ok=ok: band_pill(dst, u, txt, c, ok)), "pop")
-if ASK: add(A_END, TT, "scene", s_ask, "whoosh", s0=END - 0.5)
+if ASK:
+    for s_ in [x for x in TL if x[2] in ("scene", "band") and x[0] >= ASK_A - 0.8]:
+        warn(f"сцена/плашка на {s_[0]:.1f} с попала под опрос в конце — убрал"); TL.remove(s_)
+    add(ASK_A, TT, "scene", s_ask, "whoosh", s0=None)
 # сортировка и разведение пересечений: сцены главнее плашек
 TL.sort(key=lambda s: s[0])
 clean = []
