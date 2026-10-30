@@ -69,7 +69,7 @@ else:
         if p == 'youtube' and not vurl:
             print('youtube: нет shorts.mp4'); continue
         if p == 'threads':
-            media = urls[:10]
+            media = urls[:1]                      # Blotato: в Threads только одна картинка или видео (ошибка 30.10.2026)
         text = cfg['texts'][p]
         if p == 'instagram':                      # Instagram через Blotato: не больше 5 хэштегов
             import re
