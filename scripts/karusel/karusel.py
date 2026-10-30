@@ -70,7 +70,13 @@ else:
             print('youtube: нет shorts.mp4'); continue
         if p == 'threads':
             media = urls[:10]
-        body = {'post': {'accountId': ACC[p], 'content': {'text': cfg['texts'][p], 'mediaUrls': media, 'platform': p},
+        text = cfg['texts'][p]
+        if p == 'instagram':                      # Instagram через Blotato: не больше 5 хэштегов
+            import re
+            tags = re.findall(r'#\S+', text)
+            for t in tags[5:]:
+                text = text.replace(' ' + t, '').replace(t, '')
+        body = {'post': {'accountId': ACC[p], 'content': {'text': text.strip(), 'mediaUrls': media, 'platform': p},
                          'target': target(p, cfg)}, 'scheduledTime': cfg['at']}
         try:
             r = req('POST', '/posts', body)
