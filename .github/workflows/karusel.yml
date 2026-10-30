@@ -1,0 +1,40 @@
+name: Карусель — поставить в Blotato
+
+# Для Claude (30.10.2026): папка карусели на Диске (внутри «Монтаж!»), режим post или status.
+# post — грузит фото и ставит в Instagram, TikTok, Threads (+ YouTube Shorts из shorts.mp4) на время из karusel.json.
+# status — проверяет, вышло ли. Итог пишет в _отправлено.json в той же папке.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: "Папка внутри «Монтаж!», например Брокер/Посты/Карусели/Зима в Валенсии"
+        required: true
+      mode:
+        description: "post или status"
+        required: false
+        default: "post"
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Карусель
+        env:
+          F: ${{ inputs.folder }}
+          M: ${{ inputs.mode }}
+        run: |
+          rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
+          rclone copy "montazh:$F" k --exclude "_превью*"
+          python3 scripts/karusel/karusel.py k "$M" 2>&1 | tee out.txt
+          rclone copyto k/_отправлено.json "montazh:$F/_отправлено.json"
+          python3 - <<'PY'
+          t = open('out.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\n', '%0A')
+          print(f"::notice title=итог::{t[:2900]}")
+          PY
