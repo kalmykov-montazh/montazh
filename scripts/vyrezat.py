@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Вырезать куски из готового ролика по фразам (28.10.2026, задание «проверка перед Готовые»).
 python3 vyrezat.py in.mp4 plan.json cuts.json out.mp4
-cuts.json: {"cut": [{"from": "я делал видео", "to": "совсем свежее"}], "end_after": "но добрые", "start_at": "фраза"}
+cuts.json: {"cut": [{"from": "я делал видео", "to": "совсем свежее"}], "end_after": "но добрые", "start_at": "фраза", "hold": 2.0}
 Время слов — из plan.json распознавания этого же файла (raspoznat.yml)."""
 import json, re, subprocess, sys
 IN, PLAN, CUTS, OUT = sys.argv[1:5]
@@ -32,6 +32,9 @@ for a, b in sorted(holes):
 if end > t: keep.append((t, end))
 print('оставляю', [(round(a, 2), round(b, 2)) for a, b in keep], 'было', round(dur, 1), 'стало', round(sum(b - a for a, b in keep), 1))
 fc = ''.join(f"[0:v]trim={a:.3f}:{b:.3f},setpts=PTS-STARTPTS[v{k}];[0:a]atrim={a:.3f}:{b:.3f},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st={max(0, b - a - 0.03):.3f}:d=0.03[a{k}];" for k, (a, b) in enumerate(keep))
-fc += ''.join(f'[v{k}][a{k}]' for k in range(len(keep))) + f'concat=n={len(keep)}:v=1:a=1[v][a]'
+fc += ''.join(f'[v{k}][a{k}]' for k in range(len(keep))) + f'concat=n={len(keep)}:v=1:a=1[v0c][a0c]'
+H = float(c.get('hold', 0))   # 31.10.2026: застыть на последнем кадре H секунд (призыв в конце не пропадает, когда срезан хвост)
+fc += f';[v0c]tpad=stop_mode=clone:stop_duration={H:.2f}[v];[a0c]apad=pad_dur={H:.2f}[a]' if H > 0 else ';[v0c]null[v];[a0c]anull[a]'
+if H: print('застываю на последнем кадре', H, 'с')
 subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', IN, '-filter_complex', fc, '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '16',
                 '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', OUT], check=True)
