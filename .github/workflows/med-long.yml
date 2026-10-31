@@ -1,0 +1,50 @@
+name: 5Л. Лонг «Медицина в Испании» v2 по частям
+
+# 31.10.2026: два режима, наезды, качание, переходы, главы, вставки, наезд на карточку. Каждая часть (120 с тела) — своя машина.
+# Части кладутся в «Брокер/работа/Лонг Медицина v2/», склейку и звук делает Claude.
+
+on:
+  workflow_dispatch:
+    inputs:
+      parts:
+        description: "Начала частей (с тела) через пробел"
+        required: true
+        default: "0 120 240 360 480 600 720 840 960 1080 1200 1320"
+
+jobs:
+  list:
+    runs-on: ubuntu-24.04
+    outputs:
+      p: ${{ steps.m.outputs.p }}
+    steps:
+      - id: m
+        env:
+          X: ${{ inputs.parts }}
+        run: echo "p=$(python3 -c 'import json,os;print(json.dumps(os.environ["X"].split()))')" >> "$GITHUB_OUTPUT"
+  part:
+    needs: list
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        t: ${{ fromJson(needs.list.outputs.p) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Сырые и модель фона
+        run: |
+          pip install -q onnxruntime
+          rclone copyto "montazh:Брокер/Сырые/Лонги/Медицина в Испании/2026-10-31 15-39-57.mp4" raw.mp4
+          rclone copyto "montazh:Брокер/Сырые/Лонги/Медицина в Испании/Камера 2026-10-31 15-39-57.mp4" cam.mp4
+          curl -fsSL -o rvm.onnx https://github.com/PeterL1n/RobustVideoMatting/releases/download/v1.0.0/rvm_mobilenetv3_fp32.onnx
+      - name: Часть ${{ matrix.t }}
+        run: |
+          T=${{ matrix.t }}; N=$(printf %04d $T)
+          python "dolg/Медицина в Испании/long/render2.py" bp_$N.mp4 $T $((T+120)) 2>&1 | grep -v "Broken pipe\|Error " | tail -3
+          ffprobe -v error -count_frames -select_streams v -show_entries stream=nb_read_frames -of csv=p=0 bp_$N.mp4 | sed 's/^/::notice::кадров /'
+          rclone copyto bp_$N.mp4 "montazh:Брокер/работа/Лонг Медицина v2/bp_$N.mp4"
