@@ -9,10 +9,15 @@ WORK=$(first "работа/Сцены/$TOPIC/$ID" "Брокер/работа/С�
 SH=$(first "Брокер/Готовые/Шортсы/Шортс $TOPIC" "Брокер/Готовые/Шортсы/$TOPIC" "Брокер/Готовые/Шортсы/ШОРТС $TOPIC" "Готовые!/ШОРТС $TOPIC")
 [ -n "$SH" ] || { echo "::error::не нашёл папку шортсов «$TOPIC»"; exit 1; }
 FOLDER=$(rclone lsf "montazh:$SH" --dirs-only | sed 's#/$##' | grep "^$ID " | head -1)
-[ -n "$FOLDER" ] || { echo "::error::нет папки $ID в $SH"; exit 1; }
+SRC="$SH/$FOLDER"
+if [ -z "$FOLDER" ]; then   # 31.10.2026: правка ролика, который лежит в «На проверке» (в «Готовых» его ещё нет)
+  P=$(rclone lsf "montazh:Брокер/На проверке" --dirs-only | sed 's#/$##' | grep -F "Шортс $TOPIC $ID " | head -1)
+  [ -n "$P" ] || { echo "::error::нет папки $ID ни в $SH, ни в «На проверке»"; exit 1; }
+  FOLDER="${P#Шортс $TOPIC }"; SRC="Брокер/На проверке/$P"
+fi
 echo "::notice::основа: $WORK; ролик: $SH/$FOLDER"
 rclone copy "montazh:$WORK" $W --include base.mp4 --include words_out.json
-rclone copy "montazh:$SH/$FOLDER" $W --include обложка.jpg --include упаковка.txt
+rclone copy "montazh:$SRC" $W --include обложка.jpg --include упаковка.txt
 cp $W/обложка.jpg $W/cover.jpg
 cp "sceny/$TOPIC/$ID.json" $W/config.json
 cd $W
@@ -49,7 +54,7 @@ open("упаковка — сцены.txt", "w", encoding="utf-8").write(txt + "
 print(txt)
 PY
 # 28.10.2026 (Евгений): новое — сначала «На проверке»; перемонтаж уже одобренного (файл сцен v2 есть) — на место
-if [ -n "$(rclone lsf "montazh:$SH/$FOLDER/$NAME" 2>/dev/null)" ]; then DST="$SH/$FOLDER"; else DST="Брокер/На проверке/Шортс $TOPIC $FOLDER"; rclone copyto обложка.jpg "montazh:$DST/обложка.jpg"; fi
+if [ -n "$(rclone lsf "montazh:$SRC/$NAME" 2>/dev/null)" ]; then DST="$SRC"; rclone copyto "montazh:$SRC/$NAME" "montazh:Брокер/На удаление (старые версии)/$FOLDER — до правки $(date +%d.%m).mp4" || true; else DST="Брокер/На проверке/Шортс $TOPIC $FOLDER"; rclone copyto обложка.jpg "montazh:$DST/обложка.jpg"; fi
 rclone copyto out.mp4 "montazh:$DST/$NAME"
 rclone copyto "упаковка — сцены.txt" "montazh:$DST/упаковка — сцены.txt"
 rclone lsl "montazh:$DST" | sed 's/^/::notice::/'
