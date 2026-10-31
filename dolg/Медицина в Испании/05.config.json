@@ -1,0 +1,68 @@
+{
+ "series": "МЕДИЦИНА В ИСПАНИИ",
+ "num": "4 ФРАЗЫ",
+ "title": "ДЛЯ ПРИЁМА У ВРАЧА",
+ "scenes": [
+  {
+   "type": "stamp",
+   "from": "первая фраза",
+   "to": "где именно",
+   "kicker": "ФРАЗА 1 — БОЛИТ ЗДЕСЬ",
+   "title": "",
+   "word": "ME DUELE AQUÍ",
+   "color": "GOLD",
+   "stamp_at": "me"
+  },
+  {
+   "type": "stamp",
+   "from": "вторая фраза",
+   "to": "три дня болит",
+   "kicker": "ФРАЗА 2 — УЖЕ 3 ДНЯ",
+   "title": "",
+   "word": "DESDE HACE 3 DÍAS",
+   "color": "GOLD",
+   "stamp_at": "desde"
+  },
+  {
+   "type": "stamp",
+   "from": "третья",
+   "to": "если вы женщина",
+   "kicker": "ФРАЗА 3 — У МЕНЯ АЛЛЕРГИЯ",
+   "title": "",
+   "word": "SOY ALÉRGICO",
+   "color": "R",
+   "stamp_at": "soy"
+  },
+  {
+   "type": "stamp",
+   "from": "и четвёртая фраза",
+   "to": "любить её использовать",
+   "kicker": "ФРАЗА 4 — ПОМЕДЛЕННЕЕ",
+   "title": "",
+   "word": "MÁS DESPACIO",
+   "color": "G",
+   "stamp_at": "más"
+  }
+ ],
+ "bands": [
+  {
+   "at": "Вот",
+   "text": "4 ФРАЗЫ НА ИСПАНСКОМ У ВРАЧА",
+   "color": "GOLD",
+   "ok": true
+  }
+ ],
+ "ask": {
+  "l1": "КАКУЮ ФРАЗУ",
+  "l2": "ЗНАЛИ РАНЬШЕ?"
+ },
+ "keys": [
+  "aquí",
+  "días",
+  "alérgico",
+  "alérgica",
+  "despacio"
+ ],
+ "pack_q": "Какую из этих фраз вы уже знали? Напишите номер",
+ "id": "05"
+}

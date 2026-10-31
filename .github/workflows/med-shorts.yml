@@ -1,0 +1,46 @@
+name: 5М. Шортсы из лонга «Медицина в Испании» (из сырых)
+
+# 31.10.2026: основа строится прямо из сырых записей (новая раскладка OBS, 30 к/с), сцены — scripts/sceny/engine.py.
+# Готовое кладётся в «Брокер/На проверке/Шортс Медицина в Испании NN …». Каждый ролик — отдельная машина.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: "Номера через пробел, например 02 03 04"
+        required: true
+
+jobs:
+  list:
+    runs-on: ubuntu-24.04
+    outputs:
+      ids: ${{ steps.m.outputs.ids }}
+    steps:
+      - id: m
+        env:
+          IDS: ${{ inputs.ids }}
+        run: echo "ids=$(python3 -c 'import json,os;print(json.dumps(os.environ["IDS"].split()))')" >> "$GITHUB_OUTPUT"
+  short:
+    needs: list
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJson(needs.list.outputs.ids) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Сырые и модель фона
+        run: |
+          pip install -q onnxruntime
+          rclone copyto "montazh:Брокер/Сырые/Лонги/Медицина в Испании/2026-10-31 15-39-57.mp4" raw.mp4
+          rclone copyto "montazh:Брокер/Сырые/Лонги/Медицина в Испании/Камера 2026-10-31 15-39-57.mp4" cam.mp4
+          curl -fsSL -o rvm.onnx https://github.com/PeterL1n/RobustVideoMatting/releases/download/v1.0.0/rvm_mobilenetv3_fp32.onnx
+          ls -la raw.mp4 cam.mp4 rvm.onnx
+      - name: Монтаж ${{ matrix.id }}
+        run: bash "dolg/Медицина в Испании/run.sh" "${{ matrix.id }}"
