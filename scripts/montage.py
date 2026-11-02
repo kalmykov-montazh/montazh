@@ -224,7 +224,8 @@ def ts(x):
     return f'{h}:{mi:02d}:{s:05.2f}'
 
 def clean(w):
-    w = w.replace('.', '').replace(',', '').replace('…', '')
+    # 02.11.2026: запятую и точку между цифрами оставляем (28,87 евро; 6,5; 14,5%) — раньше выходило «2887»
+    w = re.sub(r'(?<!\d)[.,]|[.,](?!\d)', '', w).replace('…', '')
     return w
 
 HDR = f"""[Script Info]
