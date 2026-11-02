@@ -133,7 +133,7 @@ def prepare(src, top_need, bot_need):
     if zm < 1:
         sm = np.array(src.resize((int(W * zm), int(H * zm)), Image.LANCZOS))
         px = (W - sm.shape[1]) // 2; py = H - sm.shape[0]
-        ext = cv2.copyMakeBorder(sm, py, 0, px, W - sm.shape[1] - px, cv2.BORDER_REFLECT)
+        ext = cv2.copyMakeBorder(sm, py, 0, px, W - sm.shape[1] - px, cv2.BORDER_REPLICATE)  # 02.11: не REFLECT — зеркалило голову вверх «призраком»
         blur = cv2.GaussianBlur(ext, (0, 0), 25)
         m = np.zeros((H, W), np.float32); m[py:, px:px + sm.shape[1]] = 1
         m = cv2.GaussianBlur(m, (0, 0), 18)[..., None]           # мягкий переход, без рамки
