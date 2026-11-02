@@ -12,8 +12,9 @@ on:
         description: "Файл в папке, из которого брать кадр"
         required: true
       t:
-        description: "Секунда кадра"
-        required: true
+        description: "Секунда кадра (пусто — выбрать лучший кадр самому)"
+        required: false
+        default: ""
       style:
         description: "Стиль 1–7 или название"
         required: true
@@ -55,6 +56,7 @@ jobs:
           SHIFT: ${{ inputs.shift }}
         run: |
           rclone copyto "montazh:$F/$SRC" v.mp4
+          if [ -z "$T" ]; then T=$(python scripts/pick_frame.py v.mp4 pick_tmp.png | grep -o 'cover frame [0-9.]*' | awk '{print $3}'); fi
           ffmpeg -v error -y -ss "$T" -i v.mp4 -frames:v 1 pick.png
           if [ -n "$SHIFT" ]; then
             ffmpeg -v error -y -i pick.png -filter_complex "[0]split[x][y];[x]crop=1080:$SHIFT:0:0,vflip,boxblur=12[t];[y]crop=1080:1920-$SHIFT:0:0[m];[t][m]vstack" p2.png && mv p2.png pick.png

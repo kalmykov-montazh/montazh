@@ -2,7 +2,7 @@
 """Обложка нового стиля (утверждено 21.10.2026), одна команда на все 7 стилей:
 python cover_new.py кадр.png СТИЛЬ "ВЕРХ|..." "НИЗ|..." обложка.jpg
 
-Стили по кругу (чтобы лента была разной):
+Стили по кругу (чтобы лента была разной). С 02.11.2026 золотые 3, 4, 6 убраны — чередуем yellow, whiteyellow, torn, ladder:
   1 yellow       — верх на чёрной плашке, низ жёлтый с чёрной обводкой
   2 whiteyellow  — белый текст, последняя строка жёлтая
   3 gold5        — золото, текст сверху и снизу
@@ -15,8 +15,10 @@ import os, subprocess, sys
 
 D = os.path.dirname(os.path.abspath(__file__))
 SRC, ST, TOP, BOT, OUT = sys.argv[1:6]
-ORDER = ['yellow', 'whiteyellow', 'gold5', 'gold', 'torn', 'goldpill', 'ladder']
+ORDER = ['yellow', 'whiteyellow', 'torn', 'ladder']   # 02.11.2026 Евгений: золотые (gold, gold5, goldpill) убрать — сливаются, плохо видно
 if ST.isdigit(): ST = ORDER[(int(ST) - 1) % len(ORDER)]
+if ST in ('gold', 'gold5', 'goldpill'):
+    sys.exit(f'стиль {ST} убран 02.11.2026 (золото сливается с фоном); бери: {", ".join(ORDER)}')
 py = sys.executable
 top = [x for x in TOP.split('|') if x.strip()]
 bot = [x for x in BOT.split('|') if x.strip()]
