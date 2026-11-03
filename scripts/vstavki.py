@@ -12,8 +12,11 @@ from snd import snd, SR
 
 FONT = os.path.join(os.path.dirname(__file__), "..", "fonts", "montserrat-900.ttf")
 
-def card(src, w, ang, stamp=None, frame=False):
+def card(src, w, ang, stamp=None, frame=False, maxh=250):
     n = Image.open(src).convert("RGBA")
+    if frame and n.height > n.width / 1.25:  # фото обрезаем по центру до 5:4, чтобы не было узкой полоски
+        h2 = round(n.width / 1.25); t = (n.height - h2) // 2; n = n.crop((0, t, n.width, t + h2))
+    if w * n.height / n.width > maxh: w = round(maxh * n.width / n.height)  # высокие картинки не лезут на субтитры
     n = n.resize((w, round(w * n.height / n.width)), Image.LANCZOS)
     if frame:  # белая рамка со скруглением
         b = max(8, w // 40)
@@ -37,6 +40,12 @@ def card(src, w, ang, stamp=None, frame=False):
     c.alpha_composite(sh, (pad + 8, pad + 14)); c = c.filter(ImageFilter.GaussianBlur(10)); c.alpha_composite(n, (pad, pad))
     return c.rotate(ang, expand=True, resample=Image.BICUBIC)
 
+def place(e, size):
+    # slot: br — низ справа, bl — низ слева, mid — центр (тёмно-синие вставки); x/y в спецификации важнее
+    pw, ph = size; sl = e.get("slot", "br")
+    if "x" not in e: e["x"] = {"br": 1080 - pw + 12, "bl": -12, "mid": (1080 - pw) // 2}[sl]
+    if "y" not in e: e["y"] = 1920 - ph + 24 if sl != "mid" else e.get("ymid", 1115) - ph // 2
+
 def cover_frames(video):
     out = subprocess.run(["ffmpeg", "-v", "error", "-i", video, "-frames:v", "20", "-vf", "scale=54:96,format=gray", "-f", "rawvideo", "-"], capture_output=True).stdout
     d = np.frombuffer(out, np.uint8).reshape(-1, 96, 54).astype(int)
@@ -51,11 +60,12 @@ def run(spec, folder, imgdir):
     work = os.path.join("/tmp/vst", name); os.makedirs(work, exist_ok=True)
     ins = spec.get("inserts", [])
     for k, e in enumerate(ins):
-        card(os.path.join(imgdir, e["img"]), e.get("w", 450), e.get("ang", 0), e.get("stamp"), e.get("frame", False)).save(f"{work}/i{k}.png")
+        im = card(os.path.join(imgdir, e["img"]), e.get("w", 450), e.get("ang", 0), e.get("stamp"), e.get("frame", False)); im.save(f"{work}/i{k}.png")
+        place(e, im.size)
     if spec.get("cover"):
         c = spec["cover"]; cv = Image.open(cov).convert("RGBA")
         a = card(os.path.join(imgdir, c["img"]), c.get("w", 450), c.get("ang", 0), c.get("stamp"), c.get("frame", False))
-        cv.alpha_composite(a, (c["x"], c["y"])); cv.convert("RGB").save(f"{work}/cover.jpg", quality=93)
+        place(c, a.size); cv.alpha_composite(a, (c["x"], c["y"])); cv.convert("RGB").save(f"{work}/cover.jpg", quality=93)
     else:
         Image.open(cov).convert("RGB").save(f"{work}/cover.jpg", quality=93)
     a = np.zeros(int((dur + 2) * SR)); w = snd("whoosh")
