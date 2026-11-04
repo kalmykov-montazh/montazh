@@ -16,6 +16,7 @@ PLATFORMS = {'fb': fb.publish}   # текстовые посты ('fbtext') — 
 MAX_PER_RUN = 3
 FB_AHEAD = 4   # на сколько дней вперёд ставить ролики в Facebook (29.10.2026: было «только в день выхода»; растим до 7)
 LOCK = QUEUE / '_идёт.lock'
+LIVE_EARLY = 12   # «сразу»-ролик берём за 12 мин: загрузка и обработка видео в FB ~5–10 мин, выходит около своей минуты
 
 def launch(pw):
     return pw.chromium.launch_persistent_context(
@@ -52,7 +53,7 @@ def run_jobs():
     except Exception as e: log(f"blotato: ошибка {str(e)[:150]}")
     try: crypto_yt.run()                                # YouTube «Всё о крипте» — 1 шортс в день в 18:00
     except Exception as e: log(f"крипто: ошибка {str(e)[:150]}")
-    jobs = []
+    jobs, live, live_soon = [], [], []
     for f in sorted(f for f in QUEUE.glob('*.json') if not f.name.startswith('_')):
         try: j = json.loads(f.read_text(encoding='utf-8-sig'))
         except Exception: continue
@@ -65,10 +66,23 @@ def run_jobs():
                 textposts.mark(j, 'пропущен (опоздание)')
                 log(f"ПРОПУСК текст {j['kind']} {j['at']} — сильно опоздали")
                 continue
+        elif j.get('mode') == 'live':                      # тест 04.11.2026: публикуем сразу, в свою минуту
+            at = datetime.datetime.fromisoformat(f"{j['date']} {j['time'].zfill(5)}")
+            if datetime.datetime.now() < at - datetime.timedelta(minutes=LIVE_EARLY):
+                live_soon.append(at)
+                continue                                   # ещё рано
+            live.append(f)
+            continue
         elif j.get('date', '') > (datetime.date.today() + datetime.timedelta(days=FB_AHEAD)).isoformat() \
                 and not j.get('ahead'):                    # "ahead": true — разовая постановка заранее (тест 29.10.2026)
             continue                                       # ролик дальше FB_AHEAD дней — ждёт
         jobs.append(f)
+    # «сразу»-ролик подошёл — в этом запуске только он (не ждёт, пока робот ставит отложку на другие дни);
+    # «сразу»-ролик через час-полтора — берём не больше одного другого задания, чтобы не опоздать
+    if live:
+        jobs = live
+    elif any(a - datetime.datetime.now() < datetime.timedelta(minutes=80) for a in live_soon):
+        jobs = jobs[:1]
     if not jobs:
         return
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 3 * 3600:

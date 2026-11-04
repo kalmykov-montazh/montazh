@@ -1,0 +1,37 @@
+name: Робот — залить скрипты на Диск
+
+# Для Claude (04.11.2026): заливает выбранные файлы из robot/ хранилища в «Общее/Робот» на Диске.
+# Перед заливкой кладёт рядом бэкап «<файл>.bak<суффикс>» (если такого ещё нет).
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: "Имена файлов через пробел, например: fb.py planner.py"
+        required: true
+      bak:
+        description: "суффикс бэкапа, например 0411"
+        required: true
+
+jobs:
+  push:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Залить
+        env:
+          F: ${{ inputs.files }}
+          B: ${{ inputs.bak }}
+        run: |
+          for f in $F; do
+            python3 -m py_compile "robot/$f" || { echo "::error::синтаксис $f"; exit 1; }
+          done
+          for f in $F; do
+            D="montazh:Общее/Робот/$f"
+            if [ -z "$(rclone lsf "$D.bak$B" 2>/dev/null)" ]; then rclone copyto "$D" "$D.bak$B" && echo "::notice::бэкап $f.bak$B"; fi
+            rclone copyto "robot/$f" "$D" && echo "::notice::залит $f ($(wc -c < robot/$f) байт)"
+          done

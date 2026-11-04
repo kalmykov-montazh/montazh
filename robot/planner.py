@@ -13,8 +13,33 @@ SLOTS = ['08:15', '10:45', '13:30', '16:30']
 OLD_SLOTS = ['08:20', '13:00', '18:30']
 SLOTS_FROM = datetime.date(2026, 10, 27)
 
+# ТЕСТ 04.11.2026 (решение Евгения): с 07.11 по 20.11 время выхода каждый день плавает на 10–25 мин от слота,
+# а в НЕЧЁТНЫЕ дни робот публикует рилс сразу кнопкой «Опубликовать» в нужную минуту (mode = live),
+# в чётные — как раньше, через «Запланировать» (отложка). Сравниваем медианы. Разбор — файл проекта
+# «Автопостинг и охваты — разбор 04.11.2026». Дни до 07.11 уже разложены — их не трогаем.
+TEST_FROM = datetime.date(2026, 11, 7)
+TEST_TO = datetime.date(2026, 11, 20)
+
 def _slots(day):
-    return SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+    base = SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+    if day < TEST_FROM:
+        return base
+    import random
+    out = []
+    for i, t in enumerate(base):
+        off = random.Random(f"{day.isoformat()}-{i}").choice([-25, -20, -15, -10, 10, 15, 20, 25])
+        dt = datetime.datetime.combine(day, datetime.time(*map(int, t.split(':')))) + datetime.timedelta(minutes=off)
+        out.append(f"{dt:%H:%M}")
+    return out
+
+def _mode(day):
+    return 'live' if TEST_FROM <= day <= TEST_TO and day.day % 2 == 1 else 'schedule'
+
+def _slot_index(day, hhmm):
+    """К какому базовому слоту относится время (слоты разнесены на 2,5+ часа, сдвиг до 25 мин — не перепутать)."""
+    base = SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+    m = lambda t: int(t[:2]) * 60 + int(t[3:5])
+    return min(range(len(base)), key=lambda i: abs(m(base[i]) - m(hhmm)))
 LEAD_MIN = 70                     # минимум минут до выхода: робот забирает задание до 10 мин + ставит ~10 мин + запас
 PLAN = QUEUE / '_план.json'
 ARCHIVE = QUEUE / 'архив'
@@ -66,8 +91,8 @@ def _pending_folders():
 def plan():
     p = _load()
     # слот с ошибкой (ролик не встал) считаем свободным — иначе утро пропадает (22.10.2026)
-    busy = {(v['date'], v['time']) for v in p.values()
-            if v.get('platform', 'fb') == 'fb' and v.get('status') != 'ошибка'}
+    busy = {(v['date'], _slot_index(datetime.date.fromisoformat(v['date']), v['time'].zfill(5))) for v in p.values()
+            if v.get('platform', 'fb') == 'fb' and v.get('status') != 'ошибка' and v.get('date') and v.get('time')}
     skip = set(p) | _pending_folders()
     seen, seen_new = _load_seen(), {}
     new = []
@@ -95,19 +120,20 @@ def plan():
     day = now.date()
     for _, name in new:
         while True:
-            free = [t for t in _slots(day) if (day.isoformat(), t) not in busy and
+            free = [(i, t) for i, t in enumerate(_slots(day)) if (day.isoformat(), i) not in busy and
                     datetime.datetime.combine(day, datetime.time(*map(int, t.split(':')))) >= earliest]
             if free:
-                t = free[0]; break
+                si, t = free[0]; break
             day += datetime.timedelta(days=1)
         ds = day.isoformat()
-        busy.add((ds, t))
-        job = {'platform': 'fb', 'folder': name, 'date': ds, 'time': t}
+        busy.add((ds, si))
+        mode = _mode(day)
+        job = {'platform': 'fb', 'folder': name, 'date': ds, 'time': t, 'mode': mode}
         safe = re.sub(r'[^\w\- ]', '', name)[:40].strip()
         (QUEUE / f"{ds}_{t.replace(':', '')}_fb_{safe}.json").write_text(
             json.dumps(job, ensure_ascii=False), encoding='utf-8')
-        p[name] = {'platform': 'fb', 'date': ds, 'time': t, 'status': 'задание', 'created': f"{now:%Y-%m-%d %H:%M}"}
-        log(f"РАСКЛАДКА fb {ds} {t} — {name}")
+        p[name] = {'platform': 'fb', 'date': ds, 'time': t, 'mode': mode, 'status': 'задание', 'created': f"{now:%Y-%m-%d %H:%M}"}
+        log(f"РАСКЛАДКА fb {ds} {t} ({'сразу' if mode == 'live' else 'отложка'}) — {name}")
     _save(p)
 
 def mark(j, status, time_set=None):

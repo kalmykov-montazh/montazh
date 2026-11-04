@@ -30,6 +30,9 @@ def publish(page, j, folder):
                     if c.count(): human_click(page, c.last); pause(2, 3)
                     if not _cover_open(page): break
     _type_text(page, text)
+    if j.get('mode') == 'live':                    # тест 04.11.2026: сразу, без отложки
+        _publish_now(page, j, folder, text)
+        return
     human_click(page, page.get_by_text('Настройки планирования', exact=True).first)
     _set_date(page, j['date'])
     j['time_set'] = _set_time(page, j['time'])
@@ -40,6 +43,38 @@ def publish(page, j, folder):
     pause(15, 25)
     _debug(page, f"после планирования {folder.name[:30]}")
     _verify(page, text.split('\n')[0][:40], j['time_set'])
+
+def _publish_now(page, j, folder, text):
+    """Рилс выходит сразу кнопкой «Опубликовать» (тест «сразу против отложки», 04.11.2026).
+    После клика повторов нет — чтобы не задвоить ролик. Проверка мягкая: не нашли — только запись в журнал."""
+    _debug(page, f"перед публикацией сразу {folder.name[:30]}")
+    btn = None
+    for name in ('Опубликовать', 'Поделиться'):
+        b = page.locator('[role="dialog"]').get_by_role('button', name=name, exact=True)
+        if not b.count():
+            b = page.get_by_role('button', name=name, exact=True)
+        if b.count():
+            btn = b.last; break
+    if btn is None:
+        raise RuntimeError('не вижу кнопку «Опубликовать» — ролик НЕ вышел, поставить вручную')
+    human_click(page, btn)
+    j['time_set'] = f"{datetime.datetime.now():%H:%M}"
+    log(f"FB СРАЗУ: нажал «Опубликовать» в {j['time_set']} (по плану {j['time']}) — {folder.name}")
+    pause(20, 30)
+    _debug(page, f"после публикации сразу {folder.name[:30]}")
+    key = text.split('\n')[0][:25].strip()
+    url = ('https://www.facebook.com/professional_dashboard/content/content_library/'
+           '?filter=PUBLISHED&post_types[0]=REELS&sort_by=DATE')
+    for _ in range(4):
+        try:
+            page.goto(url, wait_until='domcontentloaded'); pause(10, 15)
+            if key in page.inner_text('body'):
+                log(f"FB СРАЗУ: ролик виден в опубликованных — {key}")
+                return
+        except Exception:
+            pass
+        pause(40, 70)
+    log(f"FB СРАЗУ: в опубликованных пока не вижу (обработка?) — проверить — {key}")
 
 def _upload_video(page, video):
     """Видео в окно «Создание видео Reels». Сначала прямо в поле файла (надёжно),
