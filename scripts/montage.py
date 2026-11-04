@@ -133,11 +133,36 @@ if SPECJ.get('zoom') and not os.environ.get('ZMAX'):
     os.environ['ZMAX'] = str(SPECJ['zoom'])
 if os.environ.get('NO_TRIM_EDGES'): kept_edges = False
 else: kept_edges = True
+# 04.11.2026 (Евгений): «практически во всех роликах срезано первое слово, теряются буквы».
+# whisper ставит начало слова поздно (тихие «с», «ш», «ф» он не слышит), а мы резали за 0,03 с до него.
+# Теперь ищем настоящее начало голоса по громкости: от начала слова идём назад, пока звук громче тишины,
+# и оставляем ещё 0,15 с запаса. Так же для начала каждого куска (там тоже мог срезаться первый звук).
+import wave as _wave, numpy as _np
+try:
+    with _wave.open(wav) as _wf: _A = _np.frombuffer(_wf.readframes(_wf.getnframes()), _np.int16).astype(_np.float32) / 32768
+    _FR = 160   # 10 мс
+    _DB = 20 * _np.log10(_np.sqrt(_np.add.reduceat(_A[:len(_A) // _FR * _FR] ** 2, _np.arange(0, len(_A) // _FR * _FR, _FR)) / _FR) + 1e-9)
+    _FLOOR = float(_np.percentile(_DB, 10))
+except Exception as e_:
+    _DB = None; print('onset skip', e_)
+LEAD = float(os.environ.get('LEAD', '0.15'))
+def onset(t, limit=0.45):
+    # самое раннее место перед t (не дальше limit), где ещё идёт звук этого слова; дальше — тишина
+    if _DB is None: return t - LEAD
+    k = int(t * 100); k0 = max(0, k - int(limit * 100)); thr = _FLOOR + 8
+    while k > k0 and _DB[k - 1] > thr: k -= 1
+    return k / 100 - LEAD
 if kept_edges and kept:
     f0 = kept[0]
-    if f0['words']: f0['a'] = max(f0['a'], f0['words'][0]['s'] - 0.03)
+    if f0['words']: f0['a'] = max(0.0, min(f0['words'][0]['s'] - LEAD, onset(f0['words'][0]['s'])))
+    for p_ in kept[1:]:
+        if p_['words']: p_['a'] = max(0.0, min(p_['a'], onset(p_['words'][0]['s'])))
+    for i_ in range(1, len(kept)):   # куски не должны залезать друг на друга
+        kept[i_]['a'] = max(kept[i_]['a'], kept[i_ - 1]['b'])
     l0 = kept[-1]
-    if l0['words']: l0['b'] = min(l0['b'], l0['words'][-1]['e'] + 0.12)
+    if l0['words']: l0['b'] = min(l0['b'], l0['words'][-1]['e'] + 0.25)
+    print('lead', LEAD, 'start', round(f0['a'], 3))
+    print('slova', json.dumps(PROBA, ensure_ascii=False))
     print('slova', json.dumps(PROBA, ensure_ascii=False))
 
 # 4. таймлайн результата

@@ -151,6 +151,20 @@ jobs:
           else
             grep '^ПОВТОР' dups.txt | head -8 | while read -r l; do echo "::error::$l"; done
           fi
+          # 04.11.2026 (Евгений, «Соцслужбы и мелочи»): вторая проверка на слух — GigaAM слушает готовый звук
+          # независимо от субтитров: дубль фразы, речь без субтитров, обрезанное первое слово. Дольше, но качественно
+          pip install -q sherpa-onnx > /dev/null 2>&1
+          G="$GITHUB_WORKSPACE/models/gigaam"
+          if [ ! -f "$G/encoder.int8.onnx" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/models" && curl -sSL https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19.tar.bz2 | tar xj -C "$GITHUB_WORKSPACE/models" \
+              && mv "$GITHUB_WORKSPACE/models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19" "$G"
+          fi
+          if python "$GITHUB_WORKSPACE/scripts/proverka_zvuka.py" final.mp4 words_out.json "$G" > sluh.txt 2>&1; then
+            echo "::notice::На слух чисто (GigaAM)"
+          else
+            grep -E '^(ПОВТОР|БЕЗ ТИТРОВ|НАЧАЛО)' sluh.txt | head -8 | while read -r l; do echo "::error::$l"; echo "ПОВТОР (на слух) $l" >> dups.txt; done
+          fi
+          grep '^СЛЫШНО' sluh.txt | cut -c1-2900 | sed 's/^/::notice::/' || true
           # 10 кадров сеткой 5×2 — проверить плашки и субтитры глазами (рот и лицо не закрыты, ничего не обрезано)
           mkdir -p k
           for i in 0 1 2 3 4 5 6 7 8 9; do
@@ -195,7 +209,7 @@ jobs:
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
           cp "$SPEC" "$W/spec.json"
           rclone copy "$W" "montazh:Брокер/работа/$STEM" --include fixes.json --include face.json --include spec.json --include words_out.json \
-            --include кадры.jpg --include кандидаты.jpg --include pick.png --include montage.log --include overlay.log --include align.log
+            --include кадры.jpg --include sluh.txt --include кандидаты.jpg --include pick.png --include montage.log --include overlay.log --include align.log
           echo "::notice::Готово: $DEST"
 
       - name: Перенести сырой в папку готового ролика
