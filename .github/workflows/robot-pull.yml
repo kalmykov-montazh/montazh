@@ -22,6 +22,9 @@ jobs:
           rm -rf robot && mkdir -p robot
           rclone copy 'montazh:Общее/Робот' robot --max-depth 1 --max-size 2M --include '*.py' --include '*.pyw' --include '*.json'
           echo "::notice::$(ls robot | tr '\n' ' ')"
+          mkdir -p robot/shagi
+          f=$(rclone lsf 'montazh:Брокер/К публикации/_задания/шаги' --include '*перед планированием*.html' | sort | tail -1)
+          [ -n "$f" ] && rclone copyto "montazh:Брокер/К публикации/_задания/шаги/$f" robot/shagi/last.html && echo "::notice::шаги: $f"
       - name: Сохранить
         run: |
           git config user.name kalmykov-montazh
