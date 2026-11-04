@@ -31,19 +31,35 @@ def resolve(words, dur, ins):
     return out
 
 def main():
-    plan = json.load(open(sys.argv[1]))
+    plan = json.load(open(sys.argv[1])); dry = os.environ.get("DRY") == "1"
     os.makedirs("pics", exist_ok=True)
+    if not os.path.isdir(IMG):
+        rc("copy", f"{B}/Вставки/Предметы", IMG, "--include", "*.jpg"); rc("copy", f"{B}/Вставки/Предметы_ov", f"{IMG}/ov", "--include", "*.jpg")
+        rc("copy", f"{B}/Вставки/Купюры", IMG, "--include", "*.jpg")
+    if dry:   # лист всех картинок плана с подписями — проверить глазами до сборки
+        from PIL import Image, ImageDraw
+        used = sorted({p["cover"]["img"] for p in plan.values() if p.get("cover")} | {i for p in plan.values() for _, i, _ in p["ins"]})
+        tl = []
+        for u in used:
+            try: im = Image.open(f"{IMG}/{u}").convert("RGB")
+            except Exception: print("НЕТ ФАЙЛА", u); continue
+            im.thumbnail((300, 200)); c = Image.new("RGB", (300, 226), (20, 20, 20)); c.paste(im, ((300 - im.width) // 2, 0))
+            ImageDraw.Draw(c).text((4, 208), u, fill=(255, 230, 0)); tl.append(c)
+        for g in range(0, len(tl), 30):
+            sh = Image.new("RGB", (300 * 6, 226 * 5)); [sh.paste(t, ((j % 6) * 300, (j // 6) * 226)) for j, t in enumerate(tl[g:g + 30])]
+            sh.save(f"pics/_imgs{g // 30}.jpg", quality=80)
     for name, p in plan.items():
         print("==", name, flush=True)
         d = f"v/{name}"; os.makedirs(d, exist_ok=True)
         try:
-            rc("copy", f"{B}/На проверке/{name}", d, "--include", f"!!! {name}.mp4", "--include", "обложка.jpg")
+            if not dry: rc("copy", f"{B}/На проверке/{name}", d, "--include", f"!!! {name}.mp4", "--include", "обложка.jpg")
             rc("copyto", f"{B}/работа/{p['key']}/words_out.json", f"{d}/words.json")
             words = json.load(open(f"{d}/words.json"))
-            dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f"{d}/!!! {name}.mp4"], capture_output=True, text=True).stdout)
+            dur = words[-1]['e'] + 0.3 if dry else float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f"{d}/!!! {name}.mp4"], capture_output=True, text=True).stdout)
             spec = {"cover": p.get("cover"), "inserts": resolve(words, dur, p["ins"])}
             if spec["cover"]: spec["cover"] = {"slot": "br", "ang": 7, "w": 470, "frame": True, **spec["cover"]}
             print("  ", [(e["t0"], e["img"]) for e in spec["inserts"]], flush=True)
+            if dry: continue
             out, cov, nc = vstavki.run(spec, d, IMG)
             rc("copyto", out, f"{B}/На проверке/{name}/!!! {name}.mp4")
             rc("copyto", cov, f"{B}/На проверке/{name}/обложка.jpg")
