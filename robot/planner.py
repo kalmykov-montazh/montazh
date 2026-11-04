@@ -60,6 +60,10 @@ def _save(p):
 # и ставит её не раньше чем через SETTLE_MIN минут, если за это время имя и размер не менялись.
 # Переименовали или ролик ещё докачивается — отсчёт начинается заново.
 SETTLE_MIN = 5
+# ПАУЗА «ПАЛЬМА» (решение Евгения 04.11.2026): ролики, в имени которых есть «ПАЛЬМА», не публикуем
+# до его особого распоряжения. Робот такие папки не ставит, даже если они попали в «К публикации».
+# Снять паузу — только по слову Евгения: PALMA_PAUSE = False.
+PALMA_PAUSE = True
 SEEN = QUEUE / '_увидел.json'
 
 def _load_seen():
@@ -98,6 +102,11 @@ def plan():
     new = []
     for d in PUB.iterdir():
         if not d.is_dir() or d.name.startswith('_') or d.name in skip:
+            continue
+        if PALMA_PAUSE and 'ПАЛЬМА' in d.name.upper():
+            if d.name not in seen:
+                log(f"ПАУЗА ПАЛЬМА: не ставлю — {d.name}")
+            seen_new[d.name] = seen.get(d.name) or [time.time(), 0]
             continue
         m = NUM.match(d.name)
         if m and any(f.suffix.lower() == '.mp4' for f in d.iterdir()):
