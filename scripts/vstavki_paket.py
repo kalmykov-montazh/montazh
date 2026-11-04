@@ -32,6 +32,8 @@ def resolve(words, dur, ins):
 
 def main():
     plan = json.load(open(sys.argv[1])); dry = os.environ.get("DRY") == "1"
+    if os.environ.get("PART"):   # «2/4» — вторая четверть роликов (параллельные задачи)
+        i, n = map(int, os.environ["PART"].split("/")); ks = sorted(plan); plan = {k: plan[k] for k in ks[(i - 1)::n]}
     os.makedirs("pics", exist_ok=True)
     if not os.path.isdir(IMG):
         rc("copy", f"{B}/Вставки/Предметы", IMG, "--include", "*.jpg"); rc("copy", f"{B}/Вставки/Предметы_ov", f"{IMG}/ov", "--include", "*.jpg")
