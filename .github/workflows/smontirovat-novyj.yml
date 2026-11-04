@@ -146,10 +146,13 @@ jobs:
           echo "::notice::Длина $(printf '%.1f' "$dur") с, битрейт $((br / 1000000)) Мбит/с, размер $(du -h "$V" | cut -f1)"
           [ "$br" -ge 8000000 ] || echo "::warning::Битрейт ниже 8 Мбит/с"
           cd "$W"
-          if python "$GITHUB_WORKSPACE/scripts/check_dups.py" ролик_B.mp4 "$WMODEL" > dups.txt 2> /dev/null; then
-            echo "::notice::Повторов нет"; : > dups.txt
+          # 04.11.2026: старая проверка по тексту whisper ловит риторику («за пару месяцев… за пару лет») —
+          # теперь она только предупреждает, а ролик останавливает проверка на слух (GigaAM) ниже
+          : > dups.txt
+          if python "$GITHUB_WORKSPACE/scripts/check_dups.py" ролик_B.mp4 "$WMODEL" > dups_old.txt 2> /dev/null; then
+            echo "::notice::Повторов по тексту нет"
           else
-            grep '^ПОВТОР' dups.txt | head -8 | while read -r l; do echo "::error::$l"; done
+            grep '^ПОВТОР' dups_old.txt | head -8 | while read -r l; do echo "::warning::(по тексту, только к сведению) $l"; done
           fi
           # 04.11.2026 (Евгений, «Соцслужбы и мелочи»): вторая проверка на слух — GigaAM слушает готовый звук
           # независимо от субтитров: дубль фразы, речь без субтитров, обрезанное первое слово. Дольше, но качественно
