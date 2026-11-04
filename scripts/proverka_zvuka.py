@@ -47,6 +47,9 @@ def words_of(r, a):
         pos = end
     return out
 
+NUMW = re.compile(r'^(ноль|один|одна|одно|два|две|три|четыр|пят|шест|сем|восем|девят|десят|одиннадцат|двенадцат|двадцат|тридцат|сорок|пятьдесят|шестьдесят|семьдесят|восемьдесят|девяност|сто|двест|трист|четырест|пятьсот|шестьсот|семьсот|восемьсот|девятьсот|тысяч|миллион|евро|цент|процент|год|градус|раз|первого|второго|тре|четверт|пято|шесто|седьмо|восьмо|девято|половин)')
+def is_num(w): return bool(NUMW.match(w))
+
 def norm(w):
     return re.sub(r'[^\w]', '', w.lower().replace('ё', 'е'))
 
@@ -64,6 +67,7 @@ def main():
         for i in range(len(toks) - n):
             g = toks[i:i + n]
             if any(len(x) < 2 for x in g) or sum(len(x) for x in g) < 8: continue
+            if sum(is_num(x) for x in g) >= len(g) - 1: continue   # «тысяча сто… тысяча сто семьдесят», «пять евро… тридцать пять евро» — числа, не дубль
             for j in range(i + n, min(len(toks) - n + 1, i + n + 12)):
                 if toks[j:j + n] == g and ws[j]['s'] - ws[i]['s'] < 5 and (i, j) not in seen:
                     # «нужны, нужны» и подобное — одно слово, сюда не попадает (n ≥ 2)
@@ -73,7 +77,7 @@ def main():
 
     # 2. речь без субтитров (дубль, который whisper не записал)
     if wo:
-        cov = [(w['s'] - 0.35, w['e'] + 0.35) for w in wo]
+        cov = [(w['s'] - 0.35, w['e'] + (0.9 if re.search(r'[A-Za-z]', w['w']) else 0.35)) for w in wo]
         run = []
         def flush():
             if len(run) >= 2 and run[-1]['e'] - run[0]['s'] > 0.4:
