@@ -1,0 +1,32 @@
+name: Робот — забрать скрипты с Диска (только чтение Диска)
+
+# Для Claude (04.11.2026): копирует *.py/*.json/*.txt из «Общее/Робот» (без бэкапов) в папку robot/ хранилища.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скопировать
+        run: |
+          rm -rf robot && mkdir -p robot
+          rclone copy 'montazh:Общее/Робот' robot --max-depth 1 --max-size 2M --include '*.py' --include '*.pyw' --include '*.json'
+          echo "::notice::$(ls robot | tr '\n' ' ')"
+      - name: Сохранить
+        run: |
+          git config user.name kalmykov-montazh
+          git config user.email kalmykov-montazh@users.noreply.github.com
+          git add -A robot
+          git diff --cached --quiet && exit 0
+          git commit -m "Робот: скрипты с Диска [skip ci]"
+          git push
