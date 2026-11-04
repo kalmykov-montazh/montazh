@@ -153,7 +153,7 @@ jobs:
           fi
           # 04.11.2026 (Евгений, «Соцслужбы и мелочи»): вторая проверка на слух — GigaAM слушает готовый звук
           # независимо от субтитров: дубль фразы, речь без субтитров, обрезанное первое слово. Дольше, но качественно
-          pip install -q sherpa-onnx > /dev/null 2>&1
+          pip install -q sherpa-onnx 2>/dev/null || pip install -q --break-system-packages sherpa-onnx
           G="$GITHUB_WORKSPACE/models/gigaam"
           if [ ! -f "$G/encoder.int8.onnx" ]; then
             mkdir -p "$GITHUB_WORKSPACE/models" && curl -sSL https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19.tar.bz2 | tar xj -C "$GITHUB_WORKSPACE/models" \
