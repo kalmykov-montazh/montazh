@@ -212,7 +212,9 @@ EYE_T = 0.40                                  # куда ставим глаза
 NATURAL = not os.environ.get('ZMAX')
 ZB = 1.0 if NATURAL else min(float(os.environ['ZMAX']), max(1.0, (1 - 0.45) / max(0.05, 1 - EYE)))   # больше 1.15 — мыло
 ANC = min(CHIN + 0.02, 0.95)   # NATURAL: приближаем к точке под подбородком — лицо растёт вверх, субтитры не наезжают
-SWAY = float(os.environ.get('SWAY', '0.03'))   # NATURAL: камера «ходит» влево-вправо, доля ширины при полном приближении
+# 04.11.2026 (Евгений): покачивание влево-вправо убрано для всех новых роликов — «как будто я шатаюсь». Зум больше-меньше остаётся.
+# Было 0.03 (доля ширины при полном приближении). Вернуть — только по слову Евгения.
+SWAY = float(os.environ.get('SWAY', '0'))
 LEVELS = [ZB, ZB * 1.06, ZB * 1.12]
 def ycrop(z): return min(max((ANC * (z - 1)) if NATURAL else (EYE * z - EYE_T), 0), z - 1)
 chin_out = max(CHIN * z - ycrop(z) for z in LEVELS)
