@@ -68,7 +68,8 @@ def main():
                 if toks[j:j + n] == g and ws[j]['s'] - ws[i]['s'] < 5 and (i, j) not in seen:
                     # «нужны, нужны» и подобное — одно слово, сюда не попадает (n ≥ 2)
                     seen.update((i + k, j + k) for k in range(n))
-                    bad.append(f"ПОВТОР {ws[i]['s']:.1f} с и {ws[j]['s']:.1f} с: «{' '.join(w['w'] for w in ws[i:i + n])}»")
+                    ctx = ' '.join(w['w'] for w in ws[max(0, i - 3):j + n + 3])
+                    bad.append(f"ПОВТОР {ws[i]['s']:.1f} с и {ws[j]['s']:.1f} с: «{' '.join(w['w'] for w in ws[i:i + n])}» … {ctx}")
 
     # 2. речь без субтитров (дубль, который whisper не записал)
     if wo:
