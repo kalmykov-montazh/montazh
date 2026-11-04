@@ -1,7 +1,7 @@
 {
  "num": "ШТРАФ",
  "title": "МУСОР МИМО КОНТЕЙНЕРА",
- "title_until": "3000 евро",
+ "title_until": "возле мусорки",
  "scenes": [
   {
    "type": "stamp",
