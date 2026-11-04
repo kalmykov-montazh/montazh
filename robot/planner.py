@@ -1,0 +1,151 @@
+# Автораскладка и автоочистка (решение Евгения 15.10.2026).
+# Раскладка: каждая папка в «К публикации!», у которой имя начинается с номера («1 03 Меньше года на защите»),
+# ставится в Facebook на ближайший свободный слот (с 27.10.2026 — 8:15 / 10:45 / 13:30 / 16:30). Порядок — по первому числу в имени.
+# Папку без номера не трогаем. Папки НЕ переносим в «Опубликовано!» (Евгений переносит сам, пока остальные
+# соцсети не на автопостинге). Что уже поставлено — помним в «_задания\_план.json», чтобы не ставить второй раз.
+# Очистка: выполненное и старые ошибки — в «_задания\архив», архив и скриншоты шагов старше 14 дней удаляются.
+import json, re, time, datetime, shutil
+from common import PUB, QUEUE, log
+
+# 4 ролика в день с 27.10.2026 (решение Евгения 26.10.2026): 8:15 / 10:45 / 13:30 / 16:30.
+# До 27.10 — старые 3 слота, чтобы 26.10 не трогать.
+SLOTS = ['08:15', '10:45', '13:30', '16:30']
+OLD_SLOTS = ['08:20', '13:00', '18:30']
+SLOTS_FROM = datetime.date(2026, 10, 27)
+
+def _slots(day):
+    return SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+LEAD_MIN = 70                     # минимум минут до выхода: робот забирает задание до 10 мин + ставит ~10 мин + запас
+PLAN = QUEUE / '_план.json'
+ARCHIVE = QUEUE / 'архив'
+NUM = re.compile(r'^\s*(\d+)\s+\S')
+
+def _load():
+    try:
+        return json.loads(PLAN.read_text(encoding='utf-8'))
+    except Exception:
+        return {}
+
+def _save(p):
+    PLAN.write_text(json.dumps(p, ensure_ascii=False, indent=1), encoding='utf-8')
+
+# Пауза перед раскладкой (28.10.2026): 02:44 робот схватил папку «03 Без документов не сдадут» в ту же минуту,
+# как Евгений её вставил, — а он тут же переименовал её в «1 03 …», и задания FB/Blotato упали (файла по старому пути нет).
+# Теперь новую папку робот сначала только запоминает (имя + размер роликов) в «_задания\_увидел.json»
+# и ставит её не раньше чем через SETTLE_MIN минут, если за это время имя и размер не менялись.
+# Переименовали или ролик ещё докачивается — отсчёт начинается заново.
+SETTLE_MIN = 5
+SEEN = QUEUE / '_увидел.json'
+
+def _load_seen():
+    try:
+        return json.loads(SEEN.read_text(encoding='utf-8'))
+    except Exception:
+        return {}
+
+def _save_seen(s):
+    try:
+        if s != _load_seen():
+            SEEN.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding='utf-8')
+    except Exception:
+        pass
+
+def _pending_folders():
+    # любые задания (ждут, выполнены, с ошибкой, в архиве) — папку второй раз не ставим
+    s = set()
+    for d in (QUEUE, ARCHIVE):
+        if not d.exists():
+            continue
+        for f in d.iterdir():
+            if f.name.startswith('_') or f.suffix not in ('.json', '.done', '.error'):
+                continue
+            try: s.add(json.loads(f.read_text(encoding='utf-8-sig'))['folder'])
+            except Exception: pass
+    return s
+
+def plan():
+    p = _load()
+    # слот с ошибкой (ролик не встал) считаем свободным — иначе утро пропадает (22.10.2026)
+    busy = {(v['date'], v['time']) for v in p.values()
+            if v.get('platform', 'fb') == 'fb' and v.get('status') != 'ошибка'}
+    skip = set(p) | _pending_folders()
+    seen, seen_new = _load_seen(), {}
+    new = []
+    for d in PUB.iterdir():
+        if not d.is_dir() or d.name.startswith('_') or d.name in skip:
+            continue
+        m = NUM.match(d.name)
+        if m and any(f.suffix.lower() == '.mp4' for f in d.iterdir()):
+            sizes = sum(f.stat().st_size for f in d.iterdir() if f.suffix.lower() == '.mp4')
+            s = seen.get(d.name)
+            if not s or s[1] != sizes:
+                seen_new[d.name] = [time.time(), sizes]
+                log(f"ВИЖУ новую папку, жду {SETTLE_MIN} мин без изменений — {d.name}")
+                continue
+            seen_new[d.name] = s
+            if time.time() - s[0] < SETTLE_MIN * 60:
+                continue
+            new.append((int(m.group(1)), d.name))
+    _save_seen(seen_new)
+    if not new:
+        return
+    new.sort()
+    now = datetime.datetime.now()
+    earliest = now + datetime.timedelta(minutes=LEAD_MIN)
+    day = now.date()
+    for _, name in new:
+        while True:
+            free = [t for t in _slots(day) if (day.isoformat(), t) not in busy and
+                    datetime.datetime.combine(day, datetime.time(*map(int, t.split(':')))) >= earliest]
+            if free:
+                t = free[0]; break
+            day += datetime.timedelta(days=1)
+        ds = day.isoformat()
+        busy.add((ds, t))
+        job = {'platform': 'fb', 'folder': name, 'date': ds, 'time': t}
+        safe = re.sub(r'[^\w\- ]', '', name)[:40].strip()
+        (QUEUE / f"{ds}_{t.replace(':', '')}_fb_{safe}.json").write_text(
+            json.dumps(job, ensure_ascii=False), encoding='utf-8')
+        p[name] = {'platform': 'fb', 'date': ds, 'time': t, 'status': 'задание', 'created': f"{now:%Y-%m-%d %H:%M}"}
+        log(f"РАСКЛАДКА fb {ds} {t} — {name}")
+    _save(p)
+
+def mark(j, status, time_set=None):
+    p = _load()
+    e = p.setdefault(j['folder'], {'platform': j['platform'], 'date': j['date'], 'time': j['time']})
+    e['status'] = status
+    if time_set:
+        e['time'] = time_set
+    _save(p)
+
+def cleanup():
+    ARCHIVE.mkdir(exist_ok=True)
+    now = time.time()
+    day = 86400
+    for f in QUEUE.iterdir():
+        if not f.is_file() or f.name in ('журнал.txt', '_план.json', '_идёт.lock', '_пульс.txt', '_blotato.json', '_blotato.lock') or f.suffix == '.json':
+            continue
+        age = now - f.stat().st_mtime
+        base = f.name.split('.')[0]
+        done = (QUEUE / f'{base}.done').exists()
+        # выполненное — сразу в архив; ошибки и скриншоты — через сутки
+        if f.suffix == '.done' or done or age > day:
+            try: shutil.move(str(f), str(ARCHIVE / f.name))
+            except Exception: pass
+    for folder in (ARCHIVE, QUEUE / 'шаги'):
+        if folder.exists():
+            for f in folder.iterdir():
+                if f.is_file() and now - f.stat().st_mtime > 14 * day:
+                    f.unlink(missing_ok=True)
+    # журнал — последние 400 строк
+    log_f = QUEUE / 'журнал.txt'
+    if log_f.exists():
+        lines = log_f.read_text(encoding='utf-8').splitlines()
+        if len(lines) > 500:
+            log_f.write_text('\n'.join(lines[-400:]) + '\n', encoding='utf-8')
+    # план — забываем записи старше 30 дней, если папки уже нет
+    p = _load()
+    cutoff = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+    keep = {k: v for k, v in p.items() if v.get('date', '9999') >= cutoff or (PUB / k).exists()}
+    if keep != p:
+        _save(keep)
