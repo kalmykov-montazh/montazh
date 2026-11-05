@@ -1,0 +1,124 @@
+name: 6Л. Лонг-склейка из готовых лонгов (Штрафы + 17 ловушек)
+
+# 05.11.2026: новый лонг для часов из двух готовых. prep — стыки по тишине, звук −14 LUFS, вжух, .srt, плашки, QR;
+# part — видео по 120 с параллельно; final — склейка, звук, проверка стыков распознаванием, на Диск.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dir:
+        description: "Папка в dolg/"
+        default: "Склейка Штрафы и аренда"
+      name:
+        description: "Имя готового лонга"
+        default: "Деньги в Испании — штрафы и аренда"
+      only_prep:
+        description: "1 — только подготовка"
+        default: "0"
+
+env:
+  WD: "Брокер/работа/Склейка ${{ inputs.name }}"
+
+jobs:
+  prep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      parts: ${{ steps.p.outputs.parts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Исходники
+        run: |
+          D="dolg/${{ inputs.dir }}"
+          rclone copyto "montazh:$(jq -r .src.S "$D/plan.json")" S.mp4
+          rclone copyto "montazh:$(jq -r .src.L "$D/plan.json")" L.mp4
+          rclone copyto "montazh:Брокер/работа/Опубликованные - Лонги - Октябрь 2026 - Штрафы 15 законов - !!! Штрафы 15 законов/asr_cache.json" S.asr.json
+          rclone copyto "montazh:Брокер/работа/Лонг 17 ловушек аренды/asr.json" L.words.json
+          python3 -c "
+          import json;d=json.load(open('S.asr.json'));W=[]
+          for k in sorted(d,key=lambda x:float(x.split('-')[0])):
+              s=float(k.split('-')[0]);W+=[[s+a,s+b,w] for a,b,w in d[k]]
+          json.dump(W,open('S.words.json','w'),ensure_ascii=False)"
+      - name: Подготовка
+        run: python "dolg/${{ inputs.dir }}/prep.py" 2>&1 | tee prep.log | sed 's/^/::notice::/'
+      - name: Проверка стыков на слух (распознавание)
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, os
+          from pywhispercpp.model import Model
+          D = json.load(open('out/edl.json')); m = Model(os.environ['WMODEL'], n_threads=4, print_progress=False, print_realtime=False, redirect_whispercpp_logs_to=None)
+          res = []
+          for i, of in enumerate(D['off'][1:] + [D['body']], 1):
+              a = max(0, of - 3.0)
+              subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a}', '-t', '6', '-i', 'out/mix.wav', '-ac', '1', '-ar', '16000', 'j.wav'], check=True)
+              t = ' '.join(s.text for s in m.transcribe('j.wav', language='ru'))
+              res.append(f'стык {i} ({of:.1f} с): {t.strip()}')
+          for i, (src, s, e) in enumerate(D['edl']):
+              subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{D["off"][i]}', '-t', '4', '-i', 'out/mix.wav', '-ac', '1', '-ar', '16000', 'j.wav'], check=True)
+              res.append(f'начало куска {i}: ' + ' '.join(s_.text for s_ in m.transcribe('j.wav', language='ru')).strip())
+          open('out/joins_asr.txt', 'w').write('\n'.join(res)); print('\n'.join('::notice::' + r for r in res))
+          PY
+      - name: На Диск
+        run: rclone copy out "montazh:$WD/prep"
+      - id: p
+        run: |
+          echo "parts=$(python3 -c "import json,math;t=json.load(open('out/edl.json'))['total'];print(json.dumps([i*120 for i in range(math.ceil(t/120))]))")" >> "$GITHUB_OUTPUT"
+          echo "::notice::Длительность $(jq .total out/edl.json) с"
+
+  part:
+    needs: prep
+    if: inputs.only_prep != '1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        t: ${{ fromJson(needs.prep.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Исходники и план
+        run: |
+          D="dolg/${{ inputs.dir }}"
+          rclone copyto "montazh:$(jq -r .src.S "$D/plan.json")" S.mp4
+          rclone copyto "montazh:$(jq -r .src.L "$D/plan.json")" L.mp4
+          rclone copy "montazh:$WD/prep" out --exclude mix.wav
+      - name: Часть ${{ matrix.t }}
+        run: |
+          T=${{ matrix.t }}; N=$(printf %04d $T)
+          python "dolg/${{ inputs.dir }}/render.py" out/edl.json out/ov p_$N.mp4 $T $((T+120)) | tail -2
+          rclone copyto p_$N.mp4 "montazh:$WD/parts/p_$N.mp4"
+
+  final:
+    needs: [prep, part]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Склеить
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          rclone copy "montazh:$WD/parts" parts; rclone copy "montazh:$WD/prep" prep
+          ls parts | sort | sed "s:^:file 'parts/:;s:$:':" > list.txt
+          ffmpeg -v error -y -f concat -safe 0 -i list.txt -i prep/mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest -movflags +faststart "!!! ${{ inputs.name }}.mp4"
+          V=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "!!! ${{ inputs.name }}.mp4"); echo "::notice::Готово: $V с, $(du -h "!!! ${{ inputs.name }}.mp4" | cut -f1); план $(jq .total prep/edl.json) с"
+          ffmpeg -v error -i "!!! ${{ inputs.name }}.mp4" -af ebur128 -f null - 2>&1 | grep -E '^\s+I:' | tail -1 | sed 's/^/::notice::Громкость /'
+          G="Брокер/Готовые/Лонги/${{ inputs.name }}"
+          rclone copyto "!!! ${{ inputs.name }}.mp4" "montazh:$G/!!! ${{ inputs.name }}.mp4"
+          rclone copyto prep/subs.srt "montazh:$G/субтитры.srt"
+          for t in 30 300 900 1500 2100 2700; do ffmpeg -v error -ss $t -i "!!! ${{ inputs.name }}.mp4" -frames:v 1 -vf scale=640:-1 k_$t.jpg; done
+          rclone copy . "montazh:$WD/kadry" --include 'k_*.jpg'
