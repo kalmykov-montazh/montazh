@@ -26,7 +26,7 @@ QR = rgba(f'{H_}/qr.png'); END = cv2.imread(f'{OV}/end.png')
 def is_slide(src, f):
     if src == 'S':
         r = f[925:960, 160:340].astype(np.float32); m = r.mean((0, 1))   # BGR
-        return abs(m[2] - 15) < 14 and abs(m[1] - 28) < 14 and abs(m[0] - 49) < 16 and r.std() < 10
+        return abs(m[2] - 10) < 10 and abs(m[1] - 24) < 10 and abs(m[0] - 50) < 12 and r.std((0, 1)).max() < 9
     st = f[2:6, 100:1800].astype(np.float32); return (st.max(2) - st.min(2)).mean() > 120
 def hide(src, f):
     """прячем «6 / 23» (Штрафы) и полоску прогресса (Ловушки) — копией фона чуть выше"""

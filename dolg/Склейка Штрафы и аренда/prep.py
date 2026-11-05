@@ -47,7 +47,7 @@ def is_slide(src, f):
     if f is None: return False
     if src == 'S':
         r = f[925:960, 160:340].astype(np.float32); m = r.mean((0, 1))
-        return abs(m[0] - 15) < 14 and abs(m[1] - 28) < 14 and abs(m[2] - 49) < 16 and r.std() < 10
+        return abs(m[0] - 10) < 10 and abs(m[1] - 24) < 10 and abs(m[2] - 50) < 12 and r.std((0, 1)).max() < 9
     st = f[2:6, 100:1800].astype(np.float32); sat = (st.max(2) - st.min(2)).mean()
     return sat > 120
 def src_at(T):
