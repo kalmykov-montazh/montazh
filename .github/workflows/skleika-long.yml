@@ -121,7 +121,7 @@ jobs:
           client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
       - name: Склеить
         run: |
-          sudo apt-get install -y -qq ffmpeg > /dev/null
+          command -v ffmpeg || timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null || { curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ && sudo cp ffmpeg-*-static/ff* /usr/local/bin/; }
           rclone copy "montazh:$WD/parts" parts; rclone copy "montazh:$WD/prep" prep
           ls parts | sort | sed "s:^:file 'parts/:;s:$:':" > list.txt
           ffmpeg -v error -y -f concat -safe 0 -i list.txt -i prep/mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest -movflags +faststart "!!! ${{ inputs.name }}.mp4"
