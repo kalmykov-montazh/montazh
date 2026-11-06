@@ -15,6 +15,9 @@ on:
       only_prep:
         description: "1 — только подготовка"
         default: "0"
+      reuse:
+        description: "Начала частей через пробел — перерисовать только их, подготовку взять с Диска"
+        default: ""
 
 env:
   WD: "Брокер/работа/Склейка ${{ inputs.name }}"
@@ -32,7 +35,11 @@ jobs:
           token: ${{ secrets.RCLONE_TOKEN }}
           client_id: ${{ secrets.RCLONE_CLIENT_ID }}
           client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Взять подготовку с Диска
+        if: inputs.reuse != ''
+        run: rclone copy "montazh:$WD/prep" out
       - name: Исходники
+        if: inputs.reuse == ''
         run: |
           D="dolg/${{ inputs.dir }}"
           rclone copyto "montazh:$(jq -r .src.S "$D/plan.json")" S.mp4
@@ -45,8 +52,10 @@ jobs:
               s=float(k.split('-')[0]);W+=[[s+a,s+b,w] for a,b,w in d[k]]
           json.dump(W,open('S.words.json','w'),ensure_ascii=False)"
       - name: Подготовка
+        if: inputs.reuse == ''
         run: python "dolg/${{ inputs.dir }}/prep.py" 2>&1 | tee prep.log | sed 's/^/::notice::/'
       - name: Проверка стыков на слух (распознавание)
+        if: inputs.reuse == ''
         run: |
           python3 - <<'PY'
           import json, subprocess, os
@@ -64,10 +73,11 @@ jobs:
           open('out/joins_asr.txt', 'w').write('\n'.join(res)); print('\n'.join('::notice::' + r for r in res))
           PY
       - name: На Диск
+        if: inputs.reuse == ''
         run: rclone copy out "montazh:$WD/prep"
       - id: p
         run: |
-          echo "parts=$(python3 -c "import json,math;t=json.load(open('out/edl.json'))['total'];print(json.dumps([i*120 for i in range(math.ceil(t/120))]))")" >> "$GITHUB_OUTPUT"
+          echo "parts=$(R="${{ inputs.reuse }}" python3 -c "import json,math,os;t=json.load(open('out/edl.json'))['total'];r=os.environ['R'].split();print(json.dumps([int(x) for x in r] if r else [i*120 for i in range(math.ceil(t/120))]))")" >> "$GITHUB_OUTPUT"
           echo "::notice::Длительность $(jq .total out/edl.json) с"
 
   part:

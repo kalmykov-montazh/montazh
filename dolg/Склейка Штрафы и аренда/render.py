@@ -77,6 +77,6 @@ for k in range(k0, k1):
         dd = T - t
         if 0 <= dd < 4.0:
             w_ = CH[j][1].shape[1]; a = eo(dd / 0.3) if dd < 0.3 else (1 - eo((dd - 3.65) / 0.35) if dd > 3.65 else 1)
-            over(o, CH[j], int(-w_ + (w_ + 106) * a), 22)
+            over(o, CH[j], int(-w_ + (w_ + 106) * a), 22 if j == 0 else 520)
     prev = o; enc.stdin.write(np.ascontiguousarray(o).tobytes())
 enc.stdin.close(); enc.wait(); print('DONE', k1 - k0, flush=True)
