@@ -1,0 +1,38 @@
+name: Залить папку из ветки на Диск
+
+# Для Claude (06.11.2026): копирует папку из ветки хранилища в папку внутри «Монтаж!» на Диске.
+# Нужна, когда файлы (слайды, видео) собраны в сессии Claude и их надо положить на Диск.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "ветка с файлами, например tmp-karusel-ba082"
+        required: true
+      src:
+        description: "папка в ветке"
+        required: true
+      dest:
+        description: "папка внутри «Монтаж!»"
+        required: true
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          path: src
+      - name: Залить
+        env:
+          S: ${{ inputs.src }}
+          D: ${{ inputs.dest }}
+        run: |
+          rclone copy "src/$S" "montazh:$D"
+          echo "::notice::На Диске: $(rclone lsf "montazh:$D" | tr '\n' ' ')"
