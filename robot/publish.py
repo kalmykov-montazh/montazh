@@ -11,6 +11,7 @@ import blotato
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'Крипто', 'скрипты'))
 import crypto_yt                                       # шортсы «Всё о крипте» (25.10.2026)
 import fb_playlists                                    # новые рилсы FB — сами в плейлист по теме (25.10.2026)
+import claude_guard                                    # Claude закрыт (после своего обновления) — поднять (04.11.2026)
 
 PLATFORMS = {'fb': fb.publish}   # текстовые посты ('fbtext') — textposts.publish   # дальше добавим: 'ig', 'th', 'tt', 'yt'
 MAX_PER_RUN = 3
@@ -43,6 +44,8 @@ def run_jobs():
     QUEUE.mkdir(parents=True, exist_ok=True)
     try: pulse()
     except Exception: pass
+    try: claude_guard.run()
+    except Exception as e: log(f"сторож Claude: ошибка {str(e)[:150]}")
     try: planner.cleanup()
     except Exception as e: log(f"очистка: ошибка {str(e)[:150]}")
     try: planner.plan()
