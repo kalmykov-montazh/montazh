@@ -60,6 +60,7 @@ def _save(p):
 # и ставит её не раньше чем через SETTLE_MIN минут, если за это время имя и размер не менялись.
 # Переименовали или ролик ещё докачивается — отсчёт начинается заново.
 SETTLE_MIN = 5
+RETRY_MAX = 3   # всего попыток поставить ролик (первая + 2 повтора), дальше — ждём Евгения/Claude
 # ПАУЗА «ПАЛЬМА» (решение Евгения 04.11.2026): ролики, в имени которых есть «ПАЛЬМА», не публикуем
 # до его особого распоряжения. Робот такие папки не ставит, даже если они попали в «К публикации».
 # Снять паузу — только по слову Евгения: PALMA_PAUSE = False.
@@ -97,7 +98,12 @@ def plan():
     # слот с ошибкой (ролик не встал) считаем свободным — иначе утро пропадает (22.10.2026)
     busy = {(v['date'], _slot_index(datetime.date.fromisoformat(v['date']), v['time'].zfill(5))) for v in p.values()
             if v.get('platform', 'fb') == 'fb' and v.get('status') != 'ошибка' and v.get('date') and v.get('time')}
-    skip = set(p) | _pending_folders()
+    # ПОВТОР ПОСЛЕ ОШИБКИ (06.11.2026): раньше папка с ошибкой навсегда оставалась в плане и в .error
+    # и больше не ставилась (10.11 так пропали «Испанцы живут с мамой» и «Срок для вашей машины»).
+    # Теперь такую папку ставим заново, до RETRY_MAX попыток всего; сначала на её прежнее время, если оно ещё впереди.
+    retry = {k for k, v in p.items() if v.get('platform', 'fb') == 'fb' and v.get('status') == 'ошибка'
+             and v.get('попыток', 1) < RETRY_MAX}
+    skip = (set(p) | _pending_folders()) - retry
     seen, seen_new = _load_seen(), {}
     new = []
     for d in PUB.iterdir():
@@ -128,22 +134,39 @@ def plan():
     earliest = now + datetime.timedelta(minutes=LEAD_MIN)
     day = now.date()
     for _, name in new:
+        day = now.date()
+        prev = p.get(name) if name in retry else None
+        if prev:
+            try:
+                pd = datetime.date.fromisoformat(prev['date']); pt = prev['time'].zfill(5)
+                key = (prev['date'], _slot_index(pd, pt))
+                if key not in busy and datetime.datetime.combine(pd, datetime.time(*map(int, pt.split(':')))) >= earliest:
+                    day, si, t = pd, key[1], pt
+                    _place(p, busy, name, day, si, t, now, prev)
+                    continue
+            except Exception:
+                pass
         while True:
             free = [(i, t) for i, t in enumerate(_slots(day)) if (day.isoformat(), i) not in busy and
                     datetime.datetime.combine(day, datetime.time(*map(int, t.split(':')))) >= earliest]
             if free:
                 si, t = free[0]; break
             day += datetime.timedelta(days=1)
-        ds = day.isoformat()
-        busy.add((ds, si))
-        mode = _mode(day)
-        job = {'platform': 'fb', 'folder': name, 'date': ds, 'time': t, 'mode': mode}
-        safe = re.sub(r'[^\w\- ]', '', name)[:40].strip()
-        (QUEUE / f"{ds}_{t.replace(':', '')}_fb_{safe}.json").write_text(
-            json.dumps(job, ensure_ascii=False), encoding='utf-8')
-        p[name] = {'platform': 'fb', 'date': ds, 'time': t, 'mode': mode, 'status': 'задание', 'created': f"{now:%Y-%m-%d %H:%M}"}
-        log(f"РАСКЛАДКА fb {ds} {t} ({'сразу' if mode == 'live' else 'отложка'}) — {name}")
+        _place(p, busy, name, day, si, t, now, prev)
     _save(p)
+
+def _place(p, busy, name, day, si, t, now, prev=None):
+    ds = day.isoformat()
+    busy.add((ds, si))
+    mode = _mode(day)
+    job = {'platform': 'fb', 'folder': name, 'date': ds, 'time': t, 'mode': mode}
+    safe = re.sub(r'[^\w\- ]', '', name)[:40].strip()
+    (QUEUE / f"{ds}_{t.replace(':', '')}_fb_{safe}.json").write_text(
+        json.dumps(job, ensure_ascii=False), encoding='utf-8')
+    tries = (prev.get('попыток', 1) + 1) if prev else 1
+    p[name] = {'platform': 'fb', 'date': ds, 'time': t, 'mode': mode, 'status': 'задание',
+               'created': f"{now:%Y-%m-%d %H:%M}", 'попыток': tries}
+    log(f"РАСКЛАДКА fb {ds} {t} ({'сразу' if mode == 'live' else 'отложка'}){' ПОВТОР ' + str(tries) if prev else ''} — {name}")
 
 def mark(j, status, time_set=None):
     p = _load()
