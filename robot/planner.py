@@ -181,7 +181,7 @@ def cleanup():
     now = time.time()
     day = 86400
     for f in QUEUE.iterdir():
-        if not f.is_file() or f.name in ('журнал.txt', '_план.json', '_идёт.lock', '_пульс.txt', '_blotato.json', '_blotato.lock') or f.suffix == '.json':
+        if not f.is_file() or f.name in ('журнал.txt', '_план.json', '_идёт.lock', '_пульс.txt', '_пульс_конец.txt', '_blotato.json', '_blotato.lock') or f.suffix == '.json':
             continue
         age = now - f.stat().st_mtime
         base = f.name.split('.')[0]

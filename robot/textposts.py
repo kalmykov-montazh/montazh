@@ -366,8 +366,10 @@ def choose_groups(available, topic, day):
             g = reg[n]
             top = g.get('топ', 99) if typ == 'испания' else 99
             pref = 0 if (topic == 'юмор' and g.get('жанр') == 'юмор') else 1
-            if status == 'тест':             # тестовые: сначала те, что ещё ни разу не пробовали
-                return (pref, len(g.get('посты', [])), random.random())
+            if status == 'тест':             # 06.11.2026: сначала повтор (1–2 поста, прошлый 7+ дней назад), потом новые
+                np_ = len(g.get('посты', []))
+                due = 0 if 1 <= np_ <= 2 and _days_since(g, today) >= 7 else (1 if np_ == 0 else 2)
+                return (pref, due, np_, random.random())
             return (pref, top if main == 'испания' else 99, -_days_since(g, today), random.random())
         return sorted(out, key=key)
 

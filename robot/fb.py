@@ -12,11 +12,9 @@ def publish(page, j, folder):
     page.goto('https://www.facebook.com/reels/create', wait_until='domcontentloaded')
     pause(5, 9)
     _upload_video(page, video)
-    page.get_by_text('можно публиковать').first.wait_for(timeout=20 * 60 * 1000)
-    pause(4, 8)
-    for _ in range(2):
-        human_click(page, page.get_by_role('button', name='Далее').last)
-        pause(3, 6)
+    _wait_uploaded(page)
+    for step in (1, 2):                            # два экрана «Далее» до описания
+        _press_next(page, folder, step)
     if cover.exists() and j.get('cover', True):
         try:
             _set_cover(page, cover)
@@ -43,6 +41,108 @@ def publish(page, j, folder):
     pause(15, 25)
     _debug(page, f"после планирования {folder.name[:30]}")
     _verify(page, text.split('\n')[0][:40], j['time_set'])
+
+NEXT_WAIT = 5 * 60      # 06.11.2026: сколько ждать, пока «Далее» станет активной (идёт проверка авторских прав)
+NEXT_TRIES = 3          # сколько раз жать «Далее», если следующий экран не появился
+NEXT_SCREEN = 60        # сколько секунд ждать следующий экран после клика
+
+class NextStuck(RuntimeError):
+    pass
+
+def _wait_uploaded(page):
+    """Ждём, пока видео загрузится. 06.11.2026: окно стояло с «Проверка на наличие контента, защищенного
+    авторским правом» и без надписи «можно публиковать» — робот висел на ней до 20 минут и «Далее» не жал.
+    Теперь: надпись появилась — дальше; нет — после 8 минут идём к «Далее» (её активность ждём отдельно)."""
+    import time
+    t0 = time.time()
+    while time.time() - t0 < 20 * 60:
+        try:
+            if page.get_by_text('можно публиковать').count():
+                pause(3, 6); return
+        except Exception:
+            pass
+        if time.time() - t0 > 8 * 60 and _next_btn(page) is not None and _next_enabled(_next_btn(page)):
+            log("FB: «можно публиковать» не появилось за 8 мин, «Далее» активна — иду дальше")
+            return
+        time.sleep(5)
+    log("FB: видео грузится больше 20 мин — пробую «Далее»")
+
+def _next_btn(page):
+    for loc in (page.locator('[role="dialog"]').get_by_role('button', name='Далее', exact=True),
+                page.get_by_role('button', name='Далее', exact=True),
+                page.get_by_role('button', name='Далее')):
+        try:
+            if loc.count():
+                return loc.last
+        except Exception:
+            pass
+    return None
+
+def _next_enabled(btn):
+    try:
+        if btn.get_attribute('aria-disabled') == 'true' or btn.get_attribute('disabled') is not None:
+            return False
+        return btn.is_visible() and btn.is_enabled()
+    except Exception:
+        return False
+
+def _screen_sig(page):
+    """Чем отличается текущий экран окна Reels: заголовки + есть ли поле описания."""
+    try:
+        dlg = page.locator('[role="dialog"]').last
+        if not dlg.count():
+            return ('нет окна',)
+        heads = tuple(h.strip() for h in dlg.get_by_role('heading').all_inner_texts() if h.strip())[:4]
+        btns = tuple(sorted({b.strip() for b in dlg.get_by_role('button').all_inner_texts()
+                             if b.strip() in ('Назад', 'Далее', 'Запланировать', 'Опубликовать', 'Поделиться',
+                                              'Редактировать', 'Настройки планирования')}))
+        return heads + btns + (('поле описания',) if _on_text_screen(page) else ())
+    except Exception:
+        return ('?',)
+
+def _on_text_screen(page):
+    try:
+        return page.locator('[role="dialog"] [contenteditable="true"][role="textbox"]').count() > 0
+    except Exception:
+        return False
+
+def _press_next(page, folder, step):
+    """Жмём «Далее» только когда она активная (не aria-disabled), ждём до 5 минут.
+    Следующий экран не появился за 60 с — жмём ещё раз, до 3 попыток, каждую пишем в журнал.
+    После 3 неудач — закрываем окно и даём ошибку: слот остаётся свободным, planner поставит повтор."""
+    import time
+    for attempt in range(1, NEXT_TRIES + 1):
+        if _on_text_screen(page):                  # уже экран описания — «Далее» больше не нужна
+            return
+        t0 = time.time()
+        btn = _next_btn(page)
+        while (btn is None or not _next_enabled(btn)) and time.time() - t0 < NEXT_WAIT:
+            time.sleep(5)
+            btn = _next_btn(page)
+        if btn is None or not _next_enabled(btn):
+            _debug(page, f"далее неактивна {step} {folder.name[:25]}")
+            log(f"FB: «Далее» (экран {step}) {NEXT_WAIT // 60} мин неактивна — {folder.name}")
+            if attempt == NEXT_TRIES:
+                break
+            continue
+        before = _screen_sig(page)
+        human_click(page, btn)
+        t1 = time.time()
+        while time.time() - t1 < NEXT_SCREEN:
+            time.sleep(3)
+            if _screen_sig(page) != before:
+                pause(2, 4)
+                return
+        _debug(page, f"далее не сработало {step}-{attempt} {folder.name[:25]}")
+        if attempt < NEXT_TRIES:
+            log(f"FB: «Далее» не сработало, жму ещё раз ({attempt}) — экран {step}, {folder.name}")
+    try:
+        page.keyboard.press('Escape'); pause(1, 2)
+        page.goto('about:blank')
+    except Exception:
+        pass
+    raise NextStuck(f'FB: «Далее» не сработало {NEXT_TRIES} раза (экран {step}) — окно закрыл, ролик не поставлен, '
+                    f'повтор на следующем запуске')
 
 def _publish_now(page, j, folder, text):
     """Рилс выходит сразу кнопкой «Опубликовать» (тест «сразу против отложки», 04.11.2026).

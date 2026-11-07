@@ -67,7 +67,7 @@ PL = {
     'life':   'PLmG0Z0zkAWLzY3ODXfC6Saa2CoCZ4XwxE',  # Жизнь в Испании: цены, быт, адаптация
     'vlc':    'PLmG0Z0zkAWLwsAe8qpWYaV-1dRsQeJ1V3',  # Валенсия: районы, город и праздники
     'travel': 'PLEL0Wb3EBHw8',                       # Путешествия без переплат!
-    'path':   'PLmG0Z0zkAWLwBClBzRVxdvlwf1H0u2vqH',  # Переезд в Испанию с нуля: мой путь из Украины в Валенсию
+    'path':   'PLmG0Z0zkAWLwBClBzRVxdvlwf1H0u2vqH',  # Мой путь: с нуля в третий раз
     'obj':    'PLmG0Z0zkAWLylDNlBRwcudBVTJpsLOPRF',  # Квартиры в Валенсии: аренда и продажа
 }
 LABELS = [

@@ -25,20 +25,45 @@ def launch(pw):
         viewport={'width': 1400, 'height': 900}, args=['--start-minimized'])
 
 PULSE = QUEUE / '_пульс.txt'
+PULSE_END = QUEUE / '_пульс_конец.txt'   # 06.11.2026: время КОНЦА запуска (пишется в finally)
+CYCLE = QUEUE / '_цикл.txt'
+
+def _read_ts(path):
+    try:
+        return float(path.read_text(encoding='utf-8').split()[0])
+    except Exception:
+        return None
 
 def pulse():
     """Отметка каждого запуска. Перерыв больше 40 минут — в журнал и в Telegram (25.10.2026:
-    в ночь перевода часов Планировщик Windows пропустил целый час, ролики лежали без раскладки)."""
+    в ночь перевода часов Планировщик Windows пропустил целый час, ролики лежали без раскладки).
+    06.11.2026: перерыв считаем от КОНЦА прошлого запуска, а не от начала. Часы робота (цикл.pyw) ждут,
+    пока publish.py закончит, поэтому длинная раскладка роликов (00:04–00:40) давала ложный «ПРОПУСК 40 мин».
+    Конец не записан (прошлый запуск упал или его убили часы через 2 часа) — смотрим «_цикл.txt»:
+    там «запуск publish.py» и с прошлого старта меньше 2 часов — молчим."""
     now = time.time()
-    try:
-        last = float(PULSE.read_text(encoding='utf-8').split()[0])
-    except Exception:
-        last = None
+    last = _read_ts(PULSE)                       # начало прошлого запуска
+    end = _read_ts(PULSE_END)                    # конец прошлого запуска
     try: PULSE.write_text(f"{now} {time.strftime('%Y-%m-%d %H:%M')}", encoding='utf-8')
     except Exception: pass
-    if last and now - last > 40 * 60:
-        log(f"ПРОПУСК запусков: робот не запускался {int((now - last) // 60)} мин "
-            f"(с {time.strftime('%d.%m %H:%M', time.localtime(last))}) — проверь компьютер и Планировщик")
+    if not last:
+        return
+    if end and end >= last - 5:                  # прошлый запуск дописал конец
+        ref = end
+    else:                                        # конец не записан: упал, убит или старый publish.py
+        try: cyc = CYCLE.read_text(encoding='utf-8')
+        except Exception: cyc = ''
+        if 'запуск publish.py' in cyc and now - last < 2 * 3600 + 15 * 60:
+            return                               # часы живы и ждали долгий запуск — это не пропуск
+        ref = last
+    if now - ref > 40 * 60:
+        log(f"ПРОПУСК запусков: робот не запускался {int((now - ref) // 60)} мин "
+            f"(с {time.strftime('%d.%m %H:%M', time.localtime(ref))}"
+            f"{', конец прошлого запуска' if ref is end else ''}) — проверь компьютер и Планировщик")
+
+def pulse_end():
+    try: PULSE_END.write_text(f"{time.time()} {time.strftime('%Y-%m-%d %H:%M')}", encoding='utf-8')
+    except Exception: pass
 
 def run_jobs():
     QUEUE.mkdir(parents=True, exist_ok=True)
@@ -170,11 +195,14 @@ if __name__ == '__main__':
         login()
     else:
         try:
-            run_jobs()
-        except Exception as e:
-            log(f"СБОЙ запуска: {str(e).splitlines()[0][:200] if str(e) else type(e).__name__}")
-            (QUEUE / '_сбой.txt').write_text(traceback.format_exc(), encoding='utf-8')
-        try:
-            fb_playlists.maybe_run()                         # раз в 3 часа: вышедшие рилсы без плейлиста — в плейлист
-        except Exception as e:
-            log(f"плейлист FB: ошибка {str(e)[:150]}")
+            try:
+                run_jobs()
+            except Exception as e:
+                log(f"СБОЙ запуска: {str(e).splitlines()[0][:200] if str(e) else type(e).__name__}")
+                (QUEUE / '_сбой.txt').write_text(traceback.format_exc(), encoding='utf-8')
+            try:
+                fb_playlists.maybe_run()                     # раз в 3 часа: вышедшие рилсы без плейлиста — в плейлист
+            except Exception as e:
+                log(f"плейлист FB: ошибка {str(e)[:150]}")
+        finally:
+            pulse_end()                                      # 06.11.2026: конец запуска — даже при ошибке
