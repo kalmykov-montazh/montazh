@@ -126,3 +126,11 @@ for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).
         subprocess.run(['rm', '-rf', 'k'])
     pathlib.Path('rep.json').write_text(json.dumps(rep, ensure_ascii=False), encoding='utf-8')
     rc('copyto', 'rep.json', f'{F}/_повторы.json', check=False)
+
+# Ролики (07.11.2026)
+try:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import storozh_video
+    storozh_video.main(tg)
+except Exception as ex:
+    print('сторож роликов:', str(ex)[:300])
