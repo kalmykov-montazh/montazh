@@ -1,0 +1,80 @@
+name: Разбор чужого ролика (кадры по сменам сцен)
+
+# Для Claude (07.11.2026): скачивает ролик по ссылке, режет кадры на каждой смене сцены,
+# собирает листы 4x4 с таймкодами, берёт субтитры и описание. Всё шифрованно в ветку tmp-razbor.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Ссылка на ролик"
+        required: true
+      key:
+        description: "Пароль для шифрования"
+        required: true
+      porog:
+        description: "Порог смены сцены (0.2–0.4)"
+        default: "0.25"
+
+permissions:
+  contents: write
+
+jobs:
+  razbor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Скачать и разобрать
+        env:
+          U: ${{ inputs.url }}
+          P: ${{ inputs.porog }}
+        run: |
+          sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg fonts-dejavu-core > /dev/null
+          pip install -q -U yt-dlp
+          mkdir -p out/kadry out/listy
+          yt-dlp -q --no-warnings -f "bv*[height<=720][ext=mp4]+ba[ext=m4a]/b[height<=720]/b" --merge-output-format mp4 \
+            --write-info-json --write-auto-subs --write-subs --sub-langs "ru.*,en.*,en" --sub-format vtt \
+            -o "v.%(ext)s" "$U" || { echo "::error::Не скачалось"; exit 1; }
+          python3 - <<'PY'
+          import json
+          i=json.load(open('v.info.json'))
+          keep={k:i.get(k) for k in ['title','channel','channel_url','duration','upload_date','view_count','like_count','description','chapters','tags']}
+          json.dump(keep,open('out/info.json','w'),ensure_ascii=False,indent=1)
+          PY
+          cp v*.vtt out/ 2>/dev/null || true
+          ffprobe -v error -show_entries format=duration:stream=width,height,r_frame_rate -of compact=p=0 v.mp4 > out/svoystva.txt
+          # смены сцен с таймкодами
+          ffmpeg -v info -i v.mp4 -vf "select='gt(scene,$P)',showinfo,scale=480:-2" -vsync vfr out/kadry/s_%04d.jpg 2> sc.log
+          grep -o 'pts_time:[0-9.]*' sc.log | cut -d: -f2 > out/smeny.txt
+          echo "::notice::Смен сцен: $(wc -l < out/smeny.txt)"
+          # подписать кадры таймкодом
+          n=1
+          while read t; do
+            f=$(printf out/kadry/s_%04d.jpg $n); m=$(printf '%d:%02d' $(echo "$t/60" | bc) $(echo "$t%60/1" | bc))
+            ffmpeg -v error -y -i "$f" -vf "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='$m':x=8:y=8:fontsize=28:fontcolor=yellow:box=1:boxcolor=black@0.7" "$f.t.jpg" && mv "$f.t.jpg" "$f"
+            n=$((n+1))
+          done < out/smeny.txt
+          # листы 4x4
+          ffmpeg -v error -y -framerate 1 -i out/kadry/s_%04d.jpg -vf "scale=480:270:force_original_aspect_ratio=decrease,pad=480:270:(ow-iw)/2:(oh-ih)/2,tile=4x4" out/listy/list_%03d.jpg
+          # плюс по кадру каждые 10 секунд для ровного обзора
+          mkdir -p out/rovno
+          ffmpeg -v error -y -i v.mp4 -vf "fps=1/10,scale=480:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{pts\:hms}':x=8:y=8:fontsize=24:fontcolor=yellow:box=1:boxcolor=black@0.7,tile=4x4" out/rovno/r_%03d.jpg
+          # короткие отрывки вокруг первых смен для просмотра переходов (gif не нужен, кадры через 0.2с)
+          mkdir -p out/perehody
+          head -60 out/smeny.txt | awk 'NR%3==1' | while read t; do
+            s=$(echo "$t-0.6" | bc); [ "${s:0:1}" = "-" ] && s=0
+            ffmpeg -v error -y -ss $s -i v.mp4 -t 1.2 -vf "fps=5,scale=320:-2,tile=6x1" -frames:v 1 "out/perehody/p_$(printf %07.2f $t).jpg" || true
+          done
+          ls out/listy | wc -l; ls out/kadry | wc -l
+      - name: Зашифровать
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz -C out .
+          ls -la p.tgz
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout --orphan tmp-razbor; git rm -rqf .
+          cp /tmp/p.enc p.enc; git add p.enc; git commit -qm "tmp [skip ci]"; git push -fq origin tmp-razbor
