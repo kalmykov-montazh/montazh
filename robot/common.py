@@ -90,12 +90,26 @@ def human_type(page, text):
         if ch in ' .,!?' and random.random() < 0.12:
             time.sleep(random.uniform(0.6, 1.8))
 
-def warm_up(page):
-    """Перед публикацией — как человек: открыть ленту и немного полистать."""
+def warm_up(page, short=False, profile=False):
+    """Перед публикацией — как человек: открыть ленту и немного полистать.
+    07.11.2026: short — пара прокруток; иначе 1–3 минуты; profile — ещё заглянуть в свой профиль."""
     page.goto('https://www.facebook.com/', wait_until='domcontentloaded')
-    pause(5, 9)
-    for _ in range(random.randint(2, 5)):
-        page.mouse.wheel(0, random.randint(300, 900))
-        pause(2, 6)
+    pause(3, 6) if short else pause(5, 9)
+    n = random.randint(1, 3) if short else random.randint(5, 14)
+    for _ in range(n):
+        try:
+            page.mouse.move(random.randint(300, 1100), random.randint(200, 750), steps=random.randint(6, 18))
+        except Exception:
+            pass
+        page.mouse.wheel(0, random.randint(250, 900))
+        pause(1.5, 5) if short else pause(3, 12)
+    if profile:
+        try:
+            page.goto('https://www.facebook.com/me', wait_until='domcontentloaded')
+            pause(5, 10)
+            for _ in range(random.randint(1, 4)):
+                page.mouse.wheel(0, random.randint(300, 800)); pause(2, 6)
+        except Exception:
+            pass
     page.mouse.wheel(0, -2000)
     pause(2, 4)

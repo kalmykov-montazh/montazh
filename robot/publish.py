@@ -17,12 +17,15 @@ PLATFORMS = {'fb': fb.publish}   # текстовые посты ('fbtext') — 
 MAX_PER_RUN = 3
 FB_AHEAD = 4   # на сколько дней вперёд ставить ролики в Facebook (29.10.2026: было «только в день выхода»; растим до 7)
 LOCK = QUEUE / '_идёт.lock'
-LIVE_EARLY = 12   # «сразу»-ролик берём за 12 мин: загрузка и обработка видео в FB ~5–10 мин, выходит около своей минуты
+LIVE_EARLY = 15   # 07.11.2026: было 12; публикация теперь с «человеческими» паузами, бывает до 15 мин; «сразу»-ролик берём за 12 мин: загрузка и обработка видео в FB ~5–10 мин, выходит около своей минуты
 
 def launch(pw):
+    # 07.11.2026: без метки «браузером управляет программа» (navigator.webdriver, полоса автотеста)
     return pw.chromium.launch_persistent_context(
         str(PROFILE), channel='chrome', headless=False, locale='ru-RU',
-        viewport={'width': 1400, 'height': 900}, args=['--start-minimized'])
+        viewport={'width': 1400, 'height': 900},
+        args=['--start-minimized', '--disable-blink-features=AutomationControlled'],
+        ignore_default_args=['--enable-automation'])
 
 PULSE = QUEUE / '_пульс.txt'
 PULSE_END = QUEUE / '_пульс_конец.txt'   # 06.11.2026: время КОНЦА запуска (пишется в finally)
@@ -73,6 +76,8 @@ def run_jobs():
     except Exception as e: log(f"сторож Claude: ошибка {str(e)[:150]}")
     try: planner.cleanup()
     except Exception as e: log(f"очистка: ошибка {str(e)[:150]}")
+    try: planner.migrate_0811()                         # разово: всё с 08.11 — сразу, по новым окнам (07.11.2026)
+    except Exception as e: log(f"ОШИБКА перехода 0811: {str(e)[:200]}")
     try: planner.plan()
     except Exception as e: log(f"раскладка: ошибка {str(e)[:150]}")
     try: textposts.plan()
@@ -99,6 +104,18 @@ def run_jobs():
             if datetime.datetime.now() < at - datetime.timedelta(minutes=LIVE_EARLY):
                 live_soon.append(at)
                 continue                                   # ещё рано
+            # 07.11.2026: старая отложка этого ролика ещё не удалена из FB — сначала удаление, иначе будет дубль
+            dele = _load_delete()
+            if j.get('folder') in dele:
+                old = datetime.datetime.fromisoformat(dele[j['folder']]['old'])
+                if datetime.datetime.now() >= old:         # отложка уже вышла сама — живую не публикуем
+                    was = dele.pop(j['folder'])['old']
+                    f.rename(f.with_suffix('.done'))
+                    planner.mark(j, 'вышел отложкой', was[11:])
+                    _save_delete(dele)
+                    log(f"FB: живую не публикую — старая отложка уже вышла сама в {was} (дубля нет) — {j['folder']}")
+                    continue
+                continue                                   # ждём удаления отложки
             live.append(f)
             continue
         elif j.get('date', '') > (datetime.date.today() + datetime.timedelta(days=FB_AHEAD)).isoformat() \
@@ -111,7 +128,8 @@ def run_jobs():
         jobs = live
     elif any(a - datetime.datetime.now() < datetime.timedelta(minutes=80) for a in live_soon):
         jobs = jobs[:1]
-    if not jobs:
+    dele = _load_delete()
+    if not jobs and not dele:
         return
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 3 * 3600:
         return
@@ -122,6 +140,8 @@ def run_jobs():
             ctx = launch(pw)
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.set_default_timeout(60000)
+            if dele:                                      # 07.11.2026: сначала убрать старые отложки FB
+                _delete_scheduled(page, dele)
             batch = jobs[:MAX_PER_RUN]
             for i, job in enumerate(batch):
                 for _ in range(3):                    # Facebook после прошлого ролика ещё сам перебрасывает страницу
@@ -173,6 +193,37 @@ def run_jobs():
             ctx.close()
     finally:
         LOCK.unlink(missing_ok=True)
+
+def _load_delete():
+    try: return json.loads(planner.DELETE_FB.read_text(encoding='utf-8'))
+    except Exception: return {}
+
+def _save_delete(d):
+    planner.DELETE_FB.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding='utf-8')
+
+def _delete_scheduled(page, dele):
+    """Переход 07.11.2026: удаляем из «Запланированных» FB отложки роликов, которые теперь выходят сразу.
+    3 неудачи подряд — сообщение в Telegram (удалить вручную); живая публикация этого ролика ждёт,
+    а если отложка всё-таки вышла сама — живую не делаем (см. run_jobs)."""
+    for name in list(dele):
+        e = dele[name]
+        if datetime.datetime.now() >= datetime.datetime.fromisoformat(e['old']):
+            continue                                       # время отложки уже прошло — она вышла
+        try:
+            ok = fb.delete_scheduled(page, e['key'])
+        except Exception as ex:
+            ok = False
+            log(f"FB удаление отложки: сбой {str(ex).splitlines()[0][:150]} — {name}")
+        if ok:
+            dele.pop(name)
+            log(f"FB отложка удалена (теперь выйдет сразу) — {name}")
+        else:
+            e['tries'] = e.get('tries', 0) + 1
+            if e['tries'] == 3:
+                log(f"ОШИБКА: не могу удалить отложку FB «{e['key']}» (стоит на {e['old']}) — удалить вручную: "
+                    f"Библиотека контента → Запланированные → «…» → «Удалить публикацию». Иначе выйдет отложкой, дубля не будет")
+        _save_delete(dele)
+        pause(4, 9)
 
 def login():
     from playwright.sync_api import sync_playwright

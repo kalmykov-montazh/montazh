@@ -244,8 +244,10 @@ def _tiktok_video(video, cover):
         log(f"BLOTATO TikTok: обложку вшить не вышло ({str(ex)[:150]}) — уходит обычное видео")
         return None
 
-def _when(fb_date, fb_time, now):
-    at = datetime.datetime.fromisoformat(f"{fb_date} {fb_time}") + datetime.timedelta(minutes=DELAY_MIN)
+def _when(fb_date, fb_time, now, name=None):
+    # 07.11.2026 (решение Евгения): не ровно через 10 мин после FB, а через 5–40 мин — у каждого ролика своё
+    delay = random.Random(f"blotato-{name}").randint(5, 40) if name and fb_date >= '2026-11-08' else DELAY_MIN
+    at = datetime.datetime.fromisoformat(f"{fb_date} {fb_time}") + datetime.timedelta(minutes=delay)
     if at < now + datetime.timedelta(minutes=15):
         at = now + datetime.timedelta(minutes=random.randint(20, 30))
     return at
@@ -269,7 +271,7 @@ def schedule(key, s):
         vurl = _upload(video, key)
         cover = folder / 'обложка.jpg'
         curl = _upload(cover, key) if cover.exists() else None
-        at = _when(v['date'], v['time'], datetime.datetime.now())
+        at = _when(v['date'], v['time'], datetime.datetime.now(), name)
         e['at'] = f"{at:%Y-%m-%d %H:%M}"
         e['video'] = vurl
         _save(s)

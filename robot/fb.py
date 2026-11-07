@@ -1,5 +1,6 @@
 # Facebook, личный профиль: отложенный Reels (видео + обложка + текст + время)
 import datetime, re
+import random, time
 from common import pause, read_pack, human_click, human_type, warm_up, log
 
 MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
@@ -8,11 +9,21 @@ def publish(page, j, folder):
     video = _find_video(folder)
     cover = folder / 'обложка.jpg'
     text = j.get('text') or read_pack(folder)
-    warm_up(page)
+    # 07.11.2026 (решение Евгения): каждый раз по-разному, как человек — то быстро за пару минут,
+    # то полистал ленту, то «отвлёкся» на звонок посреди публикации
+    style = random.choices(['быстро', 'обычно', 'с отвлечением'], weights=[30, 45, 25])[0]
+    stop_at = random.choice(['после загрузки', 'перед текстом', 'перед кнопкой']) if style == 'с отвлечением' else None
+    log(f"FB манера: {style}{' (' + stop_at + ')' if stop_at else ''} — {folder.name}")
+    if style == 'быстро':
+        if random.random() < 0.5:
+            warm_up(page, short=True)
+    else:
+        warm_up(page, short=False, profile=random.random() < 0.3)
     page.goto('https://www.facebook.com/reels/create', wait_until='domcontentloaded')
-    pause(5, 9)
+    pause(3, 6) if style == 'быстро' else pause(5, 12)
     _upload_video(page, video)
     _wait_uploaded(page)
+    _distract(page, stop_at, 'после загрузки')
     for step in (1, 2):                            # два экрана «Далее» до описания
         _press_next(page, folder, step)
     if cover.exists() and j.get('cover', True):
@@ -27,8 +38,12 @@ def publish(page, j, folder):
                     c = page.get_by_text('Отмена', exact=True)
                     if c.count(): human_click(page, c.last); pause(2, 3)
                     if not _cover_open(page): break
+    _distract(page, stop_at, 'перед текстом')
     _type_text(page, text)
-    if j.get('mode') == 'live':                    # тест 04.11.2026: сразу, без отложки
+    if style == 'обычно' and random.random() < 0.3:
+        pause(20, 90)                              # перечитал текст
+    _distract(page, stop_at, 'перед кнопкой')
+    if j.get('mode') == 'live':                    # с 08.11.2026 все рилсы — сразу
         _publish_now(page, j, folder, text)
         return
     human_click(page, page.get_by_text('Настройки планирования', exact=True).first)
@@ -41,6 +56,82 @@ def publish(page, j, folder):
     pause(15, 25)
     _debug(page, f"после планирования {folder.name[:30]}")
     _verify(page, text.split('\n')[0][:40], j['time_set'])
+
+def _distract(page, stop_at, here):
+    """«Отвлёкся» на 2–6 минут, иногда при этом мышь чуть уходит в сторону."""
+    if stop_at != here:
+        return
+    sec = random.uniform(120, 360)
+    log(f"FB: пауза {int(sec // 60)} мин {int(sec % 60)} с ({here})")
+    t0 = time.time()
+    while time.time() - t0 < sec:
+        time.sleep(random.uniform(20, 60))
+        try:
+            page.mouse.move(random.randint(200, 1200), random.randint(150, 800), steps=random.randint(10, 25))
+        except Exception:
+            pass
+
+def delete_scheduled(page, key):
+    """Удалить отложенный рилс из «Запланированных» (переход 07.11.2026). True — удалён или его там уже нет."""
+    url = 'https://www.facebook.com/professional_dashboard/content/content_library/?filter=SCHEDULED'
+    page.goto(url, wait_until='domcontentloaded'); pause(8, 12)
+    k = key.strip()[:25]
+    if k not in page.inner_text('body'):
+        pause(5, 8); page.reload(wait_until='domcontentloaded'); pause(8, 12)
+        if k not in page.inner_text('body'):
+            log(f"FB удаление: в «Запланированных» не вижу «{k}» — считаю, что её там нет")
+            return True
+    # кнопка «…» в строке этого ролика: поднимаемся от текста к строке, ищем кнопку меню
+    box = page.evaluate(r"""(k) => {
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let n; while ((n = w.nextNode())) { if (n.textContent.includes(k)) break; }
+        if (!n) return null;
+        let el = n.parentElement;
+        const re = /ещё|еще|действ|параметр|more|опци/i;
+        for (let i = 0; i < 14 && el; i++, el = el.parentElement) {
+            const bs = [...el.querySelectorAll('[role="button"],button')].filter(b => {
+                const l = (b.getAttribute('aria-label') || '') + ' ' + (b.innerText || '');
+                return re.test(l) || /^\s*(…|\.\.\.)\s*$/.test(b.innerText || '');
+            });
+            // строка ролика — первый контейнер ровно с одной кнопкой меню; больше одной — это уже весь список,
+            // жать нельзя (можно удалить чужой ролик) — лучше ошибка и ручное удаление
+            if (bs.length === 1) { const r = bs[0].getBoundingClientRect(); return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }
+            if (bs.length > 1) return null;
+        }
+        return null;
+    }""", k)
+    if not box:
+        _debug(page, f"удаление нет меню {k[:20]}")
+        return False
+    page.mouse.move(box['x'] + random.uniform(-60, 60), box['y'] + random.uniform(-40, 40), steps=random.randint(8, 15))
+    pause(0.3, 0.8)
+    page.mouse.click(box['x'], box['y'], delay=random.randint(60, 160)); pause(2, 4)
+    item = page.get_by_text('Удалить публикацию', exact=True)
+    if not item.count():
+        item = page.get_by_role('menuitem').filter(has_text='Удалить')
+    if not item.count():
+        _debug(page, f"удаление нет пункта {k[:20]}")
+        page.keyboard.press('Escape')
+        return False
+    human_click(page, item.first)
+    pause(2, 4)
+    dlg = page.locator('[role="dialog"]').last
+    btn = dlg.get_by_role('button', name='Удалить', exact=True) if dlg.count() else page.get_by_role('button', name='Удалить', exact=True)
+    if not btn.count():
+        btn = page.get_by_text('Удалить', exact=True)
+    if not btn.count():
+        _debug(page, f"удаление нет кнопки {k[:20]}")
+        page.keyboard.press('Escape')
+        return False
+    human_click(page, btn.last)
+    pause(8, 12)
+    for _ in range(3):
+        page.reload(wait_until='domcontentloaded'); pause(8, 12)
+        if k not in page.inner_text('body'):
+            return True
+        pause(15, 25)
+    _debug(page, f"удаление не ушла {k[:20]}")
+    return False
 
 NEXT_WAIT = 5 * 60      # 06.11.2026: сколько ждать, пока «Далее» станет активной (идёт проверка авторских прав)
 NEXT_TRIES = 3          # сколько раз жать «Далее», если следующий экран не появился
@@ -224,13 +315,32 @@ def _type_text(page, text):
         pause(0.5, 1)
         if attempt and box.inner_text().strip():   # стираем только внутри поля описания
             box.press('Control+A'); box.press('Delete'); pause(1, 2)
-        human_type(page, text)
+        _enter_text(page, text)
         pause(3, 6)
         if key in _text_box(page).inner_text():
             return
         log(f"текст не встал в поле описания, попытка {attempt + 1}")
     _debug(page, 'текст')
     raise RuntimeError('текст не встал в поле описания — ролик не ставлю')
+
+def _enter_text(page, text):
+    """07.11.2026: как Евгений — чаще вставляет готовый текст из Telegram целиком, иногда первую строку печатает.
+    Вставка — построчно (insert_text), перенос — Shift+Enter, чтобы строки не слиплись."""
+    lines = text.split('\n')
+    if random.random() < 0.4:
+        human_type(page, lines[0])
+        rest = lines[1:]
+        if rest:
+            page.keyboard.press('Shift+Enter')
+    else:
+        rest = lines
+    pause(0.5, 2)
+    for i, ln in enumerate(rest):
+        if ln:
+            page.keyboard.insert_text(ln)
+        if i < len(rest) - 1:
+            page.keyboard.press('Shift+Enter')
+        time.sleep(random.uniform(0.02, 0.08))
 
 def _find_video(folder):
     # готовый ролик — .mp4 с «!!!» в начале имени; .mp4 без «!!!» — сырой, его не трогаем

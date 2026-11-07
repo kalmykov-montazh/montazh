@@ -20,7 +20,28 @@ SLOTS_FROM = datetime.date(2026, 10, 27)
 TEST_FROM = datetime.date(2026, 11, 7)
 TEST_TO = datetime.date(2026, 11, 20)
 
+# РЕШЕНИЕ Евгения 07.11.2026: тест «через день» отменён. Facebook не засчитывал отложенные рилсы
+# («Создайте 2 новых Reels» 0/2), а после публикации сразу — засчитал. С 08.11 ВСЕ рилсы выходят сразу,
+# 4 в день, разнесены на весь день с вечером, время каждый день своё внутри окна:
+# 9:00–10:15 / 12:20–13:40 / 16:00–17:30 / 19:50–21:15. Остальные сети (Blotato) — через 5–40 мин после FB.
+NEW_FROM = datetime.date(2026, 11, 8)
+NEW_WINDOWS = [('09:00', '10:15'), ('12:20', '13:40'), ('16:00', '17:30'), ('19:50', '21:15')]
+NEW_BASE = ['09:37', '13:00', '16:45', '20:32']   # середины окон — для определения номера слота
+
+def _base(day):
+    if day >= NEW_FROM:
+        return NEW_BASE
+    return SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+
 def _slots(day):
+    if day >= NEW_FROM:
+        import random
+        out = []
+        for i, (a, b) in enumerate(NEW_WINDOWS):
+            m = lambda t: int(t[:2]) * 60 + int(t[3:5])
+            x = random.Random(f"{day.isoformat()}-{i}-v0811").randint(m(a), m(b))
+            out.append(f"{x // 60:02d}:{x % 60:02d}")
+        return out
     base = SLOTS if day >= SLOTS_FROM else OLD_SLOTS
     if day < TEST_FROM:
         return base
@@ -33,11 +54,13 @@ def _slots(day):
     return out
 
 def _mode(day):
+    if day >= NEW_FROM:
+        return 'live'
     return 'live' if TEST_FROM <= day <= TEST_TO and day.day % 2 == 1 else 'schedule'
 
 def _slot_index(day, hhmm):
     """К какому базовому слоту относится время (слоты разнесены на 2,5+ часа, сдвиг до 25 мин — не перепутать)."""
-    base = SLOTS if day >= SLOTS_FROM else OLD_SLOTS
+    base = _base(day)
     m = lambda t: int(t[:2]) * 60 + int(t[3:5])
     return min(range(len(base)), key=lambda i: abs(m(base[i]) - m(hhmm)))
 LEAD_MIN = 70                     # минимум минут до выхода: робот забирает задание до 10 мин + ставит ~10 мин + запас
@@ -207,3 +230,87 @@ def cleanup():
     keep = {k: v for k, v in p.items() if v.get('date', '9999') >= cutoff or (PUB / k).exists()}
     if keep != p:
         _save(keep)
+
+# ---------------- ПЕРЕХОД 07.11.2026: всё с 08.11 — заново, сразу, по новым окнам ----------------
+# Разово (метка «_переход_0811.done»): все ролики FB с датой от 08.11 раскладываются заново подряд по 4 в день
+# с 08.11 по новым окнам, mode = live. Те, что уже стояли отложкой в Facebook (статус «готово»), попадают
+# в «_удалить_отложки.json» — publish.py удаляет их из «Запланированных» до живой публикации.
+# Blotato: время переносится через «_blotato_перенос.json» (FB + 5–40 мин). ПАЛЬМА — убирается совсем
+# (пауза до слова Евгения; в Blotato её посты удалены вручную 07.11).
+MIGRATE_MARK = QUEUE / '_переход_0811.done'
+DELETE_FB = QUEUE / '_удалить_отложки.json'
+
+def blotato_offset(name):
+    import random
+    return random.Random(f"blotato-{name}").randint(5, 40)
+
+def migrate_0811():
+    if MIGRATE_MARK.exists():
+        return
+    from common import read_pack
+    p = _load()
+    start = NEW_FROM.isoformat()
+    items = sorted(((v['date'], v.get('time', '').zfill(5), k) for k, v in p.items()
+                    if v.get('platform', 'fb') == 'fb' and v.get('date', '') >= start),
+                   key=lambda x: (x[0], x[1]))
+    names = {k for _, _, k in items}
+    # 1) убрать старые задания FB этих роликов из очереди
+    for f in QUEUE.glob('*.json'):
+        if f.name.startswith('_'):
+            continue
+        try: j = json.loads(f.read_text(encoding='utf-8-sig'))
+        except Exception: continue
+        if j.get('platform') == 'fb' and j.get('folder') in names:
+            f.unlink(missing_ok=True)
+    # 2) что уже стоит отложкой в Facebook — в список на удаление
+    try: dele = json.loads(DELETE_FB.read_text(encoding='utf-8'))
+    except Exception: dele = {}
+    for d, t, k in items:
+        if p[k].get('status') == 'готово':
+            first = (read_pack(PUB / k) or k).strip().split('\n')[0].strip()
+            dele[k] = {'key': first[:40], 'old': f"{d} {t}", 'tries': 0}
+    # 3) ПАЛЬМА — из плана и из состояния Blotato
+    try:
+        from blotato import STATE
+        s = json.loads(STATE.read_text(encoding='utf-8'))
+    except Exception:
+        STATE, s = None, None
+    keep = []
+    for d, t, k in items:
+        if PALMA_PAUSE and 'ПАЛЬМА' in k.upper():
+            p.pop(k, None)
+            if s is not None: s.pop(k, None)
+            log(f"ПЕРЕХОД 0811: ПАЛЬМА убрана из плана (пауза) — {k}")
+        else:
+            keep.append(k)
+    # 4) заново по 4 в день с 08.11, сразу
+    now = datetime.datetime.now()
+    move = {}
+    for idx, k in enumerate(keep):
+        day = NEW_FROM + datetime.timedelta(days=idx // 4)
+        si = idx % 4
+        t = _slots(day)[si]
+        ds = day.isoformat()
+        job = {'platform': 'fb', 'folder': k, 'date': ds, 'time': t, 'mode': 'live'}
+        safe = re.sub(r'[^\w\- ]', '', k)[:40].strip()
+        (QUEUE / f"{ds}_{t.replace(':', '')}_fb_{safe}.json").write_text(json.dumps(job, ensure_ascii=False), encoding='utf-8')
+        old = p.get(k, {})
+        p[k] = {'platform': 'fb', 'date': ds, 'time': t, 'mode': 'live', 'status': 'задание',
+                'created': f"{now:%Y-%m-%d %H:%M}", 'попыток': 1, 'было': f"{old.get('date')} {old.get('time')}"}
+        at = datetime.datetime.combine(day, datetime.time(*map(int, t.split(':')))) + \
+             datetime.timedelta(minutes=blotato_offset(k))
+        if s is not None and k in s:
+            move[k] = f"{at:%Y-%m-%d %H:%M}"
+        log(f"ПЕРЕХОД 0811: {k} → {ds} {t} сразу (было {old.get('date')} {old.get('time')}); Blotato {at:%H:%M}")
+    _save(p)
+    if s is not None:
+        STATE.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding='utf-8')
+    if move:
+        from blotato import MOVE
+        try: cur = json.loads(MOVE.read_text(encoding='utf-8'))
+        except Exception: cur = {}
+        cur.update(move)
+        MOVE.write_text(json.dumps(cur, ensure_ascii=False), encoding='utf-8')
+    DELETE_FB.write_text(json.dumps(dele, ensure_ascii=False, indent=1), encoding='utf-8')
+    MIGRATE_MARK.write_text(f"{now:%Y-%m-%d %H:%M} перенесено {len(keep)}, отложек на удаление {len(dele)}", encoding='utf-8')
+    log(f"ПЕРЕХОД 0811 готов: {len(keep)} роликов сразу с 08.11, отложек FB на удаление {len(dele)}, Blotato перенос {len(move)}")

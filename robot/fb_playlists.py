@@ -196,7 +196,9 @@ def maybe_run():
         with sync_playwright() as pw:
             ctx = pw.chromium.launch_persistent_context(
                 str(PROFILE), channel='chrome', headless=False, locale='ru-RU',
-                viewport={'width': 1400, 'height': 900}, args=['--start-minimized'])
+                viewport={'width': 1400, 'height': 900},
+                args=['--start-minimized', '--disable-blink-features=AutomationControlled'],
+                ignore_default_args=['--enable-automation'])
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.set_default_timeout(60000)
             run(page)
