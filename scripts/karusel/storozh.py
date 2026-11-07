@@ -1,4 +1,5 @@
 # Сторож каруселей (07.11.2026): каждые 20 минут смотрит карусели, вышедшие за последние 48 часов.
+# Рилсы из той же папки — по _рилс.json (с 07.11.2026), та же логика.
 # Если какая-то сеть в Blotato упала (failed) — сам перевыкладывает её сразу (karusel.py retry), до 2 раз.
 # Пишет Евгению в Telegram (@kalmykov_assistant_bot): что упало, что перевыложил, что так и не вышло.
 import json, subprocess, sys, pathlib, datetime, urllib.request, urllib.error
@@ -29,9 +30,58 @@ def status(pid):
     except Exception as e:
         return {'status': 'не ясно', 'errorMessage': str(e)[:200]}
 
+def post(body):
+    r = urllib.request.Request(f'{API}/posts', data=json.dumps(body).encode(), method='POST',
+                               headers={'blotato-api-key': KEY, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(r, timeout=120) as resp:
+        return json.loads(resp.read() or b'{}')
+
+def reels(name, F):
+    # _рилс.json: {"at": "...", "text": "...", "video": "shorts.mp4",
+    #  "posts": {"instagram": {"id": "...", "account": "80093", "target": {...}}, ...}}
+    try:
+        cfg = json.loads(rc('cat', f'{F}/_рилс.json').lstrip('\ufeff'))
+    except Exception:
+        return
+    at = datetime.datetime.fromisoformat(cfg['at'])
+    if not (datetime.timedelta(0) < now - at < datetime.timedelta(hours=48)):
+        return
+    changed = False; vurl = None
+    for p, x in cfg['posts'].items():
+        if x.get('status') in ('published', 'сдался'):
+            continue
+        if x.get('id'):
+            r = status(x['id']); x['status'] = r.get('status'); x['url'] = r.get('publicUrl'); x['error'] = r.get('errorMessage'); changed = True
+        print(name, 'рилс', p, x.get('status'), (x.get('error') or '')[:150])
+        if x.get('status') not in ('failed', 'ошибка'):
+            continue
+        if x.get('повторов', 0) >= 2:
+            tg(f'Рилс «{name}»: {NAMES.get(p, p)} так и не вышел после 2 повторов. Ошибка: {(x.get("error") or "")[:300]}')
+            x['status'] = 'сдался'; continue
+        try:
+            if not vurl:
+                rc('copyto', f'{F}/{cfg.get("video", "shorts.mp4")}', 'v.mp4')
+                up = json.loads(urllib.request.urlopen(urllib.request.Request(f'{API}/media/uploads',
+                    data=json.dumps({'filename': 'video.mp4'}).encode(), method='POST',
+                    headers={'blotato-api-key': KEY, 'Content-Type': 'application/json'}), timeout=120).read())
+                urllib.request.urlopen(urllib.request.Request(up['presignedUrl'], data=open('v.mp4', 'rb').read(),
+                    method='PUT', headers={'Content-Type': 'video/mp4'}), timeout=1800)
+                vurl = up['publicUrl']
+            r = post({'post': {'accountId': x['account'], 'content': {'text': cfg['text'], 'mediaUrls': [vurl], 'platform': p},
+                               'target': x['target']}})
+            x['id'] = r.get('postSubmissionId'); x['status'] = 'отправлен заново'
+            tg(f'Рилс «{name}»: упал {NAMES.get(p, p)} — перевыложил сам, проверю через 20 минут')
+        except Exception as e:
+            x['status'] = 'ошибка'; x['error'] = str(e)[:300]
+        x['повторов'] = x.get('повторов', 0) + 1
+    if changed:
+        pathlib.Path('rl.json').write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding='utf-8')
+        rc('copyto', 'rl.json', f'{F}/_рилс.json', check=False)
+
 now = datetime.datetime.now(datetime.timezone.utc)
 for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).splitlines()]:
     F = f'{ROOT}/{name}'
+    reels(name, F)
     try:
         cfg = json.loads(rc('cat', f'{F}/karusel.json').lstrip('﻿'))
         res = json.loads(rc('cat', f'{F}/_отправлено.json'))
