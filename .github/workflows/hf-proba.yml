@@ -1,0 +1,144 @@
+name: HF. Проба HyperFrames (анимации HTML + GSAP)
+
+# 07.11.2026, просьба Евгения: попробовать монтаж с HyperFrames (HeyGen, Apache 2.0) на ролике
+# «ПУТЬ Давайте знакомиться». Этап osnova — чистая вертикальная основа без субтитров нашим montage.py
+# (кладётся в работа/<ключ>/osnova.mp4). Этап render — композиция hf/<проект>/index.html поверх основы,
+# результат в «Брокер/На проверке/<dest>».
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "osnova или render"
+        required: true
+        default: "render"
+      src:
+        description: "Сырой внутри «Монтаж!» (для osnova)"
+        required: false
+        default: "Брокер/На потом/ПУТЬ Давайте знакомиться/ПУТЬ Давайте знакомиться.mp4"
+      key:
+        description: "Ключ работы (папка в «работа/»)"
+        required: false
+        default: "Сырые - Шортсы - 20261102_014843_1"
+      project:
+        description: "Папка композиции в репо (hf/…)"
+        required: false
+        default: "hf/znakomstvo"
+      dest:
+        description: "Куда положить результат (внутри «Монтаж!»)"
+        required: false
+        default: "Брокер/На проверке/ПРОБА HyperFrames — Давайте знакомиться"
+      enc:
+        description: "Ключ шифрования для лёгкой копии (ветка tmp-hf)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  osnova:
+    if: ${{ inputs.stage == 'osnova' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Основа без субтитров
+        env:
+          SRC: ${{ inputs.src }}
+          KEY: ${{ inputs.key }}
+        run: |
+          W="$PWD/work/$KEY"; mkdir -p raw "$W"
+          rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
+          rclone copy "montazh:Брокер/работа/$KEY" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
+          [ -f "$W/fixes.json" ] || echo '{}' > "$W/fixes.json"
+          python scripts/align.py raw/src.mp4 "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err" || { tail -5 "$W/align.err"; exit 1; }
+          ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py raw/src.mp4 "$W" > "$W/montage.log"
+          ls -la "$W"
+          ffprobe -v error -show_entries stream=width,height:format=duration -of compact "$W/ролик_B.mp4"
+          rclone copyto "$W/ролик_B.mp4" "montazh:Брокер/работа/$KEY/osnova.mp4"
+          rclone copyto "$W/words_out.json" "montazh:Брокер/работа/$KEY/osnova_words.json"
+          echo "::notice::Основа готова: $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$W/ролик_B.mp4") с"
+      - name: Лёгкая копия для Claude
+        if: ${{ inputs.enc != '' }}
+        env:
+          ENC: ${{ inputs.enc }}
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$ENC"
+          W="$PWD/work/$KEY"; mkdir -p p
+          ffmpeg -v error -i "$W/ролик_B.mp4" -vf scale=540:-2 -c:v libx264 -crf 28 -preset veryfast -c:a aac -b:a 64k p/osnova540.mp4
+          cp "$W/words_out.json" p/
+          tar czf p.tgz p && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:ENC
+          mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "hf $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf
+
+  render:
+    if: ${{ inputs.stage == 'render' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: ffmpeg и шрифты
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-inter > /dev/null
+          mkdir -p ~/.fonts && cp fonts/* ~/.fonts/ 2>/dev/null; fc-cache -f > /dev/null
+      - name: Основа и картинки
+        env:
+          KEY: ${{ inputs.key }}
+          P: ${{ inputs.project }}
+        run: |
+          rclone copyto "montazh:Брокер/работа/$KEY/osnova.mp4" "$P/osnova.mp4" --multi-thread-streams 8
+          if [ -f "$P/kartinki.txt" ]; then
+            mkdir -p "$P/img"
+            while IFS= read -r f; do [ -n "$f" ] && rclone copyto "montazh:$f" "$P/img/$(basename "$f")"; done < "$P/kartinki.txt"
+          fi
+          ls -la "$P" "$P/img" 2>/dev/null
+      - name: Рендер HyperFrames
+        env:
+          P: ${{ inputs.project }}
+        run: |
+          cd "$P"
+          npm i --silent hyperframes@0.9.20
+          npx hyperframes telemetry disable > /dev/null 2>&1 || true
+          s=$(date +%s)
+          npx hyperframes render . -o out.mp4 -q delivery -w 4 2>&1 | tail -20
+          echo "::notice::Рендер за $(( ($(date +%s) - s) / 60 )) мин"
+          ffprobe -v error -show_entries stream=codec_type,width,height:format=duration,bit_rate -of compact out.mp4
+      - name: Первый кадр = обложка, громкость, на Диск
+        env:
+          P: ${{ inputs.project }}
+          DEST: ${{ inputs.dest }}
+          ENC: ${{ inputs.enc }}
+        run: |
+          cd "$P"
+          name=$(basename "$DEST")
+          ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart "final.mp4"
+          for t in 1 6 12 20 30 40 50 60 70 80; do ffmpeg -v error -y -ss $t -i final.mp4 -frames:v 1 -vf scale=360:-2 "k_$t.jpg"; done
+          ffmpeg -v error -y -i k_1.jpg -i k_6.jpg -i k_12.jpg -i k_20.jpg -i k_30.jpg -i k_40.jpg -i k_50.jpg -i k_60.jpg -i k_70.jpg -i k_80.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
+          rclone copyto final.mp4 "montazh:$DEST/!!! $name.mp4"
+          rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
+          [ -f oblozhka.jpg ] && rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          echo "::notice::Готово: $DEST"
+          if [ -n "$ENC" ]; then
+            echo "::add-mask::$ENC"
+            mkdir -p p && ffmpeg -v error -i final.mp4 -vf scale=540:-2 -c:v libx264 -crf 26 -preset veryfast -c:a aac -b:a 96k p/final540.mp4 && cp кадры.jpg p/
+            tar czf p.tgz p && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:ENC
+            mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf
+            git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "hf $GITHUB_RUN_ID"
+            git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf
+          fi
