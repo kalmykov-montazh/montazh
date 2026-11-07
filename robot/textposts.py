@@ -639,6 +639,10 @@ def _publish(page, j, kind, path, text, topic, photo, bg):
         _discard(page)
         raise DryRun()
     groups = choose_groups(available, topic, j['day'])
+    if kind == 'photo':                      # 07.11.2026: дневной фото-пост — 5 групп вместо 9 (место под рилс в группах)
+        reg_ = _jload(GROUPS, {})
+        order = {'проверенная': 0, 'средняя': 1, 'тест': 2}
+        groups = sorted(groups, key=lambda n: order.get(reg_.get(n, {}).get('статус'), 9))[:5]
     picked = []
     for n in groups:
         r = page.evaluate(JS_ROWS, n)

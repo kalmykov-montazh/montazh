@@ -11,6 +11,7 @@ import blotato
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'Крипто', 'скрипты'))
 import crypto_yt                                       # шортсы «Всё о крипте» (25.10.2026)
 import fb_playlists                                    # новые рилсы FB — сами в плейлист по теме (25.10.2026)
+import reel_groups                                     # лучший рилс дня — в тематические группы (07.11.2026)
 import claude_guard                                    # Claude закрыт (после своего обновления) — поднять (04.11.2026)
 
 PLATFORMS = {'fb': fb.publish}   # текстовые посты ('fbtext') — textposts.publish   # дальше добавим: 'ig', 'th', 'tt', 'yt'
@@ -129,7 +130,11 @@ def run_jobs():
     elif any(a - datetime.datetime.now() < datetime.timedelta(minutes=80) for a in live_soon):
         jobs = jobs[:1]
     dele = _load_delete()
-    if not jobs and not dele:
+    try: reel_due = reel_groups.due()
+    except Exception: reel_due = False
+    if live:                                       # живой ролик важнее — группы в следующий запуск
+        reel_due = False
+    if not jobs and not dele and not reel_due:
         return
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 3 * 3600:
         return
@@ -190,6 +195,12 @@ def run_jobs():
                         log(f"повтор не поставлен: {str(e2)[:120]}")
                 if i < len(batch) - 1:
                     time.sleep(random.uniform(180, 480))     # 3–8 минут между публикациями
+            if reel_due:
+                try:
+                    if batch: time.sleep(random.uniform(120, 300))
+                    reel_groups.run(page)
+                except Exception as e:
+                    log(f"РИЛС В ГРУППЫ: сбой {str(e).splitlines()[0][:150]}")
             ctx.close()
     finally:
         LOCK.unlink(missing_ok=True)
