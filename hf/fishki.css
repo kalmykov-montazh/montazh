@@ -1,0 +1,28 @@
+/* Фишки 07.11.2026 (разбор ролика «Claude-директор»): окна-«рабочий стол», огромная надпись,
+   счётчик с кольцом, документ с маркером, белая карточка в стиле Apple */
+.win{position:absolute;left:70px;width:940px;background:#15131f;border-radius:26px;overflow:hidden;z-index:14;
+ box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.08)}
+.win .bar{height:58px;background:linear-gradient(#2a2638,#211e2e);display:flex;align-items:center;gap:14px;padding:0 24px}
+.win .bar i{width:20px;height:20px;border-radius:50%;background:#ff5f57}.win .bar i:nth-child(2){background:#febc2e}.win .bar i:nth-child(3){background:#28c840}
+.win .bar b{margin-left:18px;font-weight:800;font-size:28px;color:#b9b4cc}
+.win img{display:block;width:940px;height:600px;object-fit:cover}
+.giant{position:absolute;left:0;width:1080px;text-align:center;z-index:13;font-family:U;font-size:210px;line-height:.92;color:#fff;
+ letter-spacing:-4px;text-shadow:0 14px 50px rgba(0,0,0,.75);-webkit-text-stroke:4px rgba(0,0,0,.35);paint-order:stroke fill}
+.giant small{display:block;font-family:M;font-weight:900;font-size:60px;letter-spacing:2px;margin-top:10px;color:var(--y)}
+.meter{position:absolute;left:90px;width:900px;z-index:14;background:rgba(18,16,28,.94);border-radius:30px;padding:34px 40px;display:flex;align-items:center;gap:40px;
+ box-shadow:0 26px 70px rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.08)}
+.meter svg{flex:0 0 260px}
+.meter .rg{fill:none;stroke:rgba(255,255,255,.12);stroke-width:26}
+.meter .rv{fill:none;stroke:#ff8a2a;stroke-width:26;stroke-linecap:round;transform:rotate(-90deg);transform-origin:130px 130px}
+.meter .num{font-family:O;font-size:150px;line-height:1;color:#fff}
+.meter .lab{font-weight:900;font-size:40px;color:#b9b4cc;margin-top:8px}
+.meter .delta{display:inline-block;margin-top:16px;font-weight:900;font-size:44px;background:#e63946;color:#fff;padding:6px 18px;border-radius:12px}
+.doc{position:absolute;left:110px;width:860px;z-index:14;background:#fbfaf7;color:#1b1b1b;border-radius:18px;padding:40px 44px;box-shadow:0 28px 70px rgba(0,0,0,.55);transform:rotate(-2deg)}
+.doc h4{font-weight:900;font-size:44px;margin-bottom:22px}
+.doc p{position:relative;font-weight:800;font-size:38px;line-height:1.35;color:#555;margin:6px 0}
+.doc p.hl span{position:relative;z-index:1;color:#111}
+.doc p.hl:before{content:"";position:absolute;left:-10px;top:8px;height:44px;width:calc(100% + 20px);background:#ffb347;border-radius:8px;transform-origin:left;transform:scaleX(var(--m,0));z-index:0}
+.apple{position:absolute;left:120px;width:840px;z-index:16;background:#fff;color:#111;border-radius:44px;padding:60px 54px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.apple b{display:block;font-weight:900;font-size:84px;line-height:1.02;letter-spacing:-2px}
+.apple span{display:block;font-weight:800;font-size:40px;color:#777;margin-top:20px}
+.apple em{display:inline-block;font-style:normal;margin-top:30px;font-weight:900;font-size:42px;background:#111;color:#fff;padding:16px 34px;border-radius:999px}
