@@ -1,0 +1,28 @@
+name: Карусель — сторож (перевыложить упавшее)
+
+# Для Claude (07.11.2026): каждые 20 минут проверяет карусели за последние 48 часов (Брокер/Посты/Карусели).
+# Упала сеть в Blotato — сам перевыкладывает (до 2 раз) и пишет Евгению в Telegram. Скрипт scripts/karusel/storozh.py
+on:
+  schedule:
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch:
+
+concurrency: karusel-storozh
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Сторож
+        run: |
+          rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
+          rclone copyto "montazh:скрипты/публикатор/telegram_ключ.txt" tg.txt || rclone copyto "montazh:скрипты/публикатор/telegram_ключ.txt.txt" tg.txt || true
+          ls -la tg.txt || echo "нет ключа Telegram — без уведомлений"
+          python3 scripts/karusel/storozh.py

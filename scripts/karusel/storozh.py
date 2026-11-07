@@ -1,0 +1,78 @@
+# Сторож каруселей (07.11.2026): каждые 20 минут смотрит карусели, вышедшие за последние 48 часов.
+# Если какая-то сеть в Blotato упала (failed) — сам перевыкладывает её сразу (karusel.py retry), до 2 раз.
+# Пишет Евгению в Telegram (@kalmykov_assistant_bot): что упало, что перевыложил, что так и не вышло.
+import json, subprocess, sys, pathlib, datetime, urllib.request, urllib.error
+
+ROOT = 'montazh:Брокер/Посты/Карусели'
+API = 'https://backend.blotato.com/v2'
+KEY = open('key.txt', encoding='utf-8-sig').read().strip()
+TG_CHAT = 8341379322
+NAMES = {'instagram': 'Instagram', 'tiktok': 'TikTok', 'threads': 'Threads', 'youtube': 'YouTube'}
+
+def rc(*a, check=True):
+    return subprocess.run(['rclone', *a], capture_output=True, text=True, check=check).stdout
+
+def tg(text):
+    try:
+        tok = pathlib.Path('tg.txt').read_text(encoding='utf-8-sig').strip()
+        body = json.dumps({'chat_id': TG_CHAT, 'text': text[:3500]}).encode()
+        urllib.request.urlopen(urllib.request.Request(f'https://api.telegram.org/bot{tok}/sendMessage', data=body,
+                               headers={'Content-Type': 'application/json'}), timeout=30)
+    except Exception as e:
+        print('telegram не ушёл:', e)
+
+def status(pid):
+    r = urllib.request.Request(f'{API}/posts/{pid}', headers={'blotato-api-key': KEY})
+    try:
+        with urllib.request.urlopen(r, timeout=60) as resp:
+            return json.loads(resp.read() or b'{}')
+    except Exception as e:
+        return {'status': 'не ясно', 'errorMessage': str(e)[:200]}
+
+now = datetime.datetime.now(datetime.timezone.utc)
+for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).splitlines()]:
+    F = f'{ROOT}/{name}'
+    try:
+        cfg = json.loads(rc('cat', f'{F}/karusel.json').lstrip('﻿'))
+        res = json.loads(rc('cat', f'{F}/_отправлено.json'))
+    except Exception:
+        continue
+    at = datetime.datetime.fromisoformat(cfg['at'])
+    if not (datetime.timedelta(0) < now - at < datetime.timedelta(hours=48)):
+        continue
+    try:
+        rep = json.loads(rc('cat', f'{F}/_повторы.json', check=False) or '{}')
+    except Exception:
+        rep = {}
+    failed = []
+    for p, x in res.items():
+        if x.get('status') == 'published':
+            continue
+        if x.get('id'):
+            r = status(x['id'])
+            x['status'] = r.get('status'); x['url'] = r.get('publicUrl'); x['error'] = r.get('errorMessage')
+        print(name, p, x.get('status'), (x.get('error') or '')[:150])
+        if x.get('status') in ('failed', 'ошибка'):
+            failed.append(p)
+    if not failed:
+        pathlib.Path('r.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
+        rc('copyto', 'r.json', f'{F}/_отправлено.json', check=False)
+        continue
+    give_up = [p for p in failed if rep.get(p, 0) >= 2]
+    todo = [p for p in failed if rep.get(p, 0) < 2]
+    for p in give_up:
+        if not rep.get(p + '_сказал'):
+            tg(f'Карусель «{name}»: {NAMES.get(p, p)} так и не вышел после 2 повторов. Ошибка: {(res[p].get("error") or "")[:300]}')
+            rep[p + '_сказал'] = 1
+    if todo:
+        rc('copy', F, 'k', '--exclude', '_превью*')
+        pathlib.Path('k/_отправлено.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
+        out = subprocess.run([sys.executable, 'scripts/karusel/karusel.py', 'k', 'retry'], capture_output=True, text=True)
+        print(out.stdout, out.stderr[-500:])
+        rc('copyto', 'k/_отправлено.json', f'{F}/_отправлено.json', check=False)
+        for p in todo:
+            rep[p] = rep.get(p, 0) + 1
+        tg(f'Карусель «{name}»: упал {", ".join(NAMES.get(p, p) for p in todo)} — перевыложил сам, проверю через 20 минут')
+        subprocess.run(['rm', '-rf', 'k'])
+    pathlib.Path('rep.json').write_text(json.dumps(rep, ensure_ascii=False), encoding='utf-8')
+    rc('copyto', 'rep.json', f'{F}/_повторы.json', check=False)
