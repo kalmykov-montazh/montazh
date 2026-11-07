@@ -46,6 +46,16 @@ cfg = json.loads((D / 'karusel.json').read_text(encoding='utf-8-sig'))
 res_p = D / '_отправлено.json'
 res = json.loads(res_p.read_text(encoding='utf-8')) if res_p.exists() else {}
 mode = sys.argv[2] if len(sys.argv) > 2 else 'post'
+if mode == 'retry':                               # 07.11.2026: перевыложить сразу то, что упало (status failed / ошибка)
+    for p, x in list(res.items()):
+        st = x.get('status')
+        if x.get('id'):
+            try: st = req('GET', f"/posts/{x['id']}").get('status')
+            except Exception: pass
+        if st in ('failed', 'ошибка'):
+            print(p, 'упал — перевыкладываю сразу'); res.pop(p)
+        else:
+            print(p, 'не трогаю:', st)
 
 if mode == 'status':
     for p, x in res.items():
@@ -77,7 +87,9 @@ else:
             for t in tags[5:]:
                 text = text.replace(' ' + t, '').replace(t, '')
         body = {'post': {'accountId': ACC[p], 'content': {'text': text.strip(), 'mediaUrls': media, 'platform': p},
-                         'target': target(p, cfg)}, 'scheduledTime': cfg['at']}
+                         'target': target(p, cfg)}}
+        if mode != 'retry':
+            body['scheduledTime'] = cfg['at']
         try:
             r = req('POST', '/posts', body)
             res[p] = {'id': r.get('postSubmissionId'), 'status': 'запланирован', 'at': cfg['at']}

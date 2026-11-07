@@ -1,6 +1,6 @@
 name: Карусель — поставить в Blotato
 
-# Для Claude (30.10.2026): папка карусели на Диске (внутри «Монтаж!»), режим post или status.
+# Для Claude (30.10.2026): папка карусели на Диске (внутри «Монтаж!»), режим post, status или retry (retry — сразу перевыложить упавшие сети).
 # post — грузит фото и ставит в Instagram, TikTok, Threads (+ YouTube Shorts из shorts.mp4) на время из karusel.json.
 # status — проверяет, вышло ли. Итог пишет в _отправлено.json в той же папке.
 
@@ -11,7 +11,7 @@ on:
         description: "Папка внутри «Монтаж!», например Брокер/Посты/Карусели/Зима в Валенсии"
         required: true
       mode:
-        description: "post или status"
+        description: "post, status или retry"
         required: false
         default: "post"
 
