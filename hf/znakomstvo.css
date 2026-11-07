@@ -1,0 +1,71 @@
+@font-face{font-family:M;src:url(fonts/montserrat-900.ttf);font-weight:900}
+@font-face{font-family:M;src:url(fonts/montserrat-800.ttf);font-weight:800}
+@font-face{font-family:U;src:url(fonts/unbounded-800.ttf);font-weight:800}
+@font-face{font-family:O;src:url(fonts/oswald-700.ttf);font-weight:700}
+:root{--navy:#0b1630;--navy2:#13244a;--y:#ffd23f;--r:#e63946;--w:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:#000;overflow:hidden}
+#root{position:relative;width:1080px;height:1920px;overflow:hidden;font-family:M,sans-serif;color:#fff}
+.full{position:absolute;left:0;top:0;width:1080px;height:1920px;object-fit:cover}
+#cam{overflow:hidden;transform-origin:50% 38%}
+#cover{z-index:50;opacity:0}
+.zone{position:absolute;left:0;width:1080px;padding:0 50px;z-index:10}
+
+/* заставка */
+.stamp{font-family:U;font-size:74px;line-height:1.05;text-align:center;letter-spacing:1px}
+.stamp span{display:inline-block;background:var(--navy);padding:10px 22px;border-top:8px solid var(--y);margin:4px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.chips{display:flex;justify-content:center;gap:14px;margin-top:22px;flex-wrap:wrap}
+.chips b{font-weight:900;font-size:40px;background:#fff;color:var(--navy);padding:10px 22px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.chips b.red{background:var(--r);color:#fff}
+
+/* именная плашка */
+.lower{position:absolute;left:40px;top:1180px;display:flex;align-items:stretch;gap:18px;background:rgba(11,22,48,.92);padding:18px 30px 18px 18px;border-radius:12px;z-index:12;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.lower .bar{width:10px;background:var(--y);border-radius:6px;transform-origin:top}
+.nm{font-weight:900;font-size:52px}
+.nl{font-weight:800;font-size:34px;color:var(--y);margin-top:4px;display:flex;align-items:center;gap:10px}
+.pin{width:26px;height:26px;background:var(--r);border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:inline-block}
+
+/* фото-карточка */
+.photo{position:absolute;width:360px;background:#fff;padding:12px 12px 52px;transform:rotate(4deg);z-index:11;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.photo img{width:336px;height:250px;object-fit:cover;display:block}
+.photo span{position:absolute;bottom:8px;left:0;width:100%;text-align:center;color:var(--navy);font-weight:900;font-size:34px}
+
+/* маршрут */
+#route{height:420px;transform:scale(.86);transform-origin:50% 0}
+.rt-h{font-family:U;font-size:50px;text-align:center;color:var(--y);background:var(--navy);width:max-content;margin:0 auto;padding:8px 24px;border-radius:10px}
+#route svg{position:absolute;left:60px;top:70px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.pt{position:absolute;display:flex;flex-direction:column;align-items:center;width:180px;margin-top:70px}
+.pt i{width:44px;height:44px;border-radius:50%;background:var(--y);border:7px solid var(--navy);box-shadow:0 0 0 6px rgba(255,210,63,.35)}
+.pt u{text-decoration:none;font-family:O;font-size:68px;background:var(--navy);padding:0 16px;border-radius:10px;margin-top:6px}
+.pt s{text-decoration:none;font-weight:900;font-size:40px;text-shadow:0 3px 10px #000}
+.nth{position:absolute;right:20px;top:-30px;font-family:U;font-size:44px;line-height:1;text-align:center;background:var(--r);padding:16px 20px;border-radius:50%;width:150px;height:150px;display:flex;align-items:center;justify-content:center;transform:rotate(-8deg);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+
+/* галочки */
+.ck{display:flex;align-items:center;gap:18px;font-weight:900;font-size:50px;background:rgba(11,22,48,.88);width:max-content;padding:10px 26px 10px 14px;border-radius:12px;margin-bottom:12px;border-left:8px solid var(--y)}
+.ck i{width:46px;height:46px;border-radius:10px;background:var(--y);transform:scale(0);position:relative}
+.ck i:after{content:"";position:absolute;left:14px;top:5px;width:12px;height:24px;border:solid var(--navy);border-width:0 7px 7px 0;transform:rotate(45deg)}
+
+/* меню услуг */
+.mh{font-family:U;font-size:40px;background:var(--y);color:var(--navy);width:max-content;padding:10px 22px;margin:0 auto;border-radius:8px}
+.dots{display:flex;justify-content:center;gap:12px;margin:18px 0}
+.dots i{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.45)}
+.cards{position:relative;height:190px}
+.card{position:absolute;left:0;right:0;opacity:0;display:flex;align-items:center;gap:26px;background:linear-gradient(135deg,var(--navy),var(--navy2));border:3px solid rgba(255,210,63,.6);border-radius:22px;padding:22px 30px;box-shadow:0 16px 36px rgba(0,0,0,.5)}
+.card em{font-style:normal;font-family:O;font-size:84px;color:var(--y);line-height:1}
+.card b{display:block;font-weight:900;font-size:56px;line-height:1.05}
+.card small{display:block;font-weight:800;font-size:32px;color:#c9d6f5;margin-top:6px}
+
+/* чат */
+.bub{position:relative;font-weight:900;font-size:56px;background:#fff;color:var(--navy);width:max-content;margin:0 auto;padding:22px 34px;border-radius:40px 40px 40px 8px;box-shadow:0 14px 34px rgba(0,0,0,.45);display:flex;align-items:center;gap:20px}
+.ty{display:flex;gap:8px}.ty i{width:14px;height:14px;border-radius:50%;background:var(--navy);opacity:.6}
+.ask{font-family:U;font-size:58px;text-align:center;background:var(--r);width:max-content;margin:26px auto 0;padding:14px 28px;border-radius:14px;transform:rotate(-2deg);box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.help{font-weight:800;font-size:38px;text-align:center;margin-top:20px;text-shadow:0 3px 12px #000}
+
+/* субтитры */
+#subs{position:absolute;left:0;width:1080px;height:0;z-index:20}
+.sg{position:absolute;left:60px;right:60px;top:0;transform:translateY(-50%);text-align:center;opacity:0;font-weight:900;font-size:66px;line-height:1.15;text-transform:uppercase;
+ -webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 6px 18px rgba(0,0,0,.7)}
+.sg span{display:inline-block;color:rgba(255,255,255,.55);padding:0 6px;border-radius:12px;transition:none}
+.sg span.on{color:#fff}
+.sg span.acc{color:var(--y)}
+.sg span.acc.on{background:var(--r);color:#fff;-webkit-text-stroke:0;transform:scale(1.08) rotate(-2deg)}
