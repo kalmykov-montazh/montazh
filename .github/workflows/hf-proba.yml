@@ -128,8 +128,8 @@ jobs:
           cd "$P"
           name=$(basename "$DEST")
           ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart "final.mp4"
-          for t in 1 6 12 20 30 40 50 60 70 80; do ffmpeg -v error -y -ss $t -i final.mp4 -frames:v 1 -vf scale=360:-2 "k_$t.jpg"; done
-          ffmpeg -v error -y -i k_1.jpg -i k_6.jpg -i k_12.jpg -i k_20.jpg -i k_30.jpg -i k_40.jpg -i k_50.jpg -i k_60.jpg -i k_70.jpg -i k_80.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
+          D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4); for i in 0 1 2 3 4 5 6 7 8 9; do t=$(python3 -c "print(round(0.5+($D-1)*$i/9,2))"); ffmpeg -v error -y -ss $t -i final.mp4 -frames:v 1 -vf scale=360:-2 "k_$i.jpg"; done
+          ffmpeg -v error -y -i k_0.jpg -i k_1.jpg -i k_2.jpg -i k_3.jpg -i k_4.jpg -i k_5.jpg -i k_6.jpg -i k_7.jpg -i k_8.jpg -i k_9.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
           rclone copyto final.mp4 "montazh:$DEST/!!! $name.mp4"
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
           [ -f oblozhka.jpg ] && rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
