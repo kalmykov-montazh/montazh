@@ -23,6 +23,6 @@ jobs:
       - name: Сторож
         run: |
           rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
-          rclone copyto "montazh:скрипты/публикатор/telegram_ключ.txt" tg.txt || rclone copyto "montazh:скрипты/публикатор/telegram_ключ.txt.txt" tg.txt || true
+          rclone copyto "montazh:Общее/Робот/telegram_ключ.txt.txt" tg.txt || rclone copyto "montazh:Общее/Робот/telegram_ключ.txt" tg.txt || true
           ls -la tg.txt || echo "нет ключа Telegram — без уведомлений"
           python3 scripts/karusel/storozh.py
