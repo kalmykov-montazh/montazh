@@ -10,7 +10,7 @@ import json, re, random, datetime
 from common import QUEUE, log, pause, human_click, human_type
 import textposts
 
-DRY = True
+DRY = False   # 07.11.2026: проверка прошла (скрин «Создание публикации» → «Отправить»), включено
 REEL_GROUPS = 4
 PROFILE_REELS = 'https://www.facebook.com/kalmykov.rieltor.valencia/reels/'
 STATE = QUEUE / '_рилсы_в_группы.json'
@@ -119,7 +119,7 @@ def _share_one(page, reel_id, group, dry):
         page.keyboard.press('Escape'); pause(1, 2); page.keyboard.press('Escape')
         return False
     dlg = page.locator('[role="dialog"]').last
-    for name in ('Опубликовать', 'Поделиться', 'Отправить'):
+    for name in ('Отправить', 'Опубликовать', 'Поделиться'):
         b = dlg.get_by_role('button', name=name, exact=True)
         if b.count():
             human_click(page, b.last); pause(6, 10)
