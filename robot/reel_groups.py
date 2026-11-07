@@ -6,7 +6,7 @@
 # Риэлторские/барахолки («не для постов»), юмор, чужие города — не берём.
 # DRY = True — проверка: доходит до последней кнопки в 1 группе, делает скрин в «шаги», ничего не публикует.
 # Разовый запуск проверки сейчас: файл «_задания\_рилсы_в_группы_проверка» (робот удалит сам).
-import json, re, random, datetime, time
+import json, re, random, datetime
 from common import QUEUE, log, pause, human_click, human_type
 import textposts
 
@@ -72,16 +72,31 @@ def _groups(day):
     picked.sort(key=lambda n: STATUS_ORDER.get(reg[n].get('статус'), 9))
     return picked[:REEL_GROUPS]
 
+JS_SHARE = r"""() => {
+  const H = window.innerHeight, W = window.innerWidth;
+  const c = [...document.querySelectorAll('[aria-label*="оделиться"]')].map(e => e.getBoundingClientRect())
+    .filter(r => r.width > 0 && r.height > 0 && r.top >= 0 && r.bottom <= H && r.left >= 0 && r.right <= W);
+  if (!c.length) return null;
+  c.sort((a, b) => b.top - a.top);
+  return {x: c[0].left + c[0].width / 2, y: c[0].top + c[0].height / 2};
+}"""
+
 def _share_one(page, reel_id, group, dry):
     page.goto(f'https://www.facebook.com/reel/{reel_id}', wait_until='domcontentloaded'); pause(6, 10)
-    # 07.11: первая кнопка «Поделиться» на странице скрытая — берём только видимую
-    btn = page.locator('[aria-label="Поделиться"][role="button"]:visible')
-    if not btn.count():
-        btn = page.locator('[aria-label*="оделиться"]:visible')
-    if not btn.count():
+    # 07.11: прокрутка к кнопке листает ленту Reels на чужой ролик — кликаем по координатам, без прокрутки,
+    # и проверяем, что открыт именно наш рилс
+    if reel_id not in page.url:
+        raise RuntimeError(f'открылся не тот рилс: {page.url[:80]}')
+    box = page.evaluate(JS_SHARE)
+    if not box:
         textposts_debug(page, 'рилс нет кнопки поделиться')
         raise RuntimeError('не вижу кнопку «Поделиться» у рилса')
-    human_click(page, btn.last); pause(2, 4)
+    page.mouse.move(box['x'] + random.uniform(-40, 40), box['y'] + random.uniform(-40, 40), steps=random.randint(8, 15))
+    pause(0.3, 0.8)
+    page.mouse.click(box['x'], box['y'], delay=random.randint(60, 150)); pause(2, 4)
+    if reel_id not in page.url:
+        textposts_debug(page, 'рилс уехал')
+        raise RuntimeError('лента перелистнулась на другой рилс — не делюсь')
     grp = page.locator('[role="dialog"]').last.get_by_text('Группа', exact=True)
     if not grp.count():
         textposts_debug(page, 'рилс нет пункта группа')
