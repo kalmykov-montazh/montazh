@@ -64,7 +64,7 @@ def tl(s): J.append(s)
 def snd(kind, t, vol=0.35): SND.append((kind, round(t, 3), vol))
 
 # 0. обложка на первом кадре (TikTok берёт кадр 0)
-H.append('<img id="cover" class="full" src="img/обложка.jpg">')
+H.append('<img id="cover" class="full" src="oblozhka.jpg">')
 tl('tl.set("#cover",{opacity:1},0).set("#cover",{opacity:0},0.12);')
 
 # основа
@@ -78,7 +78,7 @@ tl(f'tl.to("#v",{{scale:1.06,duration:{DUR/2:.2f},ease:"sine.inOut",yoyo:true,re
 # 1. заставка: «Давайте знакомиться» + три фишки
 H.append(f'''<div id="title" class="zone" style="top:{TOP}px">
  <div class="stamp"><span>ДАВАЙТЕ</span> <span>ЗНАКОМИТЬСЯ</span></div>
- <div class="chips"><b id="c1">10 лет в банке</b><b id="c2">свой бизнес</b><b id="c3" class="red">3 раза с нуля</b></div></div>''')
+ <div class="chips"><b id="c1">10 лет в банке</b><b id="c2">свой бизнес</b><b id="c3" class="red">3-й раз всё сначала</b></div></div>''')
 tl('tl.from("#title .stamp span",{y:-120,opacity:0,rotation:-6,stagger:0.12,duration:0.45,ease:"back.out(2)"},0.12);')
 for cid, w in (("c1", "банке"), ("c2", "бизнес"), ("c3", "нуля")):
     t = at(w); tl(f'tl.from("#{cid}",{{scale:0,opacity:0,duration:0.35,ease:"back.out(3)"}},{t-0.1:.3f});'); snd("pop", t - 0.1, 0.3)
@@ -94,7 +94,7 @@ tl(f'tl.from("#ph1",{{scale:0.2,rotation:12,opacity:0,duration:0.45,ease:"back.o
 H.append(f'<div id="ph2" class="photo" style="top:{TOP+430}px;left:40px;transform:rotate(-5deg)"><img src="img/kharkiv_1.jpg"><span>Харьков</span></div>')
 tl(f'tl.from("#ph2",{{scale:0.2,rotation:-15,opacity:0,duration:0.45,ease:"back.out(2)"}},{T["kh"]-0.05:.3f}).to("#ph2",{{scale:0.3,opacity:0,duration:0.3}},{T["y22"]-0.2:.3f});')
 # 3. маршрут: Луганск → Харьков → Валенсия, линия рисуется, годы щёлкают
-H.append(f'''<div id="route" class="zone" style="top:{TOP}px"><div class="rt-h">ТРИ РАЗА С НУЛЯ</div>
+H.append(f'''<div id="route" class="zone" style="top:{TOP}px"><div class="rt-h">И СНОВА ВСЁ СНАЧАЛА</div>
 <svg viewBox="0 0 960 300" width="960" height="300"><path id="rp" d="M80 210 C 250 60, 330 60, 470 150 S 760 260, 880 110" fill="none" stroke="#ffd23f" stroke-width="14" stroke-linecap="round" stroke-dasharray="8 22"/></svg>
 <div class="pt" id="p1" style="left:40px;top:235px"><i></i><u>2014</u><s>Луганск</s></div>
 <div class="pt" id="p2" style="left:420px;top:175px"><i></i><u class="r">2022</u><s>Харьков</s></div>
