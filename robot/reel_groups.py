@@ -74,12 +74,23 @@ def _groups(day):
 
 def _share_one(page, reel_id, group, dry):
     page.goto(f'https://www.facebook.com/reel/{reel_id}', wait_until='domcontentloaded'); pause(6, 10)
-    btn = page.locator('[aria-label="Поделиться"][role="button"]')
+    # 07.11: первая кнопка «Поделиться» на странице скрытая — берём только видимую
+    btn = page.locator('[aria-label="Поделиться"][role="button"]:visible')
     if not btn.count():
-        btn = page.get_by_role('button', name=re.compile('^Поделиться'))
-    human_click(page, btn.first); pause(2, 4)
-    human_click(page, page.get_by_text('Группа', exact=True).last); pause(2, 4)
-    box = page.locator('[role="dialog"] input[type="search"], [role="dialog"] input[placeholder*="поиск"], [role="dialog"] input')
+        btn = page.locator('[aria-label*="оделиться"]:visible')
+    if not btn.count():
+        textposts_debug(page, 'рилс нет кнопки поделиться')
+        raise RuntimeError('не вижу кнопку «Поделиться» у рилса')
+    human_click(page, btn.last); pause(2, 4)
+    grp = page.locator('[role="dialog"]').last.get_by_text('Группа', exact=True)
+    if not grp.count():
+        textposts_debug(page, 'рилс нет пункта группа')
+        raise RuntimeError('в окне «Поделиться» нет пункта «Группа»')
+    human_click(page, grp.last); pause(2, 4)
+    box = page.locator('[role="dialog"] input:visible')
+    if not box.count():
+        textposts_debug(page, 'рилс нет поиска групп')
+        raise RuntimeError('нет поля поиска групп')
     human_click(page, box.first)
     human_type(page, group[:30]); pause(3, 5)
     row = page.locator('[role="dialog"]').last.get_by_text(group[:40], exact=False)
@@ -127,16 +138,21 @@ def run(page):
     dry = DRY or forced
     if dry:
         groups = groups[:1]
-    done = []
+    done, reached = [], []
     for g in groups:
         try:
             if _share_one(page, reel_id, g, dry):
                 done.append(g)
+            elif dry:
+                reached.append(g)
         except Exception as e:
             log(f"РИЛС В ГРУППЫ: {g} — {str(e).splitlines()[0][:150]}")
         pause(60, 200) if not dry else pause(3, 6)
     if dry:
-        log(f"ПРОВЕРКА рилс в группы (без публикации): рилс {reel_id} ({views} просм.) → дошёл до кнопки в «{groups[0]}», скрин в «шаги»")
+        if reached:
+            log(f"ПРОВЕРКА рилс в группы (без публикации): рилс {reel_id} ({views} просм.) → дошёл до кнопки в «{reached[0]}», скрин в «шаги»")
+        else:
+            log(f"ПРОВЕРКА рилс в группы: НЕ дошёл до кнопки (рилс {reel_id}), скрин в «шаги»")
         return
     textposts._record(done, day, 'reel', f'рилс {reel_id}')
     s.setdefault('done', {})[reel_id] = {'день': day, 'просмотры': views, 'группы': done}
