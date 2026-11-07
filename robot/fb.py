@@ -149,7 +149,16 @@ def _publish_now(page, j, folder, text):
     После клика повторов нет — чтобы не задвоить ролик. Проверка мягкая: не нашли — только запись в журнал."""
     _debug(page, f"перед публикацией сразу {folder.name[:30]}")
     btn = None
-    for name in ('Опубликовать', 'Поделиться'):
+    # 07.11.2026: в окне Reels кнопка выхода имеет aria-label «Отправить» (над ней «Настройки планирования —
+    # Опубликовать сейчас»). Первая такая кнопка скрытая и неактивная (aria-hidden, aria-disabled) — её не берём.
+    live_btn = ':not([aria-hidden="true"]):not([aria-disabled="true"])'
+    for sel in (f'[role="dialog"] [aria-label="Отправить"]{live_btn}', f'[aria-label="Отправить"][role="button"]{live_btn}'):
+        b = page.locator(sel)
+        if b.count():
+            btn = b.last; break
+    for name in ('Опубликовать', 'Поделиться', 'Отправить'):
+        if btn is not None:
+            break
         b = page.locator('[role="dialog"]').get_by_role('button', name=name, exact=True)
         if not b.count():
             b = page.get_by_role('button', name=name, exact=True)
