@@ -111,7 +111,7 @@ for gi, g in enumerate(groups):
 if not os.path.exists(D + "/subs.json"):
     H.append(f'<div id="subs" style="top:{SUB_Y}px">' + "".join(SH) + "</div>")
 else:
-    J[:] = [x for x in J if '"#sg' not in x and '"#w' not in x]
+    J[:] = [x for x in J if '"#sg' not in x and not re.search(r'"#w\d+_', x)]
 for i, (k, t, v) in enumerate(SND):
     H.append(f'<audio id="s{i}" src="snd/{k}.wav" data-start="{max(0,t):.3f}" data-duration="1.0" data-volume="{v}"></audio>')
 B = os.path.dirname(os.path.abspath(__file__))
