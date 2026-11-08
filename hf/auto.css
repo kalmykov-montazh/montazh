@@ -1,0 +1,18 @@
+/* build_auto.py (08.11.2026): обложка В с подгоном кегля, карточка-таблица, фото-предмет, призыв без подзаголовка */
+.cov .cvl{position:absolute;left:60px;font-family:M;font-weight:900;line-height:1;white-space:nowrap}
+.cov .cvl.b span{background:#000;padding:6px 20px}.cov .cvl.y span{background:#ffd23f;color:#000;padding:6px 20px}
+.cov .cst{top:540px}
+.rates .rw b.num{font-family:O;font-size:112px;line-height:1;color:#ffd23f;min-width:0;white-space:nowrap}
+.rates .rw b.txt{font-family:M;font-weight:900;font-size:58px;line-height:1.05;color:#fff;min-width:0}
+.rates .rw b.red{color:#ff5a5f}
+.rates .rw span{font-weight:900;font-size:48px;line-height:1.1;color:#e9e6f3}
+.rates .rw{gap:28px}
+.rates .chiprow i{font-style:normal;font-weight:900;font-size:42px;background:#e63946;color:#fff;padding:8px 22px;border-radius:12px;margin-top:6px}
+.meter .num{font-size:140px}
+.photo2{position:absolute;width:330px;background:#fff;padding:12px;z-index:13;box-shadow:0 18px 40px rgba(0,0,0,.5);border-radius:6px}
+.photo2 img{display:block;width:306px;height:230px;object-fit:cover}
+.photo2 em{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);font-style:normal;font-family:U;font-size:40px;color:#e63946;border:6px solid #e63946;padding:4px 14px;background:rgba(255,255,255,.85)}
+.apple b:empty{display:none}
+.apple em{margin-top:24px}
+.news .nt{font-size:52px;display:flex;align-items:center;flex:1}
+.apple b.sm{font-size:64px;letter-spacing:-1px}

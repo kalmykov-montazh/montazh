@@ -1,0 +1,157 @@
+name: HF. Пачка — перемонтаж готовых в формат HyperFrames
+
+# 08.11.2026, решение Евгения: все готовые ролики переделать по эталону «ПРОБА v2 — Налог за пустую квартиру».
+# Список роликов — hf/pachka/<список>.json. На каждый ролик: основа (montage.py NOSUBS=1, если её ещё нет) →
+# hf/build_auto.py (плашки из novyj/<ключ>.json) → рендер HyperFrames + тёплый цвет + субтитры «микс» → −14 LUFS →
+# «Брокер/На проверке/HF пачка/<тема>/<ролик>» (ролик, обложка.jpg, кадры.jpg). Старые версии не трогаются.
+# Для проверки Claude: кадры раз в секунду — зашифрованным архивом в артефакт «proverka-<n>».
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Список роликов в репо (hf/pachka/…json)"
+        required: true
+        default: "hf/pachka/proba3.json"
+      only:
+        description: "Номера из списка через запятую (пусто — все)"
+        required: false
+        default: ""
+      parallel:
+        description: "Сколько роликов одновременно"
+        required: false
+        default: "5"
+      osnova:
+        description: "1 — пересобрать основу, даже если есть"
+        required: false
+        default: "0"
+      enc:
+        description: "Ключ шифрования кадров для проверки"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        env:
+          L: ${{ inputs.list }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          L = json.load(open(os.environ["L"]))
+          only = [int(x) for x in os.environ["ONLY"].replace(" ", "").split(",") if x]
+          items = [dict(n=i, **x) for i, x in enumerate(L) if not only or i in only]
+          print("m=" + json.dumps(items, ensure_ascii=False))
+          PY
+
+  one:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.parallel) }}
+      matrix:
+        v: ${{ fromJSON(needs.plan.outputs.m) }}
+    name: "${{ matrix.v.n }} ${{ matrix.v.name }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Основа без субтитров (если её нет)
+        env:
+          SRC: ${{ matrix.v.src }}
+          KEY: ${{ matrix.v.key }}
+          FORCE: ${{ inputs.osnova }}
+        run: |
+          W="$PWD/work/$KEY"; mkdir -p raw "$W"
+          if [ "$FORCE" != "1" ] && rclone lsf "montazh:Брокер/работа/$KEY/osnova_words.json" | grep -q osnova; then
+            echo "::notice::Основа уже есть"; exit 0; fi
+          rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
+          rclone copy "montazh:Брокер/работа/$KEY" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
+          [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$KEY"; exit 1; }
+          [ -f "$W/fixes.json" ] || echo '{}' > "$W/fixes.json"
+          python scripts/align.py raw/src.mp4 "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err" || { tail -5 "$W/align.err"; exit 1; }
+          ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py raw/src.mp4 "$W" > "$W/montage.log" || { tail -20 "$W/montage.log"; exit 1; }
+          rclone copyto "$W/ролик_B.mp4" "montazh:Брокер/работа/$KEY/osnova.mp4"
+          rclone copyto "$W/words_out.json" "montazh:Брокер/работа/$KEY/osnova_words.json"
+          [ -f "$W/face.json" ] && rclone copyto "$W/face.json" "montazh:Брокер/работа/$KEY/face.json"
+          echo "::notice::Основа готова: $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$W/ролик_B.mp4") с"
+      - name: Композиция по эталону
+        env:
+          KEY: ${{ matrix.v.key }}
+          NAME: ${{ matrix.v.name }}
+        run: |
+          P="$PWD/hfp"; mkdir -p "$P" in
+          rclone copy "montazh:Брокер/работа/$KEY" in --include osnova.mp4 --include osnova_words.json --include face.json --multi-thread-streams 8
+          mv in/osnova.mp4 "$P/osnova.mp4"
+          python3 - <<'PY'
+          import json, os
+          n = os.environ["NAME"]; out = {}
+          for f in ("vstavki_plan_0411.json", "vstavki_plan_0511.json"):
+              d = json.load(open(f))
+              if n in d: out = d[n]
+          json.dump(out, open("in/vst.json", "w"), ensure_ascii=False)
+          PY
+          python3 hf/build_auto.py "$P" "novyj/$KEY.json" in/osnova_words.json in/face.json in/vst.json | tee build.txt
+          echo "::notice::$(tr '\n' ' ' < build.txt | cut -c1-900)"
+          if [ -s "$P/kartinki.txt" ]; then mkdir -p "$P/img"
+            while IFS= read -r f; do [ -n "$f" ] && rclone copyto "montazh:$f" "$P/img/$(basename "$f")"; done < "$P/kartinki.txt"; fi
+          cd "$P" && ffmpeg -v error -y -i osnova.mp4 -vf "lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube" -c:v libx264 -crf 14 -preset medium -c:a aac -b:a 192k o2.mp4 && mv o2.mp4 osnova.mp4
+      - name: Рендер HyperFrames
+        run: |
+          sudo apt-get install -y -qq fonts-inter > /dev/null 2>&1 || true
+          mkdir -p ~/.fonts && cp fonts/* ~/.fonts/ 2>/dev/null; fc-cache -f > /dev/null
+          cd hfp
+          npm i --silent hyperframes@0.9.20
+          npx hyperframes telemetry disable > /dev/null 2>&1 || true
+          s=$(date +%s)
+          npx hyperframes render . -o out.mp4 -q delivery -w 4 2>&1 | tail -8
+          [ -f out.mp4 ] || { echo "::error::Рендер не получился"; exit 1; }
+          echo "::notice::Рендер за $(( ($(date +%s) - s) / 60 )) мин"
+      - name: Субтитры «микс»
+        run: |
+          SFX=0 CRF264=14 python scripts/overlay.py hfp/out.mp4 hfp/words.json hfp/subs.json mix hfp/out_subs.mp4 > hfp/overlay.log 2>&1 || { tail -5 hfp/overlay.log; exit 1; }
+          mv hfp/out_subs.mp4 hfp/out.mp4
+      - name: Громкость, обложка, на Диск
+        env:
+          DEST: ${{ matrix.v.dest }}
+          NAME: ${{ matrix.v.name }}
+          ENC: ${{ inputs.enc }}
+          N: ${{ matrix.v.n }}
+        run: |
+          cd hfp
+          ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
+          D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4)
+          for i in 0 1 2 3 4 5 6 7 8 9; do t=$(python3 -c "print(round(0.5+($D-1)*$i/9,2))"); ffmpeg -v error -y -ss $t -i final.mp4 -frames:v 1 -vf scale=360:-2 "k_$i.jpg"; done
+          ffmpeg -v error -y -i k_0.jpg -i k_1.jpg -i k_2.jpg -i k_3.jpg -i k_4.jpg -i k_5.jpg -i k_6.jpg -i k_7.jpg -i k_8.jpg -i k_9.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
+          ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
+          rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
+          rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
+          rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          echo "::notice::Готово: $DEST ($D с)"
+          # для проверки Claude: кадр каждую секунду, листами по 30 (6×5), плюс обложка в полный размер
+          mkdir -p pr; ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t\:d}':x=6:y=6:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x5" -frames:v 9 pr/list_%d.jpg 2>/dev/null || ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,tile=6x5" pr/list_%d.jpg
+          cp oblozhka.jpg кадры.jpg ../build.txt pr/ 2>/dev/null; cp build.json overlay.log pr/ 2>/dev/null || true
+          if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.enc != '' }}
+        with:
+          name: proverka-${{ matrix.v.n }}
+          path: proverka.enc
+          retention-days: 7
