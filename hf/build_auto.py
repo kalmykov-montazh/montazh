@@ -213,11 +213,11 @@ for n, (gi, built, te) in enumerate(clean):
             sid = f"{gid}s{k}"
             t_end = stamps[k + 1][1] - 0.05 if k + 1 < len(stamps) else te
             txt = sanitize(it["text"])
-            m = re.search(r"[+−-]?\d[\d\s.,]*\s*(%|€)?", txt)
-            red = m.group(0).strip() if m and len(m.group(0).strip()) <= 7 else "!"
-            rest = txt.replace(m.group(0), "").strip(" ,:—-+") if red != "!" else txt
+            m = re.match(r"\s*[+−-]?\d[\d.,]*(?:\s?\d{3})*\s*(%|€|°\s?C|°)?", txt)   # число только в начале штампа
+            red = m.group(0).strip() if m and len(m.group(0).strip()) <= 8 else "!"
+            rest = txt[len(m.group(0)):].strip(" ,:—-+") if red != "!" else txt
             fs = 110 if len(red) <= 4 else 80
-            H.append(f'<div id="{sid}" class="news fit" style="top:{TOP+20}px"><div class="nd"><b style="font-size:{fs}px">{esc(red)}</b></div><div class="nt">{esc(rest or txt)}</div></div>')
+            H.append(f'<div id="{sid}" class="news fit" style="top:{TOP+20}px"><div class="nd"><b style="font-size:{fs}px">{esc(red)}</b></div>{f'<div class="nt">{esc(rest)}</div>' if (rest or red == "!") and (rest or txt) else ""}</div>')
             tl(f'tl.set("#{sid}",{{opacity:0}},0).set("#{sid}",{{opacity:1}},{t-0.1:.3f}).from("#{sid} .nd",{{x:-500,duration:0.45,ease:"power4.out"}},{t-0.1:.3f}).from("#{sid} .nt",{{scaleX:0,transformOrigin:"0% 50%",duration:0.4,ease:"power4.out"}},{t:.3f}).to("#{sid}",{{y:-60,opacity:0,duration:0.3}},{t_end-0.3:.3f});')
             snd("whoosh", t - 0.12, 0.28)
         continue
@@ -259,8 +259,11 @@ with open(f"{P}/kartinki.txt", "w") as fk:
 
 # ---------- белая карточка-призыв ----------
 if CTA:
-    H.append(f'<div id="ap" class="apple fit" style="top:{TOP}px"><b class="{"sm" if len(CTA.get("label") or "") > 16 else ""}">{esc(sanitize(CTA.get("label") or ""))}</b><em>{esc(sanitize(CTA["text"]))}</em></div>')
-    tl(f'tl.from("#ap",{{y:120,scale:0.85,opacity:0,duration:0.55,ease:"back.out(1.6)"}},{CTA_T:.3f}).from("#ap em",{{scale:0,duration:0.35,ease:"back.out(3)"}},{CTA_T+0.45:.3f});')
+    lab, txt = sanitize(CTA.get("label") or ""), sanitize(CTA["text"])
+    if lab[:1].islower():   # «Напишите «Монтаж»» + «в комментариях» — одна фраза, крупно, без кнопки
+        lab, txt = (txt.rstrip(",") + (", " if txt.endswith(",") else " ") + lab), ""
+    H.append(f'<div id="ap" class="apple fit" style="top:{TOP}px"><b class="{"sm" if len(lab) > 16 else ""}">{esc(lab)}</b>{f"<em>{esc(txt)}</em>" if txt else ""}</div>')
+    tl(f'tl.from("#ap",{{y:120,scale:0.85,opacity:0,duration:0.55,ease:"back.out(1.6)"}},{CTA_T:.3f}){'.from("#ap em",{scale:0,duration:0.35,ease:"back.out(3)"},' + f'{CTA_T+0.45:.3f})' if txt else ''};')
     snd("ding", CTA_T + 0.4, 0.25)
 
 # ---------- субтитры «микс» (overlay.py поверх рендера) ----------
