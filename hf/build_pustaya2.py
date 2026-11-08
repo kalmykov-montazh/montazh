@@ -103,8 +103,8 @@ ACC = {norm(x) for x in "пустая налог 1,1% 2% 80 880 260 19% 24% 2027
 SH = []
 for gi, g in enumerate(groups):
     gs = g[0]["s"]; ge = min((groups[gi+1][0]["s"] if gi+1 < len(groups) else DUR)-0.04, g[-1]["e"]+0.6)
-    SH.append('<div class="sg" id="g%d">' % gi + " ".join(f'<span id="w{gi}_{wi}" class="{"acc" if norm(w["w"]) in ACC else ""}">{html.escape(w["w"])}</span>' for wi, w in enumerate(g)) + "</div>")
-    tl(f'tl.set("#g{gi}",{{opacity:1}},{gs-0.02:.3f}).from("#g{gi}",{{y:30,scale:0.85,duration:0.18,ease:"back.out(2)"}},{gs-0.02:.3f}).set("#g{gi}",{{opacity:0}},{ge:.3f});')
+    SH.append('<div class="sg" id="sg%d">' % gi + " ".join(f'<span id="w{gi}_{wi}" class="{"acc" if norm(w["w"]) in ACC else ""}">{html.escape(w["w"])}</span>' for wi, w in enumerate(g)) + "</div>")
+    tl(f'tl.set("#sg{gi}",{{opacity:1}},{gs-0.02:.3f}).from("#sg{gi}",{{y:30,scale:0.85,duration:0.18,ease:"back.out(2)"}},{gs-0.02:.3f}).set("#sg{gi}",{{opacity:0}},{ge:.3f});')
     for wi, w in enumerate(g):
         tl(f'tl.set("#w{gi}_{wi}",{{attr:{{class:"{"acc on" if norm(w["w"]) in ACC else "on"}"}}}},{w["s"]:.3f});')
 H.append(f'<div id="subs" style="top:{SUB_Y}px">' + "".join(SH) + "</div>")

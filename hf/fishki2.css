@@ -18,7 +18,8 @@
 .rates .rw b{font-family:O;font-size:120px;line-height:1;color:#ffd23f;min-width:240px}
 .rates .rw b.red{color:#ff5a5f}
 .rates .rw span{font-weight:900;font-size:50px}
-.news{position:absolute;left:60px;right:60px;z-index:14;display:flex;align-items:stretch;box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.news{position:absolute;left:60px;right:60px;z-index:14;display:flex;align-items:stretch}
+.news .nd,.news .nt{box-shadow:0 22px 60px rgba(0,0,0,.55)}
 .news .nd{background:#e63946;padding:20px 28px;text-align:center;display:flex;flex-direction:column;justify-content:center}
 .news .nd b{font-family:O;font-size:110px;line-height:1}
 .news .nd span{font-weight:900;font-size:30px;letter-spacing:4px}
