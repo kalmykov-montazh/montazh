@@ -151,6 +151,14 @@ jobs:
           long=[(float(a),float(b)) for a,b in sil if float(b)-float(a)>0.4]
           print("::notice::Звук: пауз длиннее 0,4 с — %d %s" % (len(long), ", ".join("%.1f–%.1f"%x for x in long[:8])))
           PY
+      - name: Субтитры «микс» (overlay.py), если есть subs.json
+        env:
+          P: ${{ inputs.project }}
+        run: |
+          [ -f "$P/subs.json" ] || exit 0
+          pip install -q pillow
+          SFX=0 CRF264=14 python scripts/overlay.py "$P/out.mp4" "$P/words.json" "$P/subs.json" mix "$P/out_subs.mp4" > "$P/overlay.log" 2>&1 || { tail -5 "$P/overlay.log"; exit 1; }
+          mv "$P/out_subs.mp4" "$P/out.mp4"; echo "::notice::Субтитры «микс» наложены: $(tail -1 "$P/overlay.log")"
       - name: Первый кадр = обложка, громкость, на Диск
         env:
           P: ${{ inputs.project }}
@@ -164,7 +172,8 @@ jobs:
           ffmpeg -v error -y -i k_0.jpg -i k_1.jpg -i k_2.jpg -i k_3.jpg -i k_4.jpg -i k_5.jpg -i k_6.jpg -i k_7.jpg -i k_8.jpg -i k_9.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
           rclone copyto final.mp4 "montazh:$DEST/!!! $name.mp4"
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
-          [ -f oblozhka.jpg ] && rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          [ -f oblozhka.jpg ] || ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
+          rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
           echo "::notice::Готово: $DEST"
           if [ -n "$ENC" ]; then
             echo "::add-mask::$ENC"

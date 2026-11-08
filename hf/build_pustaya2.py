@@ -107,7 +107,11 @@ for gi, g in enumerate(groups):
     tl(f'tl.set("#sg{gi}",{{opacity:1}},{gs-0.02:.3f}).from("#sg{gi}",{{y:30,scale:0.85,duration:0.18,ease:"back.out(2)"}},{gs-0.02:.3f}).set("#sg{gi}",{{opacity:0}},{ge:.3f});')
     for wi, w in enumerate(g):
         tl(f'tl.set("#w{gi}_{wi}",{{attr:{{class:"{"acc on" if norm(w["w"]) in ACC else "on"}"}}}},{w["s"]:.3f});')
-H.append(f'<div id="subs" style="top:{SUB_Y}px">' + "".join(SH) + "</div>")
+# 08.11.2026: Евгений вернул субтитры «микс» (overlay.py поверх готового рендера, файл subs.json) — свои караоке не рисуем
+if not os.path.exists(D + "/subs.json"):
+    H.append(f'<div id="subs" style="top:{SUB_Y}px">' + "".join(SH) + "</div>")
+else:
+    J[:] = [x for x in J if '"#sg' not in x and '"#w' not in x]
 for i, (k, t, v) in enumerate(SND):
     H.append(f'<audio id="s{i}" src="snd/{k}.wav" data-start="{max(0,t):.3f}" data-duration="1.0" data-volume="{v}"></audio>')
 B = os.path.dirname(os.path.abspath(__file__))
