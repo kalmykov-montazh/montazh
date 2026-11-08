@@ -84,7 +84,7 @@ jobs:
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg libimage-exiftool-perl > /dev/null
           pip install -q --index-url https://download.pytorch.org/whl/cpu torch torchvision
-          pip install -q open_clip_torch faster-whisper reverse_geocoder pillow pillow-heif numpy
+          pip install -q open_clip_torch faster-whisper "av<15" reverse_geocoder pillow pillow-heif numpy
           rclone copyto "montazh:Брокер/работа/Опись/${{ inputs.dir }}/manifest.json" manifest.json
           D="montazh:Брокер/работа/Опись/${{ inputs.dir }}/шард_$(printf %02d ${{ matrix.shard }})"
           echo "D=$D" >> "$GITHUB_ENV"
