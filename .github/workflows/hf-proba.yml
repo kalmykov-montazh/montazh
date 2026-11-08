@@ -115,7 +115,7 @@ jobs:
             mkdir -p "$P/img"
             while IFS= read -r f; do [ -n "$f" ] && rclone copyto "montazh:$f" "$P/img/$(basename "$f")"; done < "$P/kartinki.txt"
           fi
-          ls -la "$P" "$P/img" 2>/dev/null
+          ls -la "$P" "$P/img" 2>/dev/null || true
       - name: Вырезка и цвет основы
         env:
           P: ${{ inputs.project }}
