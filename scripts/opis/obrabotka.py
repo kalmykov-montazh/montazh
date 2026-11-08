@@ -6,6 +6,7 @@
 import json, os, subprocess, sys, time, hashlib, glob, traceback
 import numpy as np
 from PIL import Image, ImageOps
+Image.MAX_IMAGE_PIXELS = None
 try:
     import pillow_heif; pillow_heif.register_heif_opener()
 except Exception: pass
@@ -16,7 +17,9 @@ man = [x for x in json.load(open("manifest.json")) if x["shard"] == SHARD]
 done = set()
 if os.path.exists(f"{OUT}/results.jsonl"):
     for l in open(f"{OUT}/results.jsonl", encoding="utf-8"):
-        try: done.add(json.loads(l)["path"])
+        try:
+            r = json.loads(l)
+            if "error" not in r: done.add(r["path"])
         except Exception: pass
 VID = (".mp4", ".mov", ".3gp", ".avi", ".mkv", ".m4v", ".mts")
 
