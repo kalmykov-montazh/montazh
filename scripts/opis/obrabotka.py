@@ -125,7 +125,9 @@ for it in man:
                 strip.save(f"{OUT}/thumbs/{key}.jpg", quality=72)
                 e, top = clip(frames); embs[key] = e; rec["tags"] = top
             if au and d > 1.5:
-                segs, info = wm.transcribe(loc, beam_size=1, vad_filter=True, condition_on_previous_text=False)
+                pcm = subprocess.run(["ffmpeg", "-v", "error", "-i", loc, "-vn", "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout
+                audio = np.frombuffer(pcm, np.int16).astype(np.float32) / 32768.0
+                segs, info = wm.transcribe(audio, beam_size=1, vad_filter=True, condition_on_previous_text=False)
                 txt = []
                 for s in segs:
                     txt.append(f"[{int(s.start)}] {s.text.strip()}")
