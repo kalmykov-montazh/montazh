@@ -226,18 +226,19 @@ for n, (gi, built, te) in enumerate(clean):
     for k, (it, t) in enumerate(built):
         rid = f"{gid}r{k}"
         if it["type"] == "stamp":
-            rows.append(f'<div class="rw chiprow" id="{rid}"{' style="display:none"' if k >= 2 else ''}><i>{esc(sanitize(it["text"]))}</i></div>')
+            rows.append(f'<div class="rw chiprow" id="{rid}"{' style="display:none"' if k >= 1 else ''}{' data-m="1"' if k == 1 else ''}><i>{esc(sanitize(it["text"]))}</i></div>')
         else:
             r_ = card_row(it, rid)
-            rows.append(r_.replace('class="rw"', 'class="rw" style="display:none"', 1) if k >= 2 else r_)
+            rows.append(r_.replace('class="rw"', 'class="rw" style="display:none"' + (' data-m="1"' if k == 1 else ''), 1) if k >= 1 else r_)
     hdr = ""
     H.append(f'<div id="{gid}" class="rates fit" style="top:{TOP}px">{hdr}{"".join(rows)}</div>')
     tl(f'tl.from("#{gid}",{{x:{900 if n % 2 == 0 else -900},opacity:0,duration:0.45,ease:"power4.out"}},{t0-0.1:.3f}).to("#{gid}",{{opacity:0,y:-50,duration:0.3,ease:"power2.in"}},{te-0.3:.3f});')
     snd("whoosh", t0 - 0.15, 0.25)
     for k, (it, t) in enumerate(built):
         if k == 0: continue
-        if k >= 2:   # в таблице видно не больше двух строк: старшая уходит, новая встаёт на её место (не ужимать до мелкого)
-            tl(f'tl.set("#{gid}r{k-2}",{{display:"none"}},{t-0.1:.3f}).set("#{gid}r{k}",{{display:"flex"}},{t-0.1:.3f});')
+        # строка занимает место только с момента появления; в таблице не больше двух строк сразу (не ужимать до мелкого)
+        if k >= 2: tl(f'tl.set("#{gid}r{k-2}",{{display:"none"}},{t-0.1:.3f});')
+        tl(f'tl.set("#{gid}r{k}",{{display:"flex"}},{t-0.1:.3f});')
         tl(f'tl.from("#{gid}r{k}",{{x:200,opacity:0,duration:0.35,ease:"power3.out"}},{t-0.1:.3f});'); snd("pop" if it["type"] == "stamp" else "click", t - 0.1, 0.28)
         if k >= 1 and it["type"] != "stamp":
             tl(f'tl.to("#{gid}r{k-1}",{{opacity:0.55,duration:0.2}},{t-0.1:.3f});')
@@ -281,7 +282,7 @@ open(f"{P}/index.html", "w").write(f'''<!doctype html><html><head><meta charset=
 {chr(10).join(H)}
 </div><script src="gsap.min.js"></script><script>
 /* всё, что сверху, ужимается, чтобы не залезть на голову (место {AVAIL} px) */
-document.querySelectorAll(".fit").forEach(e=>{{const h=e.offsetHeight;const s=Math.min(1,{AVAIL}/Math.max(1,h));if(s<1){{e.style.scale=s;e.style.transformOrigin="50% 0";}}}});
+document.querySelectorAll(".fit").forEach(e=>{{const m=e.querySelectorAll("[data-m]");m.forEach(x=>x.style.display="flex");const h=e.offsetHeight;m.forEach(x=>x.style.display="none");const s=Math.min(1,{AVAIL}/Math.max(1,h));if(s<1){{e.style.scale=s;e.style.transformOrigin="50% 0";}}}});
 const tl = gsap.timeline({{paused:true}});
 {chr(10).join(J)}
 tl.set({{}},{{}},{DUR:.3f});
