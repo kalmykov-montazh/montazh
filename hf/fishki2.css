@@ -1,0 +1,26 @@
+/* v2 08.11.2026: обложка стиля В слоем, нарисованная квитанция, ставки, новостная плашка-дата */
+.cov{z-index:60;opacity:0;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 62%,rgba(0,0,0,.55))}
+.cov .cl1,.cov .cl2{position:absolute;left:60px;font-family:M;font-weight:900;font-size:86px;line-height:1;white-space:nowrap}
+.cov .cl1{top:130px}.cov .cl2{top:240px}
+.cov .cl1 span{background:#000;padding:6px 20px}.cov .cl2 span{background:#ffd23f;color:#000;padding:6px 20px}
+.cov .cst{position:absolute;right:50px;top:380px;width:230px;height:230px;border-radius:50%;background:#e63946;display:flex;align-items:center;justify-content:center;text-align:center;font-family:U;font-size:40px;line-height:1.05;transform:rotate(12deg);border:6px dashed #fff}
+.cov .cb{position:absolute;left:0;right:0;top:1480px;text-align:center;font-family:M;font-weight:900;font-size:60px}
+.cov .cb span{background:#fff;color:#0b1630;padding:8px 22px;border-radius:10px}
+.rcp{background:#fbfaf7;color:#222;padding:30px 36px;font-family:M}
+.rcp .rh{font-weight:900;font-size:44px;border-bottom:4px solid #222;padding-bottom:14px;margin-bottom:16px}
+.rcp .rh i{font-style:normal;font-size:26px;background:#e63946;color:#fff;padding:4px 12px;border-radius:8px;vertical-align:middle;margin-left:14px}
+.rcp .rr{position:relative;display:flex;justify-content:space-between;font-weight:800;font-size:36px;padding:12px 4px;border-bottom:2px dashed #ccc}
+.rcp .rr span{position:relative;z-index:1}
+.rcp .hl2:before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:calc(100% + 16px);background:#ffd23f;border-radius:8px;transform-origin:left;transform:scaleX(var(--m,0))}
+.rates{position:absolute;left:90px;width:900px;z-index:14;background:rgba(18,16,28,.94);border-radius:30px;padding:30px 40px;box-shadow:0 26px 70px rgba(0,0,0,.6)}
+.rates h5{font-weight:900;font-size:38px;color:#b9b4cc;margin-bottom:10px}
+.rates .rw{display:flex;align-items:center;gap:30px;padding:8px 0}
+.rates .rw b{font-family:O;font-size:120px;line-height:1;color:#ffd23f;min-width:240px}
+.rates .rw b.red{color:#ff5a5f}
+.rates .rw span{font-weight:900;font-size:50px}
+.news{position:absolute;left:60px;right:60px;z-index:14;display:flex;align-items:stretch;box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.news .nd{background:#e63946;padding:20px 28px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+.news .nd b{font-family:O;font-size:110px;line-height:1}
+.news .nd span{font-weight:900;font-size:30px;letter-spacing:4px}
+.news .nt{background:#0b1630;border:4px solid #ffd23f;border-left:0;padding:20px 28px;font-weight:900;font-size:44px;line-height:1.15}
+.news .nt i{display:block;font-style:normal;color:#ffd23f;font-size:34px;letter-spacing:3px;margin-bottom:8px}
