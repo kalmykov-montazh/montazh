@@ -1,0 +1,9 @@
+@font-face{font-family:M;src:url(../../fonts/montserrat-900.ttf);font-weight:900}
+@font-face{font-family:U;src:url(../../fonts/unbounded-800.ttf);font-weight:800}
+@font-face{font-family:O;src:url(../../fonts/oswald-700.ttf);font-weight:700}
+@font-face{font-family:P;src:url(../../fonts/playfair-display-800.ttf);font-weight:800}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1920px;overflow:hidden;position:relative;font-family:M;color:#fff;background:#000}
+.bg{position:absolute;inset:0;background:url(bg.jpg) center/cover}
+.sh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55) 0,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 62%,rgba(0,0,0,.6) 100%)}
+.a{position:absolute;left:0;right:0;text-align:center}
