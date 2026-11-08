@@ -1,0 +1,103 @@
+name: Опись архива Google Фото (для Claude)
+
+# 08.11.2026, просьба Евгения: полная опись всех фото и видео архива — дата, время, место,
+# что в кадре, о чём речь. Сервер делает машинную часть, описание по смыслу — Claude.
+# Итоги — на Диск «Монтаж!/Брокер/работа/Опись/_архив/шард_NN/». Репозиторий публичный:
+# в лог только количество, никаких имён, мест и текстов.
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: "сколько шардов"
+        default: "28"
+      only:
+        description: "взять только пути, где есть этот текст (проба)"
+        default: ""
+      model:
+        description: "модель речи"
+        default: "medium"
+      parallel:
+        description: "сколько машин сразу"
+        default: "14"
+      dir:
+        description: "папка итогов внутри Опись/"
+        default: "_архив"
+
+concurrency:
+  group: opis-arhiv
+  cancel-in-progress: false
+
+jobs:
+  spisok:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - id: m
+        env:
+          SHARDS: ${{ inputs.shards }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          rclone lsjson -R --files-only "montazh:Брокер/Архив Google Фото" > arh.json
+          rclone lsjson -R --files-only "ves:Google Фото" > old.json || echo "[]" > old.json
+          python3 scripts/opis/manifest.py | tee m.txt
+          grep '^matrix=' m.txt | sed 's/^matrix=/matrix=/' >> "$GITHUB_OUTPUT"
+          rclone copyto manifest.json "montazh:Брокер/работа/Опись/${{ inputs.dir }}/manifest.json"
+          echo "::notice::$(head -1 m.txt)"
+
+  obrabotka:
+    needs: spisok
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.parallel) }}
+      matrix:
+        shard: ${{ fromJSON(needs.spisok.outputs.m) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Модели из кэша
+        uses: actions/cache@v4
+        with:
+          path: |
+            models
+            ~/.cache/huggingface
+          key: opis-models-v1-${{ inputs.model }}
+      - name: Подготовка
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg libimage-exiftool-perl > /dev/null
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch torchvision
+          pip install -q open_clip_torch faster-whisper reverse_geocoder pillow pillow-heif numpy
+          rclone copyto "montazh:Брокер/работа/Опись/${{ inputs.dir }}/manifest.json" manifest.json
+          D="montazh:Брокер/работа/Опись/${{ inputs.dir }}/шард_$(printf %02d ${{ matrix.shard }})"
+          echo "D=$D" >> "$GITHUB_ENV"
+          mkdir -p out && rclone copy "$D" out --exclude "thumbs/**" || true
+      - name: Обработка
+        env:
+          SHARD: ${{ matrix.shard }}
+          WMODEL: ${{ inputs.model }}
+          BUDGET: "18500"
+        run: |
+          python3 -u scripts/opis/obrabotka.py 2>&1 | grep -E "^шард|бюджет|Traceback|Error" | tail -40
+      - name: Выгрузить на Диск
+        if: always()
+        run: |
+          rclone copy out "$D" --transfers 16
+          echo "::notice::шард ${{ matrix.shard }}: строк $(wc -l < out/results.jsonl 2>/dev/null || echo 0), миниатюр $(ls out/thumbs 2>/dev/null | wc -l)"
