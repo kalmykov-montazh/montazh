@@ -18,3 +18,9 @@
 .apple b.sm{font-size:64px;letter-spacing:-1px}
 .apple{padding:44px 44px}
 .apple em{white-space:nowrap;font-size:40px;padding:14px 30px}
+.rates .rw b{flex:0 0 auto;max-width:62%}
+.rates .rw b.num{max-width:none}
+.rates .rw span{flex:1 1 0;min-width:0}
+.photo2{width:400px}.photo2 img{width:376px;height:280px}
+.cov .cg{background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 62%,rgba(0,0,0,.55))}
+.cov img.full{object-fit:cover}

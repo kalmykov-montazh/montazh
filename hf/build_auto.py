@@ -84,12 +84,14 @@ for k, x in enumerate(lines):
     cl.append(f'<div class="cvl {cls}" style="top:{y}px;font-size:{sz}px"><span>{esc(x)}</span></div>'); y += int(sz * 1.28)
 sticker = ""
 tc = (spec.get("title") or {}).get("cards") or []
-if tc and len(tc[0]) <= 24 and norm(tc[0]) not in norm(" ".join(lines)):
+def _stems(t): return {norm(x)[:5] for x in t.split() if len(norm(x)) >= 4}
+if tc and len(tc[0]) <= 24 and not (_stems(tc[0]) & _stems(" ".join(lines))):
     st = sanitize(tc[0])
     stl = max(30, min(42, int(560 / max(6, len(st)))))
     stop = max(y + 20, 520)
     sticker = f'<div class="cst" style="top:{stop}px;font-size:{stl}px">{esc(st)}</div>'
-H.append(f'<div id="cover" class="full cov">{"".join(cl)}{sticker}</div>')
+bgimg = '<img class="full" src="cover_bg.png"><div class="full cg"></div>' if os.path.exists(f"{P}/cover_bg.png") else ""
+H.append(f'<div id="cover" class="full cov">{bgimg}{"".join(cl)}{sticker}</div>')
 tl('tl.set("#cover",{opacity:1},0).set("#cover",{opacity:0},0.12);')
 log("обложка:", " / ".join(lines), "| наклейка:", tc[0] if sticker else "—", "| кегль", sz)
 
@@ -211,9 +213,9 @@ for n, (gi, built, te) in enumerate(clean):
             sid = f"{gid}s{k}"
             t_end = stamps[k + 1][1] - 0.05 if k + 1 < len(stamps) else te
             txt = sanitize(it["text"])
-            m = re.search(r"\d[\d\s.,]*\s*(%|€)?", txt)
+            m = re.search(r"[+−-]?\d[\d\s.,]*\s*(%|€)?", txt)
             red = m.group(0).strip() if m and len(m.group(0).strip()) <= 7 else "!"
-            rest = txt.replace(m.group(0), "").strip(" ,:—-") if red != "!" else txt
+            rest = txt.replace(m.group(0), "").strip(" ,:—-+") if red != "!" else txt
             fs = 110 if len(red) <= 4 else 80
             H.append(f'<div id="{sid}" class="news fit" style="top:{TOP+20}px"><div class="nd"><b style="font-size:{fs}px">{esc(red)}</b></div><div class="nt">{esc(rest or txt)}</div></div>')
             tl(f'tl.set("#{sid}",{{opacity:0}},0).set("#{sid}",{{opacity:1}},{t-0.1:.3f}).from("#{sid} .nd",{{x:-500,duration:0.45,ease:"power4.out"}},{t-0.1:.3f}).from("#{sid} .nt",{{scaleX:0,transformOrigin:"0% 50%",duration:0.4,ease:"power4.out"}},{t:.3f}).to("#{sid}",{{y:-60,opacity:0,duration:0.3}},{t_end-0.3:.3f});')
