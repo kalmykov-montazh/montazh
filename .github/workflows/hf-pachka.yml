@@ -31,7 +31,7 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   plan:
@@ -149,9 +149,11 @@ jobs:
           mkdir -p pr; ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t\:d}':x=6:y=6:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x5" -frames:v 9 pr/list_%d.jpg 2>/dev/null || ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,tile=6x5" pr/list_%d.jpg
           cp oblozhka.jpg кадры.jpg ../build.txt pr/ 2>/dev/null; cp build.json overlay.log pr/ 2>/dev/null || true
           if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
-      - uses: actions/upload-artifact@v4
+      - name: Кадры для проверки — в ветку tmp-hfp-<n> (зашифровано)
         if: ${{ inputs.enc != '' }}
-        with:
-          name: proverka-${{ matrix.v.n }}
-          path: proverka.enc
-          retention-days: 7
+        env:
+          N: ${{ matrix.v.n }}
+        run: |
+          mkdir o && cd o && cp ../proverka.enc . && git init -q && git checkout -q -b "tmp-hfp-$N"
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "hfp $GITHUB_RUN_ID $N"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "tmp-hfp-$N"
