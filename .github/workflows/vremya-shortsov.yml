@@ -1,0 +1,45 @@
+name: Время выхода шортсов — копия для задач Claude
+
+# 08.11.2026: задачи по расписанию Claude не видят папку G:\Мой диск\Монтаж! и не имеют GitHub.
+# Сюда копируется время выхода из _blotato.json в файл _время_выхода_шортсов.txt (корень Моего диска,
+# id 1kIi_PcL96puSh25W-1mMrtOUAyctipkP), который Claude читает через коннектор Google Диска.
+
+on:
+  schedule:
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Скопировать
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          rclone cat "montazh:Брокер/К публикации/_задания/_blotato.json" > b.json
+          python3 - <<'PY'
+          import json, datetime, zoneinfo
+          now = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Madrid"))
+          d = json.load(open("b.json", encoding="utf-8"))
+          day = now.strftime("%Y-%m-%d")
+          out = ["обновлено " + now.strftime("%Y-%m-%d %H:%M")]
+          for k, v in sorted(d.items(), key=lambda x: x[1].get("at") or ""):
+              at = v.get("at") or ""
+              if at >= day:
+                  st = ((v.get("posts") or {}).get("youtube") or {}).get("status")
+                  out.append(f"{at} {st} {k[:40]}")
+          open("t.txt", "w", encoding="utf-8").write("\n".join(out) + "\n")
+          PY
+          [ "$(wc -l < t.txt)" -gt 1 ] || { echo "::error::пустой список"; exit 1; }
+          rclone rcat --drive-root-folder-id 0ACQfNt8pejbNUk9PVA "ves:_время_выхода_шортсов.txt" < t.txt
+          echo "::notice::$(head -3 t.txt | tr '\n' ' ')"
