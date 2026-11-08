@@ -216,7 +216,7 @@ for n, (gi, built, te) in enumerate(clean):
             rest = txt.replace(m.group(0), "").strip(" ,:—-") if red != "!" else txt
             fs = 110 if len(red) <= 4 else 80
             H.append(f'<div id="{sid}" class="news fit" style="top:{TOP+20}px"><div class="nd"><b style="font-size:{fs}px">{esc(red)}</b></div><div class="nt">{esc(rest or txt)}</div></div>')
-            tl(f'tl.set("#{sid}",{{opacity:0}},0).set("#{sid}",{{opacity:1}},{t-0.1:.3f}).from("#{sid} .nd",{{x:-500,duration:0.45,ease:"power4.out"}},{t-0.1:.3f}).from("#{sid} .nt",{{x:900,opacity:0,duration:0.45,ease:"power4.out"}},{t:.3f}).to("#{sid}",{{y:-60,opacity:0,duration:0.3}},{t_end-0.3:.3f});')
+            tl(f'tl.set("#{sid}",{{opacity:0}},0).set("#{sid}",{{opacity:1}},{t-0.1:.3f}).from("#{sid} .nd",{{x:-500,duration:0.45,ease:"power4.out"}},{t-0.1:.3f}).from("#{sid} .nt",{{scaleX:0,transformOrigin:"0% 50%",duration:0.4,ease:"power4.out"}},{t:.3f}).to("#{sid}",{{y:-60,opacity:0,duration:0.3}},{t_end-0.3:.3f});')
             snd("whoosh", t - 0.12, 0.28)
         continue
     # 3) карточка-таблица: строки появляются по словам, штампы — красной фишкой внизу

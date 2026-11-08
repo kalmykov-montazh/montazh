@@ -16,3 +16,5 @@
 .apple em{margin-top:24px}
 .news .nt{font-size:52px;display:flex;align-items:center;flex:1}
 .apple b.sm{font-size:64px;letter-spacing:-1px}
+.apple{padding:44px 44px}
+.apple em{white-space:nowrap;font-size:40px;padding:14px 30px}
