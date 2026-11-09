@@ -202,8 +202,9 @@ for n, (gi, built, te) in enumerate(clean):
         else:
             H.append(f'''<div id="{gid}" class="meter fit" style="top:{TOP}px;display:block;text-align:center"><div class="lab">{esc(lab)}</div><div class="num" id="{gid}n">0</div></div>''')
         nd = len(re.split(r"[.,]", raw.strip())[1]) if dec else 0
-        fmt = (f'(o.v).toFixed({nd}).replace(".",",")' if dec else 'Math.round(o.v).toLocaleString("ru-RU")')
-        tl(f'(()=>{{const o={{v:0}};tl.to(o,{{v:{v},duration:0.7,ease:"power3.out",onUpdate:()=>{{document.querySelector("#{gid}n").textContent={fmt}+"{sfx}"}}}},{t0+0.05:.3f});}})();')
+        year = (not unit) and (not dec) and 1800 <= v <= 2100
+        fmt = (f'(o.v).toFixed({nd}).replace(".",",")' if dec else ('String(Math.round(o.v))' if year else 'Math.round(o.v).toLocaleString("ru-RU")'))
+        tl(f'(()=>{{const o={{v:{(v - 15) if year else 0}}};tl.to(o,{{v:{v},duration:0.7,ease:"power3.out",onUpdate:()=>{{document.querySelector("#{gid}n").textContent={fmt}+"{sfx}"}}}},{t0+0.05:.3f});}})();')
         tl(f'tl.from("#{gid}",{{x:900,opacity:0,duration:0.45,ease:"power4.out"}},{t0-0.1:.3f}).to("#{gid}",{{opacity:0,y:-50,duration:0.3,ease:"power2.in"}},{te-0.3:.3f});')
         snd("whoosh", t0 - 0.15, 0.25); snd("click", t0 + 0.05, 0.25)
         continue
