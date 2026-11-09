@@ -1,0 +1,163 @@
+name: HF. Склейки — новый шортс из кусков готовых роликов
+
+# 09.11.2026, решение Евгения: конструктор шортов. Банк кусков — таблица «Банк кусков для шортов».
+# На каждую склейку: основы исходников (montage.py NOSUBS=1, если ещё нет) → hf/skleika.py режет их по словам и стыкует →
+# hf/build_auto.py (плашки из novyj/<ключ>.json) → рендер HyperFrames + тёплый цвет + субтитры «микс» → −14 LUFS →
+# <dest>: «!!! <имя>.mp4», обложка.jpg, упаковка.txt. Кадры для проверки — зашифрованно в ветку tmp-skl-<n>.
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Список склеек (hf/skleiki/…json)"
+        required: true
+        default: "hf/skleiki/proba5.json"
+      only:
+        description: "Номера из списка через запятую (пусто — все)"
+        required: false
+        default: ""
+      parallel:
+        description: "Сколько одновременно"
+        required: false
+        default: "5"
+      enc:
+        description: "Ключ шифрования кадров для проверки"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        env:
+          L: ${{ inputs.list }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          L = json.load(open(os.environ["L"]))
+          only = [int(x) for x in os.environ["ONLY"].replace(" ", "").split(",") if x]
+          items = [dict(n=i, name=x["name"], key=x["key"], dest=x["dest"]) for i, x in enumerate(L) if not only or i in only]
+          print("m=" + json.dumps(items, ensure_ascii=False))
+          PY
+
+  one:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.parallel) }}
+      matrix:
+        v: ${{ fromJSON(needs.plan.outputs.m) }}
+    name: "${{ matrix.v.n }} ${{ matrix.v.name }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Основы исходников и склейка
+        env:
+          L: ${{ inputs.list }}
+          N: ${{ matrix.v.n }}
+          KEY: ${{ matrix.v.key }}
+        run: |
+          python3 -c "import json,os;x=json.load(open(os.environ['L']))[int(os.environ['N'])];json.dump(x,open('item.json','w'),ensure_ascii=False)"
+          python3 -c "
+          import json
+          x=json.load(open('item.json')); seen=set()
+          for p in x['parts']:
+              if p['key'] in seen: continue
+              seen.add(p['key']); print(p['key'] + '\t' + p['src'])
+          " > srcs.tsv
+          while IFS=$'\t' read -r K SRC; do
+            W="$PWD/work/$K"; mkdir -p raw "$W" "in/$K"
+            if ! rclone lsf "montazh:Брокер/работа/$K/osnova_words.json" | grep -q osnova; then
+              echo "::notice::Строю основу $K"
+              rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
+              rclone copy "montazh:Брокер/работа/$K" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
+              [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$K"; exit 1; }
+              [ -f "$W/fixes.json" ] || echo '{}' > "$W/fixes.json"
+              python scripts/align.py raw/src.mp4 "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err" || { tail -5 "$W/align.err"; exit 1; }
+              ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py raw/src.mp4 "$W" > "$W/montage.log" || { tail -20 "$W/montage.log"; exit 1; }
+              rclone copyto "$W/ролик_B.mp4" "montazh:Брокер/работа/$K/osnova.mp4"
+              rclone copyto "$W/words_out.json" "montazh:Брокер/работа/$K/osnova_words.json"
+              [ -f "$W/face.json" ] && rclone copyto "$W/face.json" "montazh:Брокер/работа/$K/face.json"
+              cp "$W/ролик_B.mp4" "in/$K/osnova.mp4"; cp "$W/words_out.json" "in/$K/osnova_words.json"; [ -f "$W/face.json" ] && cp "$W/face.json" "in/$K/"
+              rm -f raw/src.mp4
+            else
+              rclone copy "montazh:Брокер/работа/$K" "in/$K" --include osnova.mp4 --include osnova_words.json --include face.json --multi-thread-streams 8
+            fi
+          done < srcs.tsv
+          python3 hf/skleika.py item.json in sk | tee skleika.txt
+          echo "::notice::$(tr '\n' ' ' < skleika.txt | cut -c1-900)"
+          rclone copyto sk/osnova.mp4 "montazh:Брокер/работа/$KEY/osnova.mp4"
+          rclone copyto sk/osnova_words.json "montazh:Брокер/работа/$KEY/osnova_words.json"
+          [ -f sk/face.json ] && rclone copyto sk/face.json "montazh:Брокер/работа/$KEY/face.json"
+          rclone copyto item.json "montazh:Брокер/работа/$KEY/skleika.json"
+      - name: Композиция по эталону
+        env:
+          KEY: ${{ matrix.v.key }}
+        run: |
+          P="$PWD/hfp"; mkdir -p "$P"
+          cp sk/osnova.mp4 "$P/osnova.mp4"
+          echo '{}' > vst.json
+          ( cd "$P" && ffmpeg -v error -y -i osnova.mp4 -vf "lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube" -c:v libx264 -crf 14 -preset medium -c:a aac -b:a 192k o2.mp4 && mv o2.mp4 osnova.mp4 )
+          python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true
+          python3 hf/build_auto.py "$P" "novyj/$KEY.json" sk/osnova_words.json sk/face.json vst.json | tee build.txt
+          echo "::notice::$(tr '\n' ' ' < build.txt | cut -c1-900)"
+      - name: Рендер HyperFrames
+        run: |
+          sudo apt-get install -y -qq fonts-inter > /dev/null 2>&1 || true
+          mkdir -p ~/.fonts && cp fonts/* ~/.fonts/ 2>/dev/null; fc-cache -f > /dev/null
+          cd hfp
+          npm i --silent hyperframes@0.9.20
+          npx hyperframes telemetry disable > /dev/null 2>&1 || true
+          s=$(date +%s)
+          npx hyperframes render . -o out.mp4 -q delivery -w 4 2>&1 | tail -8
+          [ -f out.mp4 ] || { echo "::error::Рендер не получился"; exit 1; }
+          echo "::notice::Рендер за $(( ($(date +%s) - s) / 60 )) мин"
+      - name: Субтитры «микс»
+        run: |
+          SFX=0 CRF264=14 python scripts/overlay.py hfp/out.mp4 hfp/words.json hfp/subs.json mix hfp/out_subs.mp4 > hfp/overlay.log 2>&1 || { tail -5 hfp/overlay.log; exit 1; }
+          mv hfp/out_subs.mp4 hfp/out.mp4
+      - name: Громкость, обложка, упаковка — на Диск
+        env:
+          DEST: ${{ matrix.v.dest }}
+          NAME: ${{ matrix.v.name }}
+          ENC: ${{ inputs.enc }}
+        run: |
+          python3 -c "import json;x=json.load(open('item.json'));open('hfp/упаковка.txt','w').write(x['upak'].rstrip()+'\n');open('hfp/плейлист.txt','w').write(x.get('pl','')+'\n')"
+          cd hfp
+          ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
+          D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4)
+          ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
+          rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
+          rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          rclone copyto упаковка.txt "montazh:$DEST/упаковка.txt"
+          [ -s плейлист.txt ] && rclone copyto плейлист.txt "montazh:$DEST/плейлист.txt"
+          echo "::notice::Готово: $DEST ($D с)"
+          mkdir -p pr; ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t\:d}':x=6:y=6:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x5" -frames:v 9 pr/list_%d.jpg 2>/dev/null || ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,tile=6x5" pr/list_%d.jpg
+          cp oblozhka.jpg ../build.txt ../skleika.txt build.json words.json pr/ 2>/dev/null || true
+          ffmpeg -v error -y -i final.mp4 -vn -ac 1 -ar 16000 pr/zvuk.wav
+          if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
+      - name: Кадры для проверки — в ветку tmp-skl-<n> (зашифровано)
+        if: ${{ inputs.enc != '' }}
+        env:
+          N: ${{ matrix.v.n }}
+        run: |
+          mkdir o && cd o && cp ../proverka.enc . && git init -q && git checkout -q -b "tmp-skl-$N"
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "skl $GITHUB_RUN_ID $N"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "tmp-skl-$N"
