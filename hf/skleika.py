@@ -22,27 +22,53 @@ def find_seq(W, phrase, after=0.0, end=False):
 def dur(f):
     return float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]).decode())
 
-words, faces, segs, off = [], [], [], 0.0
-for n, p in enumerate(item["parts"]):
-    d = f"{IN}/{p['key']}"
-    W = json.load(open(f"{d}/osnova_words.json"))
+import numpy as np
+
+def pcm(f):
+    raw = subprocess.check_output(["ffmpeg", "-v", "error", "-i", f, "-vn", "-ac", "1", "-ar", "16000", "-f", "s16le", "-"])
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+
+def quiet(a, lo, hi, prefer):
+    """самая тихая точка (окно 40 мс) между lo и hi; при равной тишине — ближе к prefer"""
+    lo, hi = max(0.0, lo), max(lo + 0.05, hi)
+    best, bt = None, prefer
+    t = lo
+    while t <= hi:
+        i0, i1 = int((t - 0.02) * 16000), int((t + 0.02) * 16000)
+        seg = a[max(0, i0):max(1, i1)]
+        r = float(np.sqrt(np.mean(seg ** 2))) if len(seg) else 1.0
+        r += abs(t - prefer) * 0.002
+        if best is None or r < best: best, bt = r, t
+        t += 0.01
+    return bt
+
+# соседние куски одного ролика (кончается слово i, следующий начинается с i+1) — один кусок, без стыка
+parts, prev = [], None
+for p in item["parts"]:
+    W = json.load(open(f"{IN}/{p['key']}/osnova_words.json"))
     i0 = find_seq(W, p["from"], float(p.get("after", 0)))
     i1 = find_seq(W, p["to"], W[i0]["s"], end=True)
-    D = dur(f"{d}/osnova.mp4")
-    t0 = W[i0]["s"] - 0.07
-    if i0 > 0: t0 = max(t0, W[i0 - 1]["e"] + 0.03)
-    t0 = max(0.0, t0)
-    t1 = W[i1]["e"] + 0.16
-    if i1 + 1 < len(W): t1 = min(t1, W[i1 + 1]["s"] - 0.03)
+    if prev and prev["key"] == p["key"] and prev["i1"] + 1 == i0:
+        prev["i1"] = i1; continue
+    prev = {"key": p["key"], "i0": i0, "i1": i1}; parts.append(prev)
+
+words, faces, segs, off = [], [], [], 0.0
+for n, p in enumerate(parts):
+    d = f"{IN}/{p['key']}"
+    W = json.load(open(f"{d}/osnova_words.json")); i0, i1 = p["i0"], p["i1"]
+    D = dur(f"{d}/osnova.mp4"); A = pcm(f"{d}/osnova.mp4")
+    s0 = W[i0]["s"]; pe = W[i0 - 1]["e"] if i0 > 0 else max(0.0, s0 - 0.4)
+    t0 = quiet(A, max(pe, s0 - 0.35), s0 + 0.04, s0 - 0.06)
+    e1 = W[i1]["e"]; ns = W[i1 + 1]["s"] if i1 + 1 < len(W) else min(D, e1 + 0.5)
+    t1 = quiet(A, e1 - 0.06, min(ns, e1 + 0.45), e1 + 0.1)
     t1 = min(t1, D)
-    seg = f"{OUT}/seg{n}.mp4"
     L = t1 - t0
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t0:.3f}", "-i", f"{d}/osnova.mp4", "-t", f"{L:.3f}",
-                    "-vf", "fps=30,format=yuv420p", "-af", f"aresample=48000,afade=t=in:d=0.03,afade=t=out:st={max(0, L - 0.05):.3f}:d=0.05",
+                    "-vf", "fps=30,format=yuv420p", "-af", f"aresample=48000,afade=t=in:d=0.02,afade=t=out:st={max(0, L - 0.03):.3f}:d=0.03",
                     "-c:v", "libx264", "-crf", "12", "-preset", "medium", "-c:a", "pcm_s16le", f"{OUT}/seg{n}.mkv"], check=True)
     L = dur(f"{OUT}/seg{n}.mkv")
     for w in W[i0:i1 + 1]:
-        words.append({**w, "s": round(w["s"] - t0 + off, 3), "e": round(w["e"] - t0 + off, 3)})
+        words.append({**w, "s": round(max(0, w["s"] - t0) + off, 3), "e": round(min(L, w["e"] - t0) + off, 3)})
     if os.path.exists(f"{d}/face.json"): faces.append(json.load(open(f"{d}/face.json")))
     print(f"кусок {n}: {p['key']} {t0:.2f}–{t1:.2f} ({L:.2f} с) «{W[i0]['w']} … {W[i1]['w']}»")
     segs.append(f"{OUT}/seg{n}.mkv"); off += L
