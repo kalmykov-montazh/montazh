@@ -91,7 +91,7 @@ jobs:
             if ! rclone lsf "montazh:Брокер/работа/$K/osnova_words.json" | grep -q osnova; then
               echo "::notice::Строю основу $K"
               rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
-              rclone copy "montazh:Брокер/работа/$K" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
+              rclone copy "montazh:Брокер/работа/$K" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json 2>/dev/null || true
               if [ ! -f "$W/asr_cache.json" ]; then
                 echo "::notice::Распознаю $K (архив)"
                 ASR_ONLY=1 python scripts/montage.py raw/src.mp4 "$W" > "$W/asr.log" 2>&1 < /dev/null || { tail -20 "$W/asr.log"; exit 1; }
