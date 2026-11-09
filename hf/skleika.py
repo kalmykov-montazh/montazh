@@ -58,7 +58,8 @@ for n, p in enumerate(parts):
     W = json.load(open(f"{d}/osnova_words.json")); i0, i1 = p["i0"], p["i1"]
     D = dur(f"{d}/osnova.mp4"); A = pcm(f"{d}/osnova.mp4")
     s0 = W[i0]["s"]; pe = W[i0 - 1]["e"] if i0 > 0 else max(0.0, s0 - 0.4)
-    t0 = quiet(A, max(pe, s0 - 0.35), s0 + 0.04, s0 - 0.06)
+    # первый кусок ролика-основы: основа и так начинается с первого слова — берём с самого начала
+    t0 = 0.0 if i0 == 0 else quiet(A, max(pe, s0 - 0.35), s0 - 0.02, s0 - 0.08)
     e1 = W[i1]["e"]; ns = W[i1 + 1]["s"] if i1 + 1 < len(W) else min(D, e1 + 0.5)
     t1 = quiet(A, e1 - 0.06, min(ns, e1 + 0.45), e1 + 0.1)
     t1 = min(t1, D)
