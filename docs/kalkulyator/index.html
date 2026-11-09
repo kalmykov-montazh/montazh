@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Калькулятор фьючерсов — Всё о крипте</title>
+<meta name="description" content="Калькулятор фьючерсов: размер позиции, цена ликвидации, убыток на стоп-лоссе и сколько можно взять при риске 1–2% депозита">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#07090f;--card:#111725;--line:#1e2738;--tx:#f3f5f9;--mut:#8d97ab;--gold:#ffc400;--grn:#16c784;--red:#ff4d5e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:16px 16px 40px;max-width:560px;margin:auto}
+h1{font-size:22px;margin:4px 0 2px}h1 b{color:var(--gold)}
+.sub{color:var(--mut);font-size:14px;margin-bottom:14px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button,.side button{flex:1;padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-weight:700;font-size:15px}
+.tabs button.on{background:var(--gold);color:#111;border-color:var(--gold)}
+.side{display:flex;gap:6px;margin:4px 0 10px}
+.side .on.l{background:var(--grn);color:#04150d;border-color:var(--grn)}.side .on.s{background:var(--red);color:#fff;border-color:var(--red)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input[type=number]{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0b101b;color:var(--tx);font-size:17px}
+input:focus{outline:2px solid var(--gold);border-color:transparent}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.lev{display:flex;align-items:center;gap:10px}.lev input[type=range]{flex:1;accent-color:var(--gold)}
+.lev b{min-width:52px;text-align:right;color:var(--gold);font-size:20px}
+.res div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.res div:last-child{border:0}.res span{color:var(--mut)}.res b{text-align:right}
+.big{font-size:19px}.g{color:var(--grn)}.r{color:var(--red)}.y{color:var(--gold)}
+.warn{display:none;background:#2a0f14;border:1px solid var(--red);color:#ffb3bb;padding:10px 12px;border-radius:12px;font-size:14px;margin-bottom:12px}
+.ok{background:#0d2219;border-color:var(--grn);color:#a9f0cf}
+.note{color:var(--mut);font-size:12.5px;margin-top:6px}
+details{color:var(--mut);font-size:13px;margin-top:8px}summary{cursor:pointer;color:var(--tx)}
+.ex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ex a{display:block;text-align:center;padding:11px 4px;border-radius:12px;background:#0b101b;border:1px solid var(--line);color:var(--tx);text-decoration:none;font-weight:700;font-size:14px}
+.ex a:first-child{border-color:var(--gold);color:var(--gold)}
+.links a{color:var(--gold)}
+</style>
+</head>
+<body>
+<h1>Калькулятор <b>фьючерсов</b></h1>
+<div class="sub">Всё о крипте · посчитайте сделку до входа, а не после</div>
+
+<div class="tabs">
+  <button id="t1" class="on" onclick="mode(1)">Моя сделка</button>
+  <button id="t2" onclick="mode(2)">Сколько можно взять</button>
+</div>
+
+<div class="card">
+  <div class="side">
+    <button id="bl" class="on l" onclick="side(1)">ЛОНГ ↑</button>
+    <button id="bs" class="s" onclick="side(-1)">ШОРТ ↓</button>
+  </div>
+  <div class="row">
+    <div><label>Депозит, USDT</label><input id="dep" type="number" inputmode="decimal" value="1000"></div>
+    <div><label>Цена входа</label><input id="en" type="number" inputmode="decimal" value="100000"></div>
+  </div>
+  <div id="m1">
+    <label>Маржа на сделку, USDT (ваши деньги в позиции)</label>
+    <input id="mar" type="number" inputmode="decimal" value="100">
+  </div>
+  <div id="m2" style="display:none">
+    <label>Риск на сделку, % депозита (обычно 1–2%)</label>
+    <input id="rp" type="number" inputmode="decimal" value="1">
+  </div>
+  <label>Плечо</label>
+  <div class="lev"><input id="lv" type="range" min="1" max="100" value="10"><b id="lvb">10x</b></div>
+  <div class="row">
+    <div><label>Стоп-лосс, цена <span id="stopreq"></span></label><input id="sl" type="number" inputmode="decimal" placeholder="необязательно" value="98000"></div>
+    <div><label>Тейк-профит, цена</label><input id="tp" type="number" inputmode="decimal" placeholder="необязательно" value="104000"></div>
+  </div>
+  <details><summary>Комиссия и поддерживающая маржа</summary>
+    <div class="row">
+      <div><label>Комиссия за вход и выход, % (тейкер)</label><input id="fee" type="number" inputmode="decimal" value="0.055"></div>
+      <div><label>Поддерживающая маржа, %</label><input id="mmr" type="number" inputmode="decimal" value="0.5"></div>
+    </div>
+    <div class="note">0,5% — первый уровень лимита риска по BTC и ETH на большинстве бирж. На мелких монетах и больших позициях выше. Точные цифры — в карточке контракта на бирже</div>
+  </details>
+</div>
+
+<div id="w" class="warn"></div>
+
+<div class="card res" id="out"></div>
+
+<div class="card">
+  <div style="font-weight:700;margin-bottom:8px">Проверить на практике — биржи с фьючерсами</div>
+  <div class="ex" id="ex"></div>
+  <div class="note">Ссылки партнёрские: вам ничего не стоит, каналу помогает. Начните с демо-счёта или маленькой суммы</div>
+</div>
+
+<div class="note links">
+Ликвидация считается для изолированной маржи и приблизительно: биржа учитывает свои уровни риска, фандинг и комиссию закрытия, поэтому её цена может быть немного ближе. Это не совет покупать или продавать<br><br>
+Как это всё работает — <a href="https://youtu.be/SyNSxZKWlTs" target="_blank">урок «Фьючерсы для новичка»</a> · <a href="https://t.me/vseokrypte_news" target="_blank">Telegram «Всё о крипте»</a>
+</div>
+
+<script>
+const EX=[["Bybit","https://partner.bybit.com/b/Vseokrypte"],["MEXC","https://promote.mexc.com/a/VSEOKRYPTE"],["BingX","https://bingx.com/invite/RDHQRUE1"],["OKX","https://www.okx.com/join/VSEOCRYPTE"],["Bitget","https://partner.bitget.com/bg/3901DD"],["Binance","https://accounts.binance.com/register?ref=RFU6VQUF"]];
+const tg=window.Telegram&&Telegram.WebApp;if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#07090f');tg.setBackgroundColor&&tg.setBackgroundColor('#07090f')}catch(e){}}
+function open_(u){if(tg&&tg.openLink){tg.openLink(u)}else{window.open(u,'_blank')}}
+document.getElementById('ex').innerHTML=EX.map(e=>`<a href="${e[1]}" onclick="open_('${e[1]}');return false">${e[0]}</a>`).join('');
+let M=1,S=1;const $=id=>document.getElementById(id);
+function mode(m){M=m;$('t1').className=m==1?'on':'';$('t2').className=m==2?'on':'';$('m1').style.display=m==1?'':'none';$('m2').style.display=m==2?'':'none';$('stopreq').textContent=m==2?'(нужен)':'';calc()}
+function side(s){S=s;$('bl').className='l'+(s==1?' on':'');$('bs').className='s'+(s==-1?' on':'');
+  const e=+$('en').value;if(e>0){$('sl').value=r(e*(1-0.02*s));$('tp').value=r(e*(1+0.04*s))}calc()}
+function r(x){return +x.toPrecision(6)}
+function n(x,d=2){if(!isFinite(x))return'—';return x.toLocaleString('ru-RU',{maximumFractionDigits:d,minimumFractionDigits:0})}
+function px(x){if(!isFinite(x)||x<=0)return'—';const d=x>=1000?1:x>=1?3:6;return n(x,d)}
+function row(a,b,c=''){return`<div><span>${a}</span><b class="${c}">${b}</b></div>`}
+function calc(){
+  const dep=+$('dep').value,en=+$('en').value,L=+$('lv').value,sl=+$('sl').value,tp=+$('tp').value,fee=+$('fee').value/100,mmr=+$('mmr').value/100;
+  $('lvb').textContent=L+'x';const w=$('w');w.style.display='none';w.className='warn';let out='';
+  if(!(en>0)||!(dep>0)){$('out').innerHTML=row('Заполните депозит и цену входа','');return}
+  let mar,pos;
+  const stopDist=sl>0?Math.abs(en-sl)/en:NaN;
+  if(M==2){
+    if(!(sl>0)||(S==1&&sl>=en)||(S==-1&&sl<=en)){$('out').innerHTML=row('Укажите стоп-лосс '+(S==1?'ниже':'выше')+' цены входа','');return}
+    const risk=dep*(+$('rp').value)/100;
+    pos=risk/(stopDist+2*fee); mar=pos/L;
+  }else{mar=+$('mar').value;pos=mar*L}
+  const qty=pos/en;
+  const liq=S==1?en*(1-1/L+mmr):en*(1+1/L-mmr);
+  const liqDist=Math.abs(en-liq)/en*100;
+  const fees=pos*fee*2;
+  if(M==2){
+    out+=row('Можно открыть позицию на',n(pos)+' USDT','big y');
+    out+=row('Маржа при плече '+L+'x',n(mar)+' USDT'+(mar>dep?' ⚠️':''));
+    out+=row('Это монет',n(qty,6));
+    if(mar>dep){w.style.display='block';w.textContent='Маржи не хватает: при таком стопе нужно плечо побольше или стоп поближе. Само плечо риск не увеличивает — риск задаёт стоп'}
+  }else{
+    out+=row('Размер позиции',n(pos)+' USDT','big y');
+    out+=row('Это монет',n(qty,6));
+    out+=row('Доля депозита в марже',n(mar/dep*100,1)+'%');
+    if(mar>dep){w.style.display='block';w.textContent='Маржа больше депозита — так открыть не получится'}
+  }
+  out+=row('Цена ликвидации ≈',px(liq),'r');
+  out+=row('До ликвидации',(S==1?'−':'+')+n(liqDist,2)+'%');
+  out+=row('Комиссия вход + выход',n(fees)+' USDT');
+  if(sl>0){
+    const bad=(S==1&&sl<=liq)||(S==-1&&sl>=liq), wrong=(S==1&&sl>=en)||(S==-1&&sl<=en);
+    const loss=qty*Math.abs(en-sl)+fees;
+    if(wrong){out+=row('Стоп-лосс','с другой стороны от входа','r')}
+    else{
+      out+=row('Убыток на стопе','−'+n(loss)+' USDT','r');
+      out+=row('Это от депозита',n(loss/dep*100,2)+'%',loss/dep>0.02?'r':'g');
+      if(bad){w.style.display='block';w.textContent='Стоп стоит дальше ликвидации: позицию закроет ликвидация раньше стопа. Уменьшите плечо или передвиньте стоп'}
+      else if(M==1&&loss/dep>0.05){w.style.display='block';w.textContent='На одном стопе уходит больше 5% депозита. Обычно рискуют 1–2% на сделку — переключитесь на «Сколько можно взять»'}
+      else if(w.style.display!='block'){w.style.display='block';w.className='warn ok';w.textContent='Стоп ближе ликвидации — сделка закроется по вашему плану, а не по решению биржи'}
+    }
+  }
+  if(tp>0&&!((S==1&&tp<=en)||(S==-1&&tp>=en))){
+    const prof=qty*Math.abs(tp-en)-fees;
+    out+=row('Прибыль на тейке','+'+n(prof)+' USDT','g');
+    if(sl>0&&!((S==1&&sl>=en)||(S==-1&&sl<=en))){const loss=qty*Math.abs(en-sl)+fees;out+=row('Прибыль к риску','1 : '+n(prof/loss,2))}
+  }
+  $('out').innerHTML=out;
+}
+['dep','en','mar','rp','lv','sl','tp','fee','mmr'].forEach(id=>$(id).addEventListener('input',calc));
+calc();
+</script>
+</body>
+</html>
