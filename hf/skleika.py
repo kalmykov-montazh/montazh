@@ -74,11 +74,27 @@ for n, p in enumerate(parts):
     print(f"кусок {n}: {p['key']} {t0:.2f}–{t1:.2f} ({L:.2f} с) «{W[i0]['w']} … {W[i1]['w']}»")
     segs.append(f"{OUT}/seg{n}.mkv"); off += L
 
+# правка распознавания для субтитров: {"неверно": "верно"}, ключ может быть из нескольких слов (сливаются в одно)
+FIX = item.get("fix") or {}
+def _n(x): return re.sub(r"[^\wё%]", "", x.lower())
+for k_, v_ in sorted(FIX.items(), key=lambda kv: -len(kv[0].split())):
+    ks = [_n(x) for x in k_.split()]
+    i = 0
+    while i + len(ks) <= len(words):
+        if [_n(words[i + j]["w"]) for j in range(len(ks))] == ks:
+            tail = re.sub(r"^.*?([.,!?:;»]*)$", r"\1", words[i + len(ks) - 1]["w"])
+            words[i] = {**words[i], "w": v_ + (tail if not re.search(r"[.,!?:;»]$", v_) else ""), "e": words[i + len(ks) - 1]["e"]}
+            del words[i + 1:i + len(ks)]
+        i += 1
+
+words = [w for w in words if re.sub(r"[^\wё%]", "", w["w"])]
+
 lst = f"{OUT}/list.txt"
 open(lst, "w").write("".join(f"file '{os.path.abspath(s)}'\n" for s in segs))
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", "13",
                 "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", f"{OUT}/osnova.mp4"], check=True)
 json.dump(words, open(f"{OUT}/osnova_words.json", "w"), ensure_ascii=False)
+print("ТЕКСТ:", " ".join(w["w"] for w in words))
 # голова выше всех — по ней место для плашек (чтобы плашки ни в одном куске не легли на голову)
 if faces:
     f = min(faces, key=lambda x: x["EYE"] - 0.72 * x["HN"])

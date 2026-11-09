@@ -20,7 +20,7 @@ shutil.copy(f"{B}/pustaya2/gsap.min.js", P)
 LOG = []
 def log(*a): LOG.append(" ".join(str(x) for x in a))
 
-def norm(s): return re.sub(r"[^\wё%]", "", s.lower())
+def norm(s): return re.sub(r"[^\wё%]", "", s.lower().replace("ё", "е"))
 
 # «Всё, пошёл работать» нигде не используем (21.10.2026) — если осталось в конце, ролик кончается до этих слов
 W = list(W0)
