@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Тренажёр свечей — Всё о крипте</title>
+<meta name="description" content="Тренажёр японских свечей: угадайте свечную модель на реальном графике биткоина и альткоинов и посмотрите, что было дальше">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#07090f;--card:#111725;--line:#1e2738;--tx:#f3f5f9;--mut:#8d97ab;--gold:#ffc400;--grn:#16c784;--red:#ff4d5e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:16px 16px 40px;max-width:560px;margin:auto}
+h1{font-size:22px;margin:4px 0 2px}h1 b{color:var(--gold)}
+.sub{color:var(--mut);font-size:14px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--mut);margin-bottom:8px}
+.top b{color:var(--tx)}
+canvas{width:100%;height:260px;display:block;border-radius:10px;background:#0b101b}
+.q{font-weight:700;margin:12px 0 8px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts button{padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:#0b101b;color:var(--tx);font-weight:700;font-size:14.5px}
+.opts button.ok{background:var(--grn);border-color:var(--grn);color:#04150d}
+.opts button.bad{background:var(--red);border-color:var(--red);color:#fff}
+.opts button:disabled{opacity:1}
+.ans{display:none;margin-top:12px;font-size:14.5px}
+.ans h3{margin:0 0 6px;font-size:17px}
+.ans .g{color:var(--grn)}.ans .r{color:var(--red)}
+.next{width:100%;margin-top:12px;padding:13px;border-radius:12px;border:0;background:var(--gold);color:#111;font-weight:800;font-size:16px}
+.ex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ex a{display:block;text-align:center;padding:11px 4px;border-radius:12px;background:#0b101b;border:1px solid var(--line);color:var(--tx);text-decoration:none;font-weight:700;font-size:14px}
+.ex a:first-child{border-color:var(--gold);color:var(--gold)}
+.note{color:var(--mut);font-size:12.5px;margin-top:6px}
+.note a,.ans a{color:var(--gold)}
+.load{color:var(--mut);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<h1>Тренажёр <b>свечей</b></h1>
+<div class="sub">Всё о крипте · реальный график, последняя свеча подсвечена. Что это за модель?</div>
+
+<div class="card">
+  <div class="top"><span id="info">Загружаю график…</span><span>Верно: <b id="sc">0</b> из <b id="tot">0</b> · серия <b id="st">0</b></span></div>
+  <canvas id="cv" width="1040" height="520"></canvas>
+  <div id="game">
+    <div class="q">Какая свечная модель подсвечена?</div>
+    <div class="opts" id="opts"></div>
+    <div class="ans" id="ans"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="font-weight:700;margin-bottom:8px">Посмотреть свечи вживую — биржи</div>
+  <div class="ex" id="ex"></div>
+  <div class="note">Ссылки партнёрские: вам ничего не стоит, каналу помогает. Тренируйтесь на демо-счёте или маленькой суммой</div>
+</div>
+
+<div class="note">
+Модели ищутся по графику автоматически по простым правилам, поэтому иногда пример получается не учебный. Модель — это подсказка, а не сигнал: смотрите на уровень, тренд и объём. Это не совет покупать или продавать<br><br>
+Уроки: <a href="https://youtu.be/-zOe-aXo5dg" target="_blank">«Японские свечи с нуля»</a> · <a href="https://youtu.be/kXmPqqzOVZ0" target="_blank">«Свечные модели разворота»</a> · <a href="https://t.me/vseokrypte_news" target="_blank">Telegram «Всё о крипте»</a> · <a href="../kalkulyator/" target="_blank">Калькулятор фьючерсов</a>
+</div>
+
+<script>
+const EX=[["Bybit","https://partner.bybit.com/b/Vseokrypte"],["MEXC","https://promote.mexc.com/a/VSEOKRYPTE"],["BingX","https://bingx.com/invite/RDHQRUE1"],["OKX","https://www.okx.com/join/VSEOCRYPTE"],["Bitget","https://partner.bitget.com/bg/3901DD"],["Binance","https://accounts.binance.com/register?ref=RFU6VQUF"]];
+const tg=window.Telegram&&Telegram.WebApp;if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#07090f');tg.setBackgroundColor&&tg.setBackgroundColor('#07090f')}catch(e){}}
+function open_(u){if(tg&&tg.openLink){tg.openLink(u)}else{window.open(u,'_blank')}}
+const $=id=>document.getElementById(id);
+$('ex').innerHTML=EX.map(e=>`<a href="${e[1]}" onclick="open_('${e[1]}');return false">${e[0]}</a>`).join('');
+
+// ---------- модели
+const P={
+ hammer:{n:'Молот',k:1,t:'После падения: маленькое тело вверху и длинная нижняя тень — продавцы давили, но покупатели выкупили. Возможный разворот вверх'},
+ shooting:{n:'Падающая звезда',k:1,t:'После роста: маленькое тело внизу и длинная верхняя тень — цену подняли, но её продавили обратно. Возможный разворот вниз'},
+ bull_eng:{n:'Бычье поглощение',k:2,t:'После падения зелёная свеча полностью перекрывает тело предыдущей красной — покупатели перехватили инициативу'},
+ bear_eng:{n:'Медвежье поглощение',k:2,t:'После роста красная свеча полностью перекрывает тело предыдущей зелёной — продавцы перехватили инициативу'},
+ doji:{n:'Доджи',k:1,t:'Открытие почти равно закрытию: силы покупателей и продавцов уравнялись. Это сигнал неуверенности, а не направление'},
+ morning:{n:'Утренняя звезда',k:3,t:'Три свечи после падения: большая красная, маленькая свеча-пауза и большая зелёная, которая закрывается выше середины первой'},
+ evening:{n:'Вечерняя звезда',k:3,t:'Три свечи после роста: большая зелёная, маленькая свеча-пауза и большая красная, которая закрывается ниже середины первой'},
+ marubozu:{n:'Марубозу',k:1,t:'Большое тело почти без теней: одна сторона полностью контролировала свечу от открытия до закрытия'}
+};
+const body=c=>Math.abs(c.c-c.o), rng=c=>c.h-c.l, up=c=>c.c>c.o;
+function trend(a,i,len=8){const s=a[i-len],e=a[i-1];if(!s||!e)return 0;const ch=(e.c-s.c)/s.c;return ch<-0.04?-1:ch>0.04?1:0}
+function detect(a,i){
+  const c=a[i],p=a[i-1],pp=a[i-2];const R=rng(c),B=body(c);if(R<=0)return null;
+  const lo=Math.min(c.o,c.c)-c.l, hi=c.h-Math.max(c.o,c.c), tr=trend(a,i-(0));
+  const avgB=a.slice(i-15,i).reduce((s,x)=>s+body(x),0)/15;
+  if(pp&&p){const tr3=trend(a,i-2);
+    if(tr3<0&&!up(pp)&&body(pp)>avgB*1.2&&body(p)<body(pp)*0.35&&up(c)&&body(c)>avgB&&c.c>(pp.o+pp.c)/2)return'morning';
+    if(tr3>0&&up(pp)&&body(pp)>avgB*1.2&&body(p)<body(pp)*0.35&&!up(c)&&body(c)>avgB&&c.c<(pp.o+pp.c)/2)return'evening';}
+  if(p){const tr2=trend(a,i-1);
+    if(tr2<0&&!up(p)&&up(c)&&c.c>=p.o&&c.o<=p.c&&body(c)>body(p)*1.1&&body(p)>avgB*0.5)return'bull_eng';
+    if(tr2>0&&up(p)&&!up(c)&&c.o>=p.c&&c.c<=p.o&&body(c)>body(p)*1.1&&body(p)>avgB*0.5)return'bear_eng';}
+  if(tr<0&&B/R<0.35&&lo>=2*B&&hi<=R*0.12&&R>avgB*1.2)return'hammer';
+  if(tr>0&&B/R<0.35&&hi>=2*B&&lo<=R*0.12&&R>avgB*1.2)return'shooting';
+  if(B/R<0.06&&R>avgB*0.8)return'doji';
+  if(B/R>0.92&&B>avgB*1.8)return'marubozu';
+  return null;
+}
+
+// ---------- данные
+const COINS=[['BTCUSDT','Биткоин','XBTUSD'],['ETHUSDT','Эфир','ETHUSD'],['SOLUSDT','Solana','SOLUSD'],['XRPUSDT','XRP','XRPUSD'],['BNBUSDT','BNB',null],['DOGEUSDT','Dogecoin','XDGUSD'],['ADAUSDT','Cardano','ADAUSD'],['LINKUSDT','Chainlink','LINKUSD']];
+const TF=[['1d','дневка',1440],['4h','4 часа',240]];
+async function binance(sym,tf){const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${tf}&limit=1000`);if(!r.ok)throw 0;const j=await r.json();return j.map(k=>({t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4]}))}
+async function kraken(pair,min){const r=await fetch(`https://api.kraken.com/0/public/OHLC?pair=${pair}&interval=${min}`);const j=await r.json();const k=Object.values(j.result).find(Array.isArray);return k.map(x=>({t:x[0]*1000,o:+x[1],h:+x[2],l:+x[3],c:+x[4]}))}
+const cache={};
+async function load(ci,ti){const key=ci+'_'+ti;if(cache[key])return cache[key];const[c,,kp]=COINS[ci],[tf,,min]=TF[ti];let a;
+  try{a=await binance(c,tf)}catch(e){if(!kp)throw e;a=await kraken(kp,min)}
+  cache[key]=a;return a}
+
+// ---------- игра
+let S={sc:0,tot:0,st:0},cur=null;
+try{const s=JSON.parse(localStorage.getItem('trenazher')||'null');if(s)S=s}catch(e){}
+function save(){try{localStorage.setItem('trenazher',JSON.stringify(S))}catch(e){}}
+function stats(){$('sc').textContent=S.sc;$('tot').textContent=S.tot;$('st').textContent=S.st}
+const lastKind=[];
+async function newRound(){
+  $('ans').style.display='none';$('opts').innerHTML='';$('info').textContent='Ищу модель на графике…';
+  for(let attempt=0;attempt<12;attempt++){
+    const ci=Math.floor(Math.random()*COINS.length),ti=Math.random()<0.6?0:1;let a;
+    try{a=await load(ci,ti)}catch(e){continue}
+    const found=[];for(let i=40;i<a.length-12;i++){const k=detect(a,i);if(k)found.push([i,k])}
+    if(!found.length)continue;
+    // реже повторять одну и ту же модель и не давать доджи/марубозу слишком часто
+    const pool=found.filter(f=>!lastKind.includes(f[1])&&(f[1]!='doji'&&f[1]!='marubozu'||Math.random()<0.3));
+    const pick=(pool.length?pool:found)[Math.floor(Math.random()*(pool.length?pool:found).length)];
+    lastKind.push(pick[1]);if(lastKind.length>2)lastKind.shift();
+    cur={a,i:pick[0],k:pick[1],ci,ti,done:false};
+    const d=new Date(a[pick[0]].t);
+    $('info').textContent=`${COINS[ci][1]} · ${TF[ti][1]} · ${d.toLocaleDateString('ru-RU',{month:'short',year:'numeric'})}`;
+    draw(false);opts();return;
+  }
+  $('info').textContent='Не удалось загрузить график. Проверьте интернет и обновите страницу';
+}
+function opts(){
+  const all=Object.keys(P).filter(k=>k!=cur.k);
+  for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]]}
+  const v=[cur.k,...all.slice(0,3)].sort(()=>Math.random()-0.5);
+  $('opts').innerHTML=v.map(k=>`<button data-k="${k}">${P[k].n}</button>`).join('');
+  [...$('opts').children].forEach(b=>b.onclick=()=>answer(b));
+}
+function answer(b){
+  if(cur.done)return;cur.done=true;const ok=b.dataset.k==cur.k;
+  S.tot++;if(ok){S.sc++;S.st++}else S.st=0;save();stats();
+  [...$('opts').children].forEach(x=>{x.disabled=true;if(x.dataset.k==cur.k)x.classList.add('ok');else if(x==b)x.classList.add('bad')});
+  if(tg&&tg.HapticFeedback){try{tg.HapticFeedback.notificationOccurred(ok?'success':'error')}catch(e){}}
+  const a=cur.a,i=cur.i,after=a[Math.min(i+10,a.length-1)].c,ch=(after-a[i].c)/a[i].c*100;
+  const dir=ch>=0?`<span class="g">+${ch.toFixed(1)}%</span>`:`<span class="r">${ch.toFixed(1)}%</span>`;
+  $('ans').innerHTML=`<h3>${ok?'✅ Верно':'❌ Это '+P[cur.k].n}</h3>${P[cur.k].t}<br><br>Через 10 свечей цена: ${dir}${(v=>v?'. '+v:'')(verdict(cur.k,ch))}
+  <button class="next" onclick="newRound()">Следующий график →</button>`;
+  $('ans').style.display='block';draw(true);
+}
+function verdict(k,ch){
+  const bull=['hammer','bull_eng','morning'],bear=['shooting','bear_eng','evening'];
+  if(!bull.includes(k)&&!bear.includes(k))return'';
+  if(Math.abs(ch)<1.5)return'Почти на месте: модель не всегда даёт движение';
+  return (ch>0)==bull.includes(k)?'Модель отработала':'В этот раз рынок пошёл против модели, поэтому без стоп-лосса нельзя';
+}
+function draw(reveal){
+  const cv=$('cv'),x=cv.getContext('2d'),W=cv.width,H=cv.height,a=cur.a,i=cur.i,k=P[cur.k].k;
+  const from=i-39,to=reveal?Math.min(i+10,a.length-1):i,show=a.slice(from,to+1),n=50;
+  let lo=Math.min(...show.map(c=>c.l)),hi=Math.max(...show.map(c=>c.h));const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
+  const Y=v=>H-24-(v-lo)/(hi-lo)*(H-40),cw=(W-20)/n;
+  x.clearRect(0,0,W,H);x.fillStyle='#0b101b';x.fillRect(0,0,W,H);
+  x.strokeStyle='#1a2233';x.lineWidth=1;for(let g=1;g<5;g++){const y=H*g/5;x.beginPath();x.moveTo(0,y);x.lineTo(W,y);x.stroke()}
+  // подсветка модели
+  const hx=10+(i-k+1-from)*cw;x.fillStyle='rgba(255,196,0,.13)';x.fillRect(hx-cw*0.15,8,cw*(k+0.3)-0,H-24);
+  if(reveal){const rx=10+(i+1-from)*cw;x.fillStyle='rgba(141,151,171,.07)';x.fillRect(rx,8,W-rx,H-24);
+    x.fillStyle='#8d97ab';x.font='22px sans-serif';x.fillText('что было дальше →',rx+6,30)}
+  show.forEach((c,j)=>{const cx=10+j*cw+cw/2,col=up(c)?'#16c784':'#ff4d5e';x.strokeStyle=col;x.fillStyle=col;x.lineWidth=2;
+    x.beginPath();x.moveTo(cx,Y(c.h));x.lineTo(cx,Y(c.l));x.stroke();
+    const t=Y(Math.max(c.o,c.c)),b=Math.max(Y(Math.min(c.o,c.c))-t,2);x.fillRect(cx-cw*0.35,t,cw*0.7,b)});
+  x.fillStyle='#8d97ab';x.font='20px sans-serif';x.fillText('Всё о крипте',W-140,H-6);
+}
+stats();newRound();
+</script>
+</body>
+</html>
