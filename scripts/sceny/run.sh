@@ -54,7 +54,7 @@ open("упаковка — сцены.txt", "w", encoding="utf-8").write(txt + "
 print(txt)
 PY
 # 28.10.2026 (Евгений): новое — сначала «На проверке»; перемонтаж уже одобренного (файл сцен v2 есть) — на место
-if [ -n "$(rclone lsf "montazh:$SRC/$NAME" 2>/dev/null)" ]; then DST="$SRC"; rclone copyto "montazh:$SRC/$NAME" "montazh:Брокер/На удаление (старые версии)/$FOLDER — до правки $(date +%d.%m).mp4" || true; else DST="Брокер/На проверке/Шортс $TOPIC $FOLDER"; rclone copyto обложка.jpg "montazh:$DST/обложка.jpg"; fi
+if [ -n "$(rclone lsf "montazh:$SRC/$NAME" 2>/dev/null)" ]; then DST="$SRC"; rclone copyto "montazh:$SRC/$NAME" "montazh:Брокер/На удаление/$FOLDER — до правки $(date +%d.%m).mp4" || true; else DST="Брокер/На проверке/Шортс $TOPIC $FOLDER"; rclone copyto обложка.jpg "montazh:$DST/обложка.jpg"; fi
 rclone copyto out.mp4 "montazh:$DST/$NAME"
 rclone copyto "упаковка — сцены.txt" "montazh:$DST/упаковка — сцены.txt"
 rclone lsl "montazh:$DST" | sed 's/^/::notice::/'
