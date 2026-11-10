@@ -123,11 +123,19 @@ jobs:
         run: |
           P="$PWD/hfp"; mkdir -p "$P"
           cp sk/osnova.mp4 "$P/osnova.mp4"
-          echo '{}' > vst.json
+          # картинки-предметы — как в hf-pachka.yml (последний монтаж 09.11): план вставок у каждой склейки в поле "vst"
+          python3 -c "import json;x=json.load(open('item.json'));json.dump(x.get('vst') or {},open('vst.json','w'),ensure_ascii=False)"
           ( cd "$P" && ffmpeg -v error -y -i osnova.mp4 -vf "lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube" -c:v libx264 -crf 14 -preset medium -c:a aac -b:a 192k o2.mp4 && mv o2.mp4 osnova.mp4 )
-          python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true
+          # обложка: кадр с открытыми глазами — pick_frame; если в novyj задан cover_t (кадр проверен глазами) — берём его
+          CT=$(python3 -c "import json;print(json.load(open('novyj/$KEY.json')).get('cover_t',''))")
+          if [ -n "$CT" ]; then ffmpeg -v error -y -ss "$CT" -i "$P/osnova.mp4" -frames:v 1 "$P/cover_bg.png"; echo "обложка: кадр $CT с"
+          else python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true; fi
+          [ -f "$P/cover_bg.png" ] || echo "::warning::нет кадра обложки"
           python3 hf/build_auto.py "$P" "novyj/$KEY.json" sk/osnova_words.json sk/face.json vst.json | tee build.txt
           echo "::notice::$(tr '\n' ' ' < build.txt | cut -c1-900)"
+          if [ -s "$P/kartinki.txt" ]; then mkdir -p "$P/img"
+            while IFS= read -r f; do [ -n "$f" ] && rclone copyto "montazh:$f" "$P/img/$(basename "$f")"; done < "$P/kartinki.txt"; fi
+          cp "$P/cover_bg.png" sk/ 2>/dev/null || true
       - name: Рендер HyperFrames
         if: inputs.osnova_only != '1'
         run: |
