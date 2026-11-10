@@ -1,0 +1,6 @@
+# Сайт kalmykov-realty: Netlify берёт эту папку (Base directory = sait)
+# и собирает только когда изменилось что-то внутри sait/, остальные коммиты робота пропускает
+[build]
+  publish = "."
+  command = ""
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
