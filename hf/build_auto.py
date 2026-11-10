@@ -88,7 +88,7 @@ lines = lines[:3]
 sizes = [fit(x, 920, 92, 54) for x in lines]
 sz = min(sizes) if sizes else 86
 cl = []
-y = 290
+y = int(cov.get("y", 290))   # 10.11.2026: съёмка в полный рост на улице — голова ниже, текст можно выше (cover.y в novyj)
 for k, x in enumerate(lines):
     cls = "b" if k % 2 == 0 else "y"
     cl.append(f'<div class="cvl {cls}" style="top:{y}px;font-size:{sz}px"><span>{esc(x)}</span></div>'); y += int(sz * 1.28)
