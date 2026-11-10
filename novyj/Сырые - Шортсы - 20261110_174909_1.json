@@ -82,5 +82,6 @@
   "style": "marker",
   "top": "SMS ОТ DGT?",
   "bot": "ЭТО РАЗВОД"
- }
+ },
+ "pic_low": true
 }

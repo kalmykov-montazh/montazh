@@ -97,5 +97,6 @@
   "style": "marker",
   "top": "ПРОДАЁТЕ НА WALLAPOP?",
   "bot": "НАЛОГОВАЯ|ЗНАЕТ"
- }
+ },
+ "pic_low": true
 }

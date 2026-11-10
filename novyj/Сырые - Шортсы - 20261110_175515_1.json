@@ -84,5 +84,6 @@
   "style": "marker",
   "top": "ЧЬЯ ФАМИЛИЯ",
   "bot": "ПЕРВАЯ?"
- }
+ },
+ "pic_low": true
 }

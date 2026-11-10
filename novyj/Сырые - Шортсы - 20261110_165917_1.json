@@ -94,5 +94,6 @@
   "style": "marker",
   "top": "ЗАРПЛАТА",
   "bot": "14 РАЗ В ГОД"
- }
+ },
+ "pic_low": true
 }
