@@ -273,10 +273,12 @@ for k, (ph, img, opt) in enumerate(VST.get("ins", [])):
     st = f'<em>{esc(opt["stamp"])}</em>' if opt.get("stamp") else ""
     if LOW:
         my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
-        H.append(f'<div id="{pid}" class="photo2" style="top:{max(700, my - 420)}px;{side};transform:rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
+        # правило 03.11: низ справа/слева по очереди, НИЖЕ субтитров, высота не больше 250 px — никогда не на лице
+        top = my + 78; sc = max(0.55, min(1.0, (1920 - 24 - top) / 254))
+        H.append(f'<div id="{pid}" class="photo2" style="top:{top}px;{side};transform-origin:50% 0;transform:scale({sc:.2f}) rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
     else:
         H.append(f'<div id="{pid}" class="photo2 fit" style="top:{TOP}px;{side};transform:rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
-    tl(f'tl.from("#{pid}",{{scale:0.3,y:200,opacity:0,duration:0.45,ease:"back.out(1.7)"}},{t-0.08:.3f}).to("#{pid}",{{scale:0.6,y:-150,opacity:0,duration:0.3,ease:"power2.in"}},{t1-0.3:.3f});')
+    tl(f'tl.from("#{pid}",{{scale:0.3,y:200,opacity:0,duration:0.45,ease:"back.out(1.7)"}},{t-0.08:.3f}).to("#{pid}",{{scale:0.6,y:{200 if LOW else -150},opacity:0,duration:0.3,ease:"power2.in"}},{t1-0.3:.3f});')
     snd("whoosh", t - 0.12, 0.22)
 with open(f"{P}/kartinki.txt", "w") as fk:
     for img in KART: fk.write(("Брокер/Вставки/Предметы_ov/" + img[3:]) if img.startswith("ov/") else ("Брокер/Вставки/Предметы/" + img)); fk.write("\n")
