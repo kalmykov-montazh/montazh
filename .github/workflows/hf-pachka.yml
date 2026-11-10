@@ -22,7 +22,7 @@ on:
         required: false
         default: "5"
       osnova:
-        description: "1 — пересобрать основу, даже если есть"
+        description: "1 — пересобрать основу, даже если есть; 2 — только основа (без рендера)"
         required: false
         default: "0"
       enc:
@@ -80,7 +80,7 @@ jobs:
           FORCE: ${{ inputs.osnova }}
         run: |
           W="$PWD/work/$KEY"; mkdir -p raw "$W"
-          if [ "$FORCE" != "1" ] && rclone lsf "montazh:Брокер/работа/$KEY/osnova_words.json" | grep -q osnova; then
+          if [ "$FORCE" = "0" ] && rclone lsf "montazh:Брокер/работа/$KEY/osnova_words.json" | grep -q osnova; then
             echo "::notice::Основа уже есть"; exit 0; fi
           rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
           rclone copy "montazh:Брокер/работа/$KEY" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
@@ -93,6 +93,7 @@ jobs:
           [ -f "$W/face.json" ] && rclone copyto "$W/face.json" "montazh:Брокер/работа/$KEY/face.json"
           echo "::notice::Основа готова: $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$W/ролик_B.mp4") с"
       - name: Композиция по эталону
+        if: ${{ inputs.osnova != '2' }}
         env:
           KEY: ${{ matrix.v.key }}
           NAME: ${{ matrix.v.name }}
@@ -103,7 +104,8 @@ jobs:
           python3 - <<'PY'
           import json, os
           n = os.environ["NAME"]; out = {}
-          for f in ("vstavki_plan_0411.json", "vstavki_plan_0511.json"):
+          for f in ("vstavki_plan_0411.json", "vstavki_plan_0511.json", "vstavki_plan_1011.json"):
+              if not os.path.exists(f): continue
               d = json.load(open(f))
               if n in d: out = d[n]
           json.dump(out, open("in/vst.json", "w"), ensure_ascii=False)
@@ -116,6 +118,7 @@ jobs:
           if [ -s "$P/kartinki.txt" ]; then mkdir -p "$P/img"
             while IFS= read -r f; do [ -n "$f" ] && rclone copyto "montazh:$f" "$P/img/$(basename "$f")"; done < "$P/kartinki.txt"; fi
       - name: Рендер HyperFrames
+        if: ${{ inputs.osnova != '2' }}
         run: |
           sudo apt-get install -y -qq fonts-inter > /dev/null 2>&1 || true
           mkdir -p ~/.fonts && cp fonts/* ~/.fonts/ 2>/dev/null; fc-cache -f > /dev/null
@@ -127,10 +130,12 @@ jobs:
           [ -f out.mp4 ] || { echo "::error::Рендер не получился"; exit 1; }
           echo "::notice::Рендер за $(( ($(date +%s) - s) / 60 )) мин"
       - name: Субтитры «микс»
+        if: ${{ inputs.osnova != '2' }}
         run: |
           SFX=0 CRF264=14 python scripts/overlay.py hfp/out.mp4 hfp/words.json hfp/subs.json mix hfp/out_subs.mp4 > hfp/overlay.log 2>&1 || { tail -5 hfp/overlay.log; exit 1; }
           mv hfp/out_subs.mp4 hfp/out.mp4
       - name: Громкость, обложка, на Диск
+        if: ${{ inputs.osnova != '2' }}
         env:
           DEST: ${{ matrix.v.dest }}
           NAME: ${{ matrix.v.name }}
@@ -152,7 +157,7 @@ jobs:
           cp oblozhka.jpg кадры.jpg ../build.txt pr/ 2>/dev/null; cp build.json overlay.log pr/ 2>/dev/null || true
           if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
       - name: Проверка начала (ДНК хитов, не останавливает монтаж)
-        if: ${{ success() }}
+        if: ${{ success() && inputs.osnova != '2' }}
         continue-on-error: true
         env:
           DEST: ${{ matrix.v.dest }}
