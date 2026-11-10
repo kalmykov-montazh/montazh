@@ -206,17 +206,17 @@
  "15 Растаможка как квест": {
   "key": "Куски - Год в Испании 15 Растаможка как квест",
   "cover": {
-   "img": "ov/documents_3.jpg"
+   "img": "ov/carkeys_1.jpg"
   },
   "ins": [
    [
     "вживую ты ходишь",
-    "ov/documents_5.jpg",
+    "ov/notary_1.jpg",
     {}
    ],
    [
-    "техосмотр по-нашему",
-    "ov/garage_3.jpg",
+    "американец",
+    "ov/carkeys_3.jpg",
     {}
    ],
    [
@@ -229,22 +229,17 @@
  "25 План на второй год": {
   "key": "Куски - Год в Испании 25 План на второй год",
   "cover": {
-   "img": "ov/laptopbook_1.jpg"
+   "img": "ov/laptop2_2.jpg"
   },
   "ins": [
    [
-    "предложит более интересное",
-    "ov/handshake_3.jpg",
-    {}
-   ],
-   [
     "развиваю соцсети",
-    "ov/videoedit_2.jpg",
+    "ov/laptop2_2.jpg",
     {}
    ],
    [
-    "в real estate",
-    "ov/keys2_2.jpg",
+    "пока дойду",
+    "ov/hourglass_4.jpg",
     {}
    ]
   ]
