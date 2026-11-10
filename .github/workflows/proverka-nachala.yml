@@ -55,6 +55,7 @@ jobs:
                   name = os.path.basename(f)
                   if d['ok']:
                       rep.append(f'ОК — {name}\n')
+                      subprocess.run(['rclone', 'deletefile', f'montazh:{rel}/НАЧАЛО — проверить.txt'], capture_output=True)
                   else:
                       bad += 1
                       txt = 'Начало: ' + d['first'] + '\n' + ''.join('- ' + w + '\n' for w in d['warns'])
