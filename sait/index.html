@@ -94,7 +94,11 @@ h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
 .consult ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
 .consult li{padding-left:18px;position:relative;font-size:15px;line-height:1.45}
 .consult li::before{content:"";position:absolute;left:0;top:.6em;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.consult .price{font-weight:700;font-size:16px;margin:0}
+.consult .prices{display:flex;flex-direction:column;gap:8px}
+.consult .prices p{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.consult .prices b{font-size:15px}
+.consult .prices span{font-size:13px;color:var(--muted)}
+.consult .note{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
 .consult .go{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:16px;text-decoration:none;
   border-radius:12px;padding:13px 20px;background:var(--accent);color:var(--accent-ink)}
 .consult .go svg{width:18px;height:18px;fill:currentColor}
@@ -193,7 +197,11 @@ button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
       <li>Снимаете жильё — проверю, хозяин ли тот, кто сдаёт (выписка nota simple из реестра), и вычитаю договор до подписи</li>
       <li>Покупаете или продаёте — подскажу, что проверить до задатка</li>
     </ul>
-    <p class="price">Консультация — от 50 €</p>
+    <div class="prices">
+      <p><b>Разбор договора письменно — 50&nbsp;€</b><span>Мои рекомендации: что по закону, что нет, что поправить</span></p>
+      <p><b>Сопровождение до решения — от&nbsp;100&nbsp;€</b><span>Письма собственнику, бурофакс, ответы на его письма</span></p>
+    </div>
+    <p class="note">Моя задача — помочь разрулить ситуацию и не довести до суда. Это в интересах всех. Если дело всё же дойдёт до суда — дальше нужен профессиональный юрист, контакты дам</p>
     <a class="go" id="consultgo" target="_blank" rel="noopener">Записаться на консультацию</a>
   </section>
 
