@@ -27,7 +27,7 @@ jobs:
       - name: Подготовить
         run: |
           sudo apt-get install -y -qq ffmpeg fuse3 > /dev/null 2>&1 || true
-          pip install -q pywhispercpp > /dev/null 2>&1
+          pip install -q pywhispercpp pymorphy3 > /dev/null 2>&1
           rclone copyto 'montazh:Общее/ggml-small-q8_0.bin' ggml.bin
           mkdir -p /tmp/mnt; rclone mount montazh: /tmp/mnt --read-only --vfs-cache-mode off --buffer-size 8M --daemon; sleep 5
       - name: Проверить

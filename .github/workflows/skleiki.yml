@@ -181,6 +181,7 @@ jobs:
           DEST: ${{ matrix.v.dest }}
           KEY: ${{ matrix.v.key }}
         run: |
+          pip install -q pymorphy3 > /dev/null 2>&1 || true
           NJ="novyj/$KEY.json"; [ -f "$NJ" ] || NJ=""
           python3 scripts/proverka_nachala.py hfp/words.json $NJ hfp/final.mp4 > nachalo.json || exit 0
           python3 -c "import json;d=json.load(open('nachalo.json'));print('Начало:',d['first']);[print('-',w) for w in d['warns']];print('ОК' if d['ok'] else '')" > nachalo.txt
