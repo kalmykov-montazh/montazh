@@ -1,0 +1,46 @@
+name: Крипто — карточка дня на Диск
+
+# Решение Евгения 10.11.2026: запасной путь для задачи «YouTube: карточка канала в Сообществе».
+# Крипто-бот (kalmykov-montazh/instagram-bot, кнопка «Копия карточки на Диск») кладёт
+# chart_latest.json и chart_latest.png в ветку krypto-out этого репозитория и запускает эту задачу.
+# Она копирует оба файла на Google Диск в папку «instagram-bot/out» (корень «Мой диск»).
+# Если GitHub в запуске задачи Claude недоступен, она берёт файлы отсюда:
+#   1) https://raw.githubusercontent.com/kalmykov-montazh/montazh/krypto-out/chart_latest.json (и .png)
+#   2) Google Диск, папка instagram-bot/out
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: krypto-na-disk
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Взять файлы из ветки krypto-out
+        run: |
+          git fetch --depth 1 origin krypto-out
+          mkdir -p kout
+          git --work-tree=kout checkout FETCH_HEAD -- chart_latest.json chart_latest.png
+          python3 -c "import json;d=json.load(open('kout/chart_latest.json',encoding='utf-8'));print('date',d.get('date'))"
+      - name: Положить на Диск «instagram-bot/out»
+        run: |
+          sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
+          rclone mkdir "ves:instagram-bot/out"
+          rclone copyto kout/chart_latest.json "ves:instagram-bot/out/chart_latest.json"
+          rclone copyto kout/chart_latest.png "ves:instagram-bot/out/chart_latest.png"
+          rclone lsl "ves:instagram-bot/out"
+          D=$(python3 -c "import json;print(json.load(open('kout/chart_latest.json',encoding='utf-8')).get('date'))")
+          echo "::notice::На Диске instagram-bot/out: карточка за $D"
