@@ -151,6 +151,21 @@ jobs:
           mkdir -p pr; ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t\:d}':x=6:y=6:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x5" -frames:v 9 pr/list_%d.jpg 2>/dev/null || ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,tile=6x5" pr/list_%d.jpg
           cp oblozhka.jpg кадры.jpg ../build.txt pr/ 2>/dev/null; cp build.json overlay.log pr/ 2>/dev/null || true
           if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
+      - name: Проверка начала (ДНК хитов, не останавливает монтаж)
+        if: ${{ success() }}
+        continue-on-error: true
+        env:
+          DEST: ${{ matrix.v.dest }}
+          KEY: ${{ matrix.v.key }}
+        run: |
+          NJ="novyj/$KEY.json"; [ -f "$NJ" ] || NJ=""
+          python3 scripts/proverka_nachala.py hfp/words.json $NJ hfp/final.mp4 > nachalo.json || exit 0
+          python3 -c "import json;d=json.load(open('nachalo.json'));print('Начало:',d['first']);[print('-',w) for w in d['warns']];print('ОК' if d['ok'] else '')" > nachalo.txt
+          cat nachalo.txt
+          if grep -q '"ok": false' nachalo.json; then
+            echo "::warning::Начало ролика — замечания: $(tr '\n' ' ' < nachalo.txt | cut -c1-900)"
+            rclone copyto nachalo.txt "montazh:$DEST/НАЧАЛО — проверить.txt"
+          fi
       - name: Кадры для проверки — в ветку tmp-hfp-<n> (зашифровано)
         if: ${{ inputs.enc != '' }}
         env:

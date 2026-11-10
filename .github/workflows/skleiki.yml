@@ -174,6 +174,21 @@ jobs:
           cp oblozhka.jpg ../build.txt ../skleika.txt build.json words.json pr/ 2>/dev/null || true
           ffmpeg -v error -y -i final.mp4 -vn -ac 1 -ar 16000 pr/zvuk.wav
           if [ -n "$ENC" ]; then echo "::add-mask::$ENC"; tar czf p.tgz pr && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out ../proverka.enc -pass env:ENC; fi
+      - name: Проверка начала (ДНК хитов, не останавливает монтаж)
+        if: ${{ inputs.osnova_only != '1' }}
+        continue-on-error: true
+        env:
+          DEST: ${{ matrix.v.dest }}
+          KEY: ${{ matrix.v.key }}
+        run: |
+          NJ="novyj/$KEY.json"; [ -f "$NJ" ] || NJ=""
+          python3 scripts/proverka_nachala.py hfp/words.json $NJ hfp/final.mp4 > nachalo.json || exit 0
+          python3 -c "import json;d=json.load(open('nachalo.json'));print('Начало:',d['first']);[print('-',w) for w in d['warns']];print('ОК' if d['ok'] else '')" > nachalo.txt
+          cat nachalo.txt
+          if grep -q '"ok": false' nachalo.json; then
+            echo "::warning::Начало ролика — замечания: $(tr '\n' ' ' < nachalo.txt | cut -c1-900)"
+            rclone copyto nachalo.txt "montazh:$DEST/НАЧАЛО — проверить.txt"
+          fi
       - name: Кадры для проверки — в ветку tmp-skl-<n> (зашифровано)
         if: ${{ inputs.enc != '' && inputs.osnova_only != '1' }}
         env:

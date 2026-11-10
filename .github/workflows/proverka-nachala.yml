@@ -1,0 +1,69 @@
+name: Проверка начала готовых роликов (ДНК хитов)
+
+# 10.11.2026, одобрено Евгением: первые 5 секунд каждого «!!!»-ролика в папке —
+# распознать и проверить по «ДНК хитов» (scripts/proverka_nachala.py).
+# Ролики не двигает: при замечаниях кладёт рядом «НАЧАЛО — проверить.txt»,
+# общий отчёт — «_проверка начала.txt» в корне папки.
+
+on:
+  workflow_dispatch:
+    inputs:
+      folders:
+        description: "Папки внутри «Монтаж!» через ;"
+        required: false
+        default: "Брокер/Готовые/Шортсы;Брокер/К публикации"
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Подготовить
+        run: |
+          sudo apt-get install -y -qq ffmpeg fuse3 > /dev/null 2>&1 || true
+          pip install -q pywhispercpp > /dev/null 2>&1
+          rclone copyto 'montazh:Общее/ggml-small-q8_0.bin' ggml.bin
+          mkdir -p /tmp/mnt; rclone mount montazh: /tmp/mnt --read-only --vfs-cache-mode off --buffer-size 8M --daemon; sleep 5
+      - name: Проверить
+        env:
+          F: ${{ inputs.folders }}
+        run: |
+          python3 - <<'PY'
+          import os, json, subprocess, glob
+          from pywhispercpp.model import Model
+          m = Model('ggml.bin', n_threads=os.cpu_count(), print_progress=False, print_realtime=False, redirect_whispercpp_logs_to=None)
+          for folder in [x for x in os.environ['F'].split(';') if x]:
+              files = sorted(glob.glob(f'/tmp/mnt/{folder}/**/!!! *.mp4', recursive=True))
+              rep = [f'Проверка начала — {folder} — {len(files)} роликов\n']
+              bad = 0
+              for f in files:
+                  rel = os.path.relpath(os.path.dirname(f), '/tmp/mnt')
+                  try:
+                      subprocess.run(['ffmpeg', '-v', 'error', '-y', '-t', '6', '-i', f, '-ac', '1', '-ar', '16000', 'a.wav'], check=True, timeout=300)
+                      segs = m.transcribe('a.wav', language='ru', token_timestamps=True, max_len=1, split_on_word=True)
+                      json.dump([{'w': s.text.strip(), 's': s.t0 / 100} for s in segs if s.text.strip()], open('w.json', 'w'), ensure_ascii=False)
+                      subprocess.run(['ffmpeg', '-v', 'error', '-y', '-t', '3', '-i', f, '-c', 'copy', 'v.mp4'], timeout=300)
+                      d = json.loads(subprocess.run(['python3', 'scripts/proverka_nachala.py', 'w.json', 'v.mp4'], capture_output=True, text=True).stdout)
+                  except Exception as e:
+                      d = {'ok': False, 'warns': [f'не проверен: {str(e)[:100]}'], 'first': ''}
+                  name = os.path.basename(f)
+                  if d['ok']:
+                      rep.append(f'ОК — {name}\n')
+                  else:
+                      bad += 1
+                      txt = 'Начало: ' + d['first'] + '\n' + ''.join('- ' + w + '\n' for w in d['warns'])
+                      rep.append(f'\nЗАМЕЧАНИЯ — {name}\n{txt}\n')
+                      open('n.txt', 'w').write(txt)
+                      subprocess.run(['rclone', 'copyto', 'n.txt', f'montazh:{rel}/НАЧАЛО — проверить.txt'])
+                  print(name, 'ОК' if d['ok'] else 'замечания', flush=True)
+              rep.insert(1, f'С замечаниями: {bad}\n\n')
+              open('r.txt', 'w').write(''.join(rep))
+              subprocess.run(['rclone', 'copyto', 'r.txt', f'montazh:{folder}/_проверка начала.txt'])
+              print(f'::notice::{folder}: {len(files)} роликов, с замечаниями {bad}')
+          PY
