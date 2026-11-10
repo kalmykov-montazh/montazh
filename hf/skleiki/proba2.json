@@ -168,7 +168,7 @@
     ],
     [
      "не считать",
-     "ov/coinsstack_1.jpg",
+     "ov/eurobills_11.jpg",
      {}
     ],
     [
@@ -229,7 +229,7 @@
     ],
     [
      "Деньги и Реальность",
-     "ov/eurobills_9.jpg",
+     "ov/creditcard_4.jpg",
      {}
     ],
     [
@@ -290,12 +290,17 @@
    "ins": [
     [
      "отдали ключи",
-     "ov/keys2_2.jpg",
+     "ov/keys2_3.jpg",
+     {}
+    ],
+    [
+     "ровно один месяц",
+     "ov/calendar_6.jpg",
      {}
     ],
     [
      "начисляться проценты",
-     "ov/coinsstack_2.jpg",
+     "ov/eurobills_9.jpg",
      {}
     ],
     [
@@ -357,12 +362,12 @@
     ],
     [
      "Hacienda",
-     "ov/taxform_1.jpg",
+     "ov/notary_3.jpg",
      {}
     ],
     [
      "плюс штраф",
-     "ov/taxform_3.jpg",
+     "ov/documents_4.jpg",
      {
       "stamp": "ШТРАФ"
      }
@@ -539,11 +544,6 @@
     [
      "носить его с собой",
      "ov/passport_1.jpg",
-     {}
-    ],
-    [
-     "свой телефон",
-     "ov/phonecall_2.jpg",
      {}
     ],
     [
@@ -967,12 +967,12 @@
     ],
     [
      "две недели аренды",
-     "ov/kitchen_4.jpg",
+     "ov/deposit_6.jpg",
      {}
     ],
     [
      "больше зарабатывать",
-     "ov/laptopbook_1.jpg",
+     "ov/laptopbook_2.jpg",
      {}
     ]
    ]
