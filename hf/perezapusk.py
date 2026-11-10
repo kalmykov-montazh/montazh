@@ -189,7 +189,7 @@ for it in L:
             return best
         parts = []
         for k, (a, b) in enumerate(it["segs"]):
-            a2 = snap(a, True); b2 = snap(b, False)
+            a2, b2 = (a, b) if it.get("exact") else (snap(a, True), snap(b, False))
             sh("ffmpeg", "-v", "error", "-y", "-ss", f"{a2:.3f}", "-to", f"{b2:.3f}", "-i", f"{w}/old.mp4", "-vf", VF,
                "-af", "aresample=48000,afade=t=in:d=0.02", "-ac", "2", "-c:v", "libx264", "-crf", "16", "-preset", "medium",
                "-c:a", "aac", "-b:a", "192k", f"{w}/s{k}.mp4")
