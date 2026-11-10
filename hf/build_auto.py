@@ -35,11 +35,15 @@ DUR = round(W[-1]["e"] + 0.45, 3)
 def find(phrase, after=0.0):
     ph = [norm(x) for x in str(phrase).split()]
     ph = [x for x in ph if x]
-    lw = [norm(w["w"]) for w in W]
+    # 10.11.2026: слово из правки (fix) может быть склеено из нескольких («Так что не спрашивайте») — ищем по частям
+    lw, ls = [], []
+    for w in W:
+        for x in str(w["w"]).split():
+            lw.append(norm(x)); ls.append(w["s"])
     for i in range(len(lw)):
-        if W[i]["s"] + 0.01 < after: continue
+        if ls[i] + 0.01 < after: continue
         if all(i + k < len(lw) and lw[i + k].startswith(ph[k][:max(3, len(ph[k]) - 2)]) for k in range(len(ph))):
-            return W[i]["s"]
+            return ls[i]
     return None
 def T(v, after=0.0):
     return find(v, after) if isinstance(v, str) else float(v)
