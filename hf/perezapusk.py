@@ -178,10 +178,30 @@ for it in L:
        "-ac", "2", f"{w}/hook.wav")
     D = dur(f"{w}/hook.wav") + 0.3
     hook_card(it, w, D)
-    sh("ffmpeg", "-v", "error", "-y", "-ss", f"{it['cut']}", "-i", f"{w}/old.mp4",
-       "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p",
-       "-af", "aresample=48000,afade=t=in:d=0.03", "-ac", "2", "-c:v", "libx264", "-crf", "16", "-preset", "medium",
-       "-c:a", "aac", "-b:a", "192k", f"{w}/b.mp4")
+    VF = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p"
+    if it.get("segs"):  # несколько кусков старого ролика (вырезать устаревшее), границы — в тишину
+        sil = speech(f"{w}/old.mp4")
+        def snap(x, start):
+            best = x
+            for (a, b), (c, _) in zip(sil, sil[1:] + [(dur(f"{w}/old.mp4"), 0)]):
+                if b - 0.45 <= x <= c + 0.45 and c - b > 0.05:  # пауза между речью b..c рядом с x
+                    best = (c - 0.06) if start else (b + 0.08); break
+            return best
+        parts = []
+        for k, (a, b) in enumerate(it["segs"]):
+            a2 = snap(a, True); b2 = snap(b, False)
+            sh("ffmpeg", "-v", "error", "-y", "-ss", f"{a2:.3f}", "-to", f"{b2:.3f}", "-i", f"{w}/old.mp4", "-vf", VF,
+               "-af", "aresample=48000,afade=t=in:d=0.02", "-ac", "2", "-c:v", "libx264", "-crf", "16", "-preset", "medium",
+               "-c:a", "aac", "-b:a", "192k", f"{w}/s{k}.mp4")
+            parts.append(f"{w}/s{k}.mp4"); print(f"  кусок {a2:.2f}–{b2:.2f}")
+        n_ = len(parts); ins_ = sum([["-i", x] for x in parts], [])
+        sh("ffmpeg", "-v", "error", "-y", *ins_, "-filter_complex", "".join(f"[{k}:v][{k}:a]" for k in range(n_)) + f"concat=n={n_}:v=1:a=1[v][a]",
+           "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-c:a", "aac", "-b:a", "192k", f"{w}/b.mp4")
+        it["cut"] = it["segs"][0][0]
+    else:
+        sh("ffmpeg", "-v", "error", "-y", "-ss", f"{it['cut']}", "-i", f"{w}/old.mp4", "-vf", VF,
+           "-af", "aresample=48000,afade=t=in:d=0.03", "-ac", "2", "-c:v", "libx264", "-crf", "16", "-preset", "medium",
+           "-c:a", "aac", "-b:a", "192k", f"{w}/b.mp4")
     name = f"{n} {it['name']}"
     out = f"{w}/!!! {name} — перезапуск.mp4"
     sh("ffmpeg", "-v", "error", "-y", "-i", f"{w}/a.mp4", "-i", f"{w}/b.mp4", "-filter_complex",
