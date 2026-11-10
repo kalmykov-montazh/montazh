@@ -257,17 +257,25 @@ for n, (gi, built, te) in enumerate(clean):
 
 # ---------- картинки-предметы (03.11.2026): фото-карточка сбоку сверху, только когда верх свободен ----------
 KART = []
+PICB = []
 BAD = {"receipt_1.jpg"}   # 07.11.2026: старая французская квитанция — негодная
 for k, (ph, img, opt) in enumerate(VST.get("ins", [])):
     if img in BAD: continue
     t = find(ph)
     if t is None: continue
     t = max(t, start_min); t1 = t + 2.2
-    if t1 > CTA_T - 0.1 or any(a < t1 and t < b for a, b in BUSY): log("картинка пропущена (верх занят):", img); continue
-    BUSY.append((t, t1)); KART.append(img)
-    pid = f"ph{k}"; side = "left:50px" if len(KART) % 2 else "right:50px"
+    # pic_low (10.11.2026, склейки): картинка сбоку внизу над субтитрами, полного размера — верх не нужен,
+    # иначе при высокой голове картинка ужимается до крошечной
+    LOW = bool(spec.get("pic_low"))
+    if t1 > CTA_T - 0.1 or any(a < t1 and t < b for a, b in (PICB if LOW else BUSY)): log("картинка пропущена (место занято):", img); continue
+    (PICB if LOW else BUSY).append((t, t1)); KART.append(img)
+    pid = f"ph{k}"; side = "left:40px" if len(KART) % 2 else "right:40px"
     st = f'<em>{esc(opt["stamp"])}</em>' if opt.get("stamp") else ""
-    H.append(f'<div id="{pid}" class="photo2 fit" style="top:{TOP}px;{side};transform:rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
+    if LOW:
+        my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
+        H.append(f'<div id="{pid}" class="photo2" style="top:{max(700, my - 420)}px;{side};transform:rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
+    else:
+        H.append(f'<div id="{pid}" class="photo2 fit" style="top:{TOP}px;{side};transform:rotate({-4 if len(KART)%2 else 4}deg)"><img src="img/{os.path.basename(img)}">{st}</div>')
     tl(f'tl.from("#{pid}",{{scale:0.3,y:200,opacity:0,duration:0.45,ease:"back.out(1.7)"}},{t-0.08:.3f}).to("#{pid}",{{scale:0.6,y:-150,opacity:0,duration:0.3,ease:"power2.in"}},{t1-0.3:.3f});')
     snd("whoosh", t - 0.12, 0.22)
 with open(f"{P}/kartinki.txt", "w") as fk:
