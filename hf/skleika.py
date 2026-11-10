@@ -50,7 +50,7 @@ for p in item["parts"]:
     i1 = find_seq(W, p["to"], W[i0]["s"], end=True)
     if prev and prev["key"] == p["key"] and prev["i1"] + 1 == i0:
         prev["i1"] = i1; continue
-    prev = {"key": p["key"], "i0": i0, "i1": i1}; parts.append(prev)
+    prev = {"key": p["key"], "i0": i0, "i1": i1, "n": item["parts"].index(p)}; parts.append(prev)
 
 words, faces, segs, off = [], [], [], 0.0
 for n, p in enumerate(parts):
@@ -59,7 +59,9 @@ for n, p in enumerate(parts):
     D = dur(f"{d}/osnova.mp4"); A = pcm(f"{d}/osnova.mp4")
     s0 = W[i0]["s"]; pe = W[i0 - 1]["e"] if i0 > 0 else max(0.0, s0 - 0.4)
     # первый кусок ролика-основы: основа и так начинается с первого слова — берём с самого начала
-    t0 = 0.0 if i0 == 0 else quiet(A, max(pe, s0 - 0.35), s0 - 0.02, s0 - 0.08)
+    # pre: распознавание часто ставит начало слова позже, чем оно звучит — сдвиг начала куска раньше (с)
+    pre = float(item["parts"][p["n"]].get("pre", 0)) if "n" in p else 0.0
+    t0 = 0.0 if i0 == 0 and not pre else quiet(A, max(pe - pre, s0 - 0.35 - pre, 0), s0 - 0.02 - pre, s0 - 0.08 - pre)
     e1 = W[i1]["e"]; ns = W[i1 + 1]["s"] if i1 + 1 < len(W) else min(D, e1 + 0.5)
     t1 = quiet(A, e1 - 0.06, min(ns, e1 + 0.45), e1 + 0.1)
     t1 = min(t1, D)
