@@ -84,5 +84,6 @@
  },
  "top_px": 700,
  "top_after": "Самое главное",
- "pic_low": true
+ "pic_low": true,
+ "cover_t": 3.0
 }
