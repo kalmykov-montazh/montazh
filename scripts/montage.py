@@ -156,7 +156,7 @@ def floor_before(t):
 def onset(t, limit=0.25):
     # самое раннее место перед t (не дальше limit), где ещё идёт звук этого слова; дальше — тишина
     if _DB is None: return t - LEAD
-    k = int(t * 100); k0 = max(0, k - int(limit * 100)); thr = _FLOOR + 8
+    k = min(int(t * 100), len(_DB)); k0 = max(0, k - int(limit * 100)); thr = _FLOOR + 8   # 10.11.2026: слово у самого конца звука — не выходить за массив
     while k > k0 and _DB[k - 1] > thr: k -= 1
     return k / 100 - LEAD
 if kept_edges and kept:
