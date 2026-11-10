@@ -48,7 +48,7 @@ for p in item["parts"]:
     W = json.load(open(f"{IN}/{p['key']}/osnova_words.json"))
     i0 = find_seq(W, p["from"], float(p.get("after", 0)))
     i1 = find_seq(W, p["to"], W[i0]["s"], end=True)
-    if prev and prev["key"] == p["key"] and prev["i1"] + 1 == i0:
+    if prev and prev["key"] == p["key"] and prev["i1"] + 1 == i0 and not p.get("nomerge"):   # nomerge: между словами дубль без субтитров — резать
         prev["i1"] = i1; continue
     prev = {"key": p["key"], "i0": i0, "i1": i1, "n": item["parts"].index(p)}; parts.append(prev)
 
