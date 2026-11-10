@@ -52,6 +52,16 @@ ANC = min(CHIN + 0.04, 0.95)
 HEAD = min(((EYE - 0.72 * HN) * z - ANC * (z - 1)) * 1920 for z in (1.0, 1.06))
 TOP = 200 if HEAD < 560 else 230
 AVAIL = max(170, int(HEAD - 28 - TOP))          # сколько пикселей по высоте есть над головой
+# видео с двух камер (лицо в маленьком окошке сверху): плашки ниже окошка — top_px задаётся в novyj/<ключ>.json
+# top_after (фраза или секунды): окошко с лицом только с этого места — до него плашки как обычно
+TOP_B, AVAIL_B = TOP, AVAIL
+TOP_AFTER = ((T(spec["top_after"]) if T(spec["top_after"]) is not None else 1e9) if spec.get("top_after") is not None else 0.0) if spec.get("top_px") else None
+TOP_UNTIL = (T(spec["top_until"]) or 1e9) if spec.get("top_px") and spec.get("top_until") is not None else 1e9
+def set_top(t):
+    global TOP, AVAIL
+    if TOP_AFTER is not None and TOP_AFTER - 0.05 <= t < TOP_UNTIL - 0.05: TOP = int(spec["top_px"]); AVAIL = int(spec.get("avail_px", 420))
+    else: TOP, AVAIL = TOP_B, AVAIL_B
+set_top(0.0)
 log(f"голова {HEAD:.0f} px, верх плашек {TOP}, место {AVAIL} px")
 
 H, J, SND = [], [], []
@@ -182,6 +192,7 @@ def card_row(it, rid):
 for n, (gi, built, te) in enumerate(clean):
     gid = f"p{n}"
     t0 = built[0][1]
+    set_top(t0)
     kinds = [it["type"] for it, _ in built]
     cards = [(it, t) for it, t in built if it["type"] in ("card", "big", "full")]
     stamps = [(it, t) for it, t in built if it["type"] == "stamp"]
@@ -263,7 +274,10 @@ with open(f"{P}/kartinki.txt", "w") as fk:
     for img in KART: fk.write(("Брокер/Вставки/Предметы_ov/" + img[3:]) if img.startswith("ov/") else ("Брокер/Вставки/Предметы/" + img)); fk.write("\n")
 
 # ---------- белая карточка-призыв ----------
+if TOP_AFTER is not None and (TOP_AFTER > 0.05 or TOP_UNTIL < 1e8): AVAIL_MIX = min(AVAIL_B, int(spec.get("avail_px", 420)))
+else: AVAIL_MIX = None
 if CTA:
+    set_top(CTA_T)
     lab, txt = sanitize(CTA.get("label") or ""), sanitize(CTA["text"])
     if lab[:1].islower():   # «Напишите «Монтаж»» + «в комментариях» — одна фраза, крупно, без кнопки
         lab, txt = (txt.rstrip(",") + (", " if txt.endswith(",") else " ") + lab), ""
@@ -277,6 +291,7 @@ json.dump({"keys": spec.get("keys", []), "mix_y": mix}, open(f"{P}/subs.json", "
 
 for i, (k, t, v) in enumerate(SND):
     H.append(f'<audio id="s{i}" src="snd/{k}.wav" data-start="{t:.3f}" data-duration="1.0" data-volume="{v}"></audio>')
+if AVAIL_MIX: AVAIL = AVAIL_MIX
 CSS = "".join(open(f"{B}/{x}").read() for x in ("znakomstvo.css", "fishki.css", "fishki2.css", "auto.css"))
 open(f"{P}/index.html", "w").write(f'''<!doctype html><html><head><meta charset="utf-8"><style>{CSS}</style></head><body>
 <div id="root" data-composition-id="root" data-width="1080" data-height="1920" data-fps="30" data-motion-blur="on" data-motion-blur-shutter="200" data-start="0" data-duration="{DUR:.3f}">
