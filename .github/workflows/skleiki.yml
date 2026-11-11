@@ -162,7 +162,7 @@ jobs:
         run: |
           python3 -c "import json;x=json.load(open('item.json'));open('hfp/упаковка.txt','w').write(x['upak'].rstrip()+'\n');open('hfp/плейлист.txt','w').write(x.get('pl','')+'\n')"
           cd hfp
-          ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
+          ffmpeg -v error -y -i out.mp4 -vf "deband=1thr=0.03:2thr=0.03:3thr=0.03:range=24:blur=1,noise=alls=3:allf=t,format=yuv420p" -c:v libx264 -crf 17 -preset medium -x264-params aq-mode=3 -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
           D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4)
           ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
           python3 ../scripts/sait_auto.py final.mp4 "$DEST" ../build.txt || true

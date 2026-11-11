@@ -91,9 +91,17 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "ЗАРПЛАТА",
-  "bot": "14 РАЗ В ГОД"
+  "bot": "14 РАЗ В ГОД",
+  "s5": "hormozi"
  },
- "pic_low": true
+ "pic_low": true,
+ "mir": [
+  {
+   "at": "обязательно к Рождеству",
+   "src": "montazh:Брокер/Вставки/Фоны/xmas_tree.mp4",
+   "dur": 3,
+   "from": 5
+  }
+ ]
 }

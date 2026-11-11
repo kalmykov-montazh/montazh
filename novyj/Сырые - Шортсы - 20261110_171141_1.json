@@ -94,9 +94,10 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "ПРОДАЁТЕ НА WALLAPOP?",
-  "bot": "НАЛОГОВАЯ|ЗНАЕТ"
+  "bot": "НАЛОГОВАЯ|ЗНАЕТ",
+  "s5": "spina",
+  "word": "НАЛОГ"
  },
  "pic_low": true
 }

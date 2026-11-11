@@ -79,9 +79,10 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "SMS ОТ DGT?",
-  "bot": "ЭТО РАЗВОД"
+  "bot": "ЭТО РАЗВОД",
+  "s5": "spina",
+  "word": "ШТРАФ"
  },
  "pic_low": true
 }

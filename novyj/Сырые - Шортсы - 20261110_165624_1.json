@@ -102,9 +102,9 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "СКИДКА НА СВЕТ",
-  "bot": "БОЛЬШЕ 40%"
+  "bot": "БОЛЬШЕ 40%",
+  "s5": "hormozi"
  },
  "pic_low": true
 }

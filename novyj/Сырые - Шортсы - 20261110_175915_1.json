@@ -66,9 +66,17 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "ДВА СЛОВА",
-  "bot": "ПО-ИСПАНСКИ|И РЫБА"
+  "bot": "ПО-ИСПАНСКИ|И РЫБА",
+  "s5": "chb"
  },
- "pic_low": true
+ "pic_low": true,
+ "mir": [
+  {
+   "at": "в Меркадоне или в Консуме",
+   "src": "montazh:Брокер/Вставки/Фоны/mercadona_fish.mp4",
+   "dur": 3.5,
+   "from": 3
+  }
+ ]
 }

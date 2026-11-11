@@ -85,9 +85,23 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "ПОЛТОРА СУТОК",
-  "bot": "БЕЗ СВЕТА|В ХАРЬКОВЕ"
+  "bot": "БЕЗ СВЕТА|В ХАРЬКОВЕ",
+  "s5": "chb"
  },
- "pic_low": true
+ "pic_low": true,
+ "mir": [
+  {
+   "at": "Был период зимой",
+   "src": "montazh:Брокер/Вставки/Фоны/kharkiv_night.mp4",
+   "dur": 3.5,
+   "from": 5
+  },
+  {
+   "at": "Впереди ещё зима",
+   "src": "montazh:Брокер/Вставки/Фоны/kharkiv_snow.mp4",
+   "dur": 3,
+   "from": 3
+  }
+ ]
 }

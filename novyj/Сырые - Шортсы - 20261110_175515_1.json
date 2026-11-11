@@ -81,9 +81,9 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "ЧЬЯ ФАМИЛИЯ",
-  "bot": "ПЕРВАЯ?"
+  "bot": "ПЕРВАЯ?",
+  "s5": "shapka"
  },
  "pic_low": true
 }

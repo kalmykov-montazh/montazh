@@ -81,9 +81,17 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "АПЕЛЬСИНЫ НА УЛИЦАХ",
-  "bot": "ПОЧЕМУ|НЕ ЕДЯТ?"
+  "bot": "ПОЧЕМУ|НЕ ЕДЯТ?",
+  "s5": "shapka"
  },
- "pic_low": true
+ "pic_low": true,
+ "mir": [
+  {
+   "at": "Деревья сажают",
+   "src": "montazh:Брокер/Вставки/Фоны/orange.mp4",
+   "dur": 3.5,
+   "from": 1
+  }
+ ]
 }

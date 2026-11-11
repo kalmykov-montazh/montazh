@@ -79,9 +79,23 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "КОФЕ НА ТЕРРАСЕ",
-  "bot": "ДОРОЖЕ?"
+  "bot": "ДОРОЖЕ?",
+  "s5": "shapka"
  },
- "pic_low": true
+ "pic_low": true,
+ "mir": [
+  {
+   "at": "Бар имеет право",
+   "src": "montazh:Брокер/Вставки/Фоны/cafe_sea.mp4",
+   "dur": 3.5,
+   "from": 3
+  },
+  {
+   "at": "испанцы часто пьют",
+   "src": "montazh:Брокер/Вставки/Фоны/cafe_in.mp4",
+   "dur": 3,
+   "from": 2
+  }
+ ]
 }
