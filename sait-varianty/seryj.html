@@ -249,6 +249,17 @@ button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
   .stickywa svg{width:20px;height:20px;fill:currentColor}
 }
 
+/* соцсети: круглые цветные значки с подписью снизу */
+.socials{display:flex!important;flex-wrap:wrap;justify-content:center;gap:18px 26px}
+.socials a{flex-direction:column;gap:6px;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;width:76px;align-items:center}
+.socials .ic{width:56px!important;height:56px!important;border-radius:50%!important;box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.socials .ic svg{width:26px!important;height:26px!important}
+.socials a:hover .ic{transform:translateY(-3px)}
+.socials .ic{transition:transform .15s}
+.socials span{display:block!important}
+.socials b{font-size:12.5px!important;font-weight:700;color:var(--fg);text-align:center}
+@media (max-width:600px){.socials{gap:12px 8px;justify-content:space-between}.socials a{width:40px}.socials .ic{width:40px!important;height:40px!important}.socials .ic svg{width:20px!important;height:20px!important}.socials span{display:none!important}}
+
 /* чек-лист 2.0 */
 .checklist{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:26px 28px;border-radius:22px;position:relative;overflow:hidden;
   background:radial-gradient(circle at 85% 20%,#fff3c4 0,transparent 45%),linear-gradient(120deg,#ffd166 0%,#ff9f5a 60%,#ff7a59 100%);color:#2a1a0e;box-shadow:0 14px 34px rgba(255,122,89,.28)}
@@ -281,6 +292,18 @@ h1,h2{color:#16294a}
 .tgalt{color:#8fd3ff!important}
 .socials a{background:#fff;border:0;box-shadow:0 1px 4px rgba(22,41,74,.07)}
 .about,.faq details,.soon div,.partners{background:#fff;border-color:transparent}
+
+.bonus{margin:28px 0;padding:24px 26px;border-radius:20px;background:#fff;border:2px solid #0050b3;box-shadow:0 10px 26px rgba(0,40,110,.10)}
+.bonus .bkick{display:inline-block;background:#0050b3;color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;letter-spacing:.3px}
+.bonus h2{margin:10px 0 8px;font-size:22px;color:#0b2a55}
+.bonus ul{margin:0 0 14px;padding-left:20px;color:#2a3a4a;line-height:1.55}
+.bonus .code{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#eef4ff;border:1px dashed #0050b3;border-radius:14px;padding:12px 14px}
+.bonus .code small{display:block;font-size:12px;color:#5a6b80}
+.bonus .code b{font-size:22px;letter-spacing:2px;color:#0b2a55;font-family:ui-monospace,Consolas,monospace}
+.bonus button{background:#0050b3;color:#fff;border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #003070}
+.bonus button.ok{background:#1f9d55;box-shadow:0 4px 0 #136b39}
+.bonus .how{margin:12px 0 0;font-size:13px;color:#64707b}
+@media (max-width:600px){.bonus{padding:20px}.bonus h2{font-size:19px}.bonus .code{flex-direction:column;align-items:stretch;text-align:center}.bonus button{width:100%}}
 </style>
 </head>
 <body class="v-c">
@@ -310,7 +333,7 @@ h1,h2{color:#16294a}
       <b>Чек-лист арендатора</b>
       <i>✓ Кто собственник — nota simple</i>
       <i>✓ Сумма залога по закону</i>
-      <i>✓ Кто платит агентству</i>
+      <i>✓ Опись квартиры при въезде</i>
       <i class="blur">✓ Срок и досрочный выезд</i>
       <i class="blur">✓ Индексация цены</i>
       <span>ещё 5 пунктов</span>
@@ -362,6 +385,19 @@ h1,h2{color:#16294a}
     <details><summary>Сколько стоит?</summary><p>Разбор договора письменно — 50 €. Сопровождение до решения — от 100 €. Чек-лист — бесплатно</p></details>
   </div>
 
+  <section class="bonus reveal" aria-labelledby="h-bonus">
+    <span class="bkick">Бонус для новичков в Испании</span>
+    <h2 id="h-bonus">Откройте счёт в BBVA и получите до 450 €</h2>
+    <ul>
+      <li>до <b>50 €</b> — за покупки картой в первые 45 дней</li>
+      <li>ещё <b>400 €</b> — если на счёт приходит зарплата или пенсия от 800 €</li>
+    </ul>
+    <div class="code">
+      <div><small>Код приглашения</small><b id="bbvacode">14C70020F574B9</b></div>
+      <button type="button" id="copybbva">Скопировать код</button>
+    </div>
+    <p class="how">Скачайте приложение BBVA, при открытии счёта введите этот код. Условия задаёт банк и может их менять — проверьте в приложении перед открытием</p>
+  </section>
   <section class="head" aria-labelledby="h-soon"><h2 id="h-soon">Скоро</h2></section>
   <div class="soon">
     <div><small>январь</small><b>Гайд «Аренда жилья в Испании»</b><span>Документы, проверки, договор</span></div>
@@ -487,5 +523,11 @@ sk.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравству
 sk.insertAdjacentHTML("afterbegin",ICON.wa);
 </script>
 
+<script>
+(function(){var b=document.getElementById('copybbva');if(!b)return;b.addEventListener('click',function(){var c=document.getElementById('bbvacode').textContent;
+function done(){b.textContent='Скопировано ✓';b.classList.add('ok');setTimeout(function(){b.textContent='Скопировать код';b.classList.remove('ok')},2500)}
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(c).then(done,fallback)}else fallback();
+function fallback(){var t=document.createElement('textarea');t.value=c;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(t);done()}})})();
+</script>
 </body>
 </html>

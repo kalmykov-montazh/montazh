@@ -14,7 +14,7 @@ new_cl = '''  <section class="checklist reveal" aria-labelledby="h-check">
       <b>Чек-лист арендатора</b>
       <i>✓ Кто собственник — nota simple</i>
       <i>✓ Сумма залога по закону</i>
-      <i>✓ Кто платит агентству</i>
+      <i>✓ Опись квартиры при въезде</i>
       <i class="blur">✓ Срок и досрочный выезд</i>
       <i class="blur">✓ Индексация цены</i>
       <span>ещё 5 пунктов</span>
@@ -23,6 +23,17 @@ new_cl = '''  <section class="checklist reveal" aria-labelledby="h-check">
 base = base.replace(old_cl, new_cl, 1)
 
 cl_css = '''
+/* соцсети: круглые цветные значки с подписью снизу */
+.socials{display:flex!important;flex-wrap:wrap;justify-content:center;gap:18px 26px}
+.socials a{flex-direction:column;gap:6px;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;width:76px;align-items:center}
+.socials .ic{width:56px!important;height:56px!important;border-radius:50%!important;box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.socials .ic svg{width:26px!important;height:26px!important}
+.socials a:hover .ic{transform:translateY(-3px)}
+.socials .ic{transition:transform .15s}
+.socials span{display:block!important}
+.socials b{font-size:12.5px!important;font-weight:700;color:var(--fg);text-align:center}
+@media (max-width:600px){.socials{gap:12px 8px;justify-content:space-between}.socials a{width:40px}.socials .ic{width:40px!important;height:40px!important}.socials .ic svg{width:20px!important;height:20px!important}.socials span{display:none!important}}
+
 /* чек-лист 2.0 */
 .checklist{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:26px 28px;border-radius:22px;position:relative;overflow:hidden;
   background:radial-gradient(circle at 85% 20%,#fff3c4 0,transparent 45%),linear-gradient(120deg,#ffd166 0%,#ff9f5a 60%,#ff7a59 100%);color:#2a1a0e;box-shadow:0 14px 34px rgba(255,122,89,.28)}
