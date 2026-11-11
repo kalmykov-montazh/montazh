@@ -165,6 +165,7 @@ jobs:
           ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
           D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 final.mp4)
           ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
+          python3 ../scripts/sait_auto.py final.mp4 "$DEST" ../build.txt || true
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
           rclone copyto упаковка.txt "montazh:$DEST/упаковка.txt"

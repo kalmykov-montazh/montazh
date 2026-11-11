@@ -152,6 +152,7 @@ jobs:
           # 10.11.2026 (Евгений): в призыве-карточке можно «сайт, ссылка в шапке профиля»; нельзя сам адрес, «в описании», «полное видео»
           if jq -r '(.spec.cta // {} | tostring)' "$J" | grep -qiE 'https?://|www\.|t\.me/|в описани|полное видео|полном видео|монтаж делал в приложени'; then echo "::error::В призыве адрес ссылки / «в описании» / «полное видео» — убрать из $J"; exit 1; fi
           jq -r .pack "$J" | rclone rcat "montazh:$DEST/упаковка.txt"
+          python3 scripts/sait_auto.py "$W/final.mp4" "$DEST" || true
           rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $FOLDER.mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
           rclone copy "$W" "montazh:Брокер/работа/ШОРТС $TOPIC/$FOLDER" --include words_out.json --include modes.json --include overlay.log --include кадры.jpg --include spec.json

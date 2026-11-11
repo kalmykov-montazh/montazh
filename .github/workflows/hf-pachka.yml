@@ -151,6 +151,7 @@ jobs:
           for i in 0 1 2 3 4 5 6 7 8 9; do t=$(python3 -c "print(round(0.5+($D-1)*$i/9,2))"); ffmpeg -v error -y -ss $t -i final.mp4 -frames:v 1 -vf scale=360:-2 "k_$i.jpg"; done
           ffmpeg -v error -y -i k_0.jpg -i k_1.jpg -i k_2.jpg -i k_3.jpg -i k_4.jpg -i k_5.jpg -i k_6.jpg -i k_7.jpg -i k_8.jpg -i k_9.jpg -filter_complex "[0][1][2][3][4]hstack=5[a];[5][6][7][8][9]hstack=5[b];[a][b]vstack" кадры.jpg
           ffmpeg -v error -y -ss 0.03 -i final.mp4 -frames:v 1 -q:v 2 oblozhka.jpg
+          python3 ../scripts/sait_auto.py final.mp4 "$DEST" ../build.txt || true
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"

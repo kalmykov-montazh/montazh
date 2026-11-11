@@ -208,6 +208,7 @@ jobs:
             printf '%s' "$PACK" | grep -qiE 'ссылк|в шапке|в описани|полное видео|полном видео|монтаж делал в приложени' && echo "::warning::В упаковке есть ссылка или отсылка к ссылке — с 25.10.2026 так нельзя, убрать"
             printf '%s' "$PACK" | rclone rcat "montazh:$DEST/упаковка.txt"
           fi
+          python3 scripts/sait_auto.py "$W/final.mp4" "$DEST" || true
           rclone copyto "$W/final.mp4" "montazh:$DEST/!!! $(basename "$DEST").mp4"
           rclone copyto "$W/обложка.jpg" "montazh:$DEST/обложка.jpg"
           cp "$SPEC" "$W/spec.json"
