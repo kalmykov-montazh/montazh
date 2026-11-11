@@ -33,7 +33,9 @@ jobs:
           CODE: ${{ inputs.code }}
         run: |
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf
-          sudo apt-get install -y -qq ffmpeg fuse3 > /dev/null 2>&1 || true
+          # 11.11.2026: при сбое DNS у машин GitHub apt висел часами — запасное зеркало и таймаут
+          getent hosts azure.archive.ubuntu.com >/dev/null || sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          command -v ffmpeg >/dev/null && command -v fusermount3 >/dev/null || timeout 240 sudo apt-get -o Acquire::http::Timeout=20 install -y -qq ffmpeg fuse3 > /dev/null 2>&1 || true
           mkdir -p pics
           printf '%s' "$CODE" | base64 -d > s.sh
           bash s.sh > out.txt 2>&1 || echo "EXIT $?" >> out.txt
