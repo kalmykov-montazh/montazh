@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Євген Калмиков, Валенсія. Переїзд до Іспанії: юрист, ВНЖ, оренда, іпотека, розмитнення, ремонт та інші перевірені фахівці. Усі мої соцмережі">
+<meta property="og:title" content="Євген Калмиков · Життя в Іспанії">
+<meta property="og:description" content="Переїзд до Іспанії: перевірені фахівці та всі мої соцмережі">
+<meta property="og:image" content="https://kalmykov-realty.netlify.app/share.jpg">
+<meta property="og:type" content="website">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" hreflang="ru" href="https://kalmykov-realty.netlify.app/">
+<link rel="alternate" hreflang="uk" href="https://kalmykov-realty.netlify.app/ua.html">
+<title>Євген Калмиков — оренда, купівля та переїзд до Валенсії, Іспанія</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&display=swap">
+<style>
+/* Широкая страница: обложка (море Валенсии) → соцсети ровными плитками → услуги сеткой с мягким тоном → «Скоро» */
+:root{
+  --bg:#f6efe3; --surface:#fffaf3; --fg:#22313a; --muted:#6d6a63; --line:#eadcc6;
+  --ink:#0f4c6e; --sea:#0f5a80; --accent:#c4552f; --accent-ink:#ffffff; --sun:#f2b544;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14191d; --surface:#1d2429; --fg:#f1ede6; --muted:#a8a296; --line:#2f3840;
+  --ink:#0d1a26; --sea:#6cb7dd; --accent:#e27350; --accent-ink:#ffffff; --sun:#f2b544; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14191d; --surface:#1d2429; --fg:#f1ede6; --muted:#a8a296; --line:#2f3840;
+  --ink:#0d1a26; --sea:#6cb7dd; --accent:#e27350; --accent-ink:#ffffff; --sun:#f2b544; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:32px}
+.draft{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 14px;margin:0}
+
+/* Обложка: небо, море, солнце — пока без фото */
+.cover img{display:block;width:100%;height:100%;object-fit:cover}
+.cover{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:1600/520;max-width:100%;
+  background:linear-gradient(180deg,#f6c99a 0%,#e9a774 38%,#3f6f93 38.5%,#24496b 70%,#1a3550 100%)}
+.cover .sun{position:absolute;left:62%;top:10%;width:14%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,#fff3df 0%,#ffd8a8 45%,rgba(255,216,168,0) 70%)}
+.cover .glint{position:absolute;left:58%;top:40%;width:22%;height:40%;
+  background:repeating-linear-gradient(180deg,rgba(255,230,200,.35) 0 2px,transparent 2px 9px);
+  -webkit-mask:radial-gradient(ellipse at top,#000 20%,transparent 70%);mask:radial-gradient(ellipse at top,#000 20%,transparent 70%)}
+.cover .word{position:absolute;left:4%;top:12%;font-family:var(--display);font-weight:700;
+  font-size:clamp(14px,2.4vw,26px);letter-spacing:.14em;text-transform:uppercase;color:rgba(31,51,71,.55)}
+.profile{display:flex;gap:20px;align-items:flex-end;margin-top:-64px;padding-inline:24px;position:relative;flex-wrap:wrap}
+.avatar{flex:none;width:132px;height:132px;border-radius:50%;object-fit:cover;border:5px solid var(--bg);background:var(--ink)}
+.who{min-width:0;flex:1 1 280px;padding-top:72px;padding-bottom:6px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.4vw,36px);line-height:1.1;margin:0;text-wrap:balance}
+.path{margin:6px 0 0;color:var(--muted);font-size:15px}
+
+/* Соцсети: ровные плитки, цвет только в значке */
+.socials{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+@media (max-width:1000px){.socials{grid-template-columns:repeat(4,1fr)}}
+.socials a{display:flex;align-items:center;gap:7px;padding:7px 6px 7px 7px;border-radius:12px;min-width:0;
+  background:var(--surface);border:1px solid var(--line);color:var(--fg);text-decoration:none;transition:border-color .15s,transform .15s}
+.socials .ic{flex:none;width:36px;height:36px;border-radius:9px;display:grid;place-items:center;
+  background:var(--c);color:#fff;font-weight:700;font-size:15px}
+.socials .ic svg{width:21px;height:21px;fill:currentColor}
+.socials b{display:block;font-size:13.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.socials small{display:none!important}
+.socials small{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.socials span{min-width:0}
+.socials a:hover,.socials a:focus-visible{border-color:var(--c);transform:translateY(-1px);outline:none}
+.socials a.main{background:color-mix(in srgb,var(--c) 9%,var(--surface));border-color:color-mix(in srgb,var(--c) 35%,var(--line))}
+@media (prefers-reduced-motion:reduce){.socials a{transition:none}}
+
+/* Услуги */
+.head{display:flex;flex-direction:column;gap:4px}
+h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
+.lead{margin:0;color:var(--muted);max-width:65ch}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.filters button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  border-radius:999px;padding:6px 14px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:6px;text-align:left;font:inherit;color:var(--fg);cursor:pointer;text-decoration:none;min-width:0;
+  background:color-mix(in srgb,var(--t) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--t) 18%,var(--line));border-radius:14px;padding:18px}
+.card:hover,.card:focus-visible{border-color:var(--t);outline:none}
+.tag{align-self:flex-start;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t)}
+.card b{font-size:16px}
+.card span{color:var(--muted);font-size:14px}
+.card em .l{font-style:normal}
+.card em{margin-top:auto;padding-top:8px;font-style:normal;font-weight:700;font-size:13px;color:var(--t)}
+
+/* Скоро */
+.soon{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.soon div{padding:16px 18px;border:1px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;gap:4px}
+.soon small{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.soon span{color:var(--muted);font-size:14px}
+/* Моя консультація — сразу под соцсетями */
+.consult{display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:18px;
+  background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
+.consult .kick{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.consult ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.consult li{padding-left:18px;position:relative;font-size:15px;line-height:1.45}
+.consult li::before{content:"";position:absolute;left:0;top:.6em;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.consult .prices{display:flex;flex-direction:column;gap:8px}
+.consult .prices p{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.consult .prices b{font-size:15px}
+.consult .prices span{font-size:13px;color:var(--muted)}
+.consult .note{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+.consult .go{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:16px;text-decoration:none;
+  border-radius:12px;padding:13px 20px;background:var(--accent);color:var(--accent-ink)}
+.consult .go svg{width:18px;height:18px;fill:currentColor}
+@media (max-width:600px){.consult{padding:16px;gap:10px}.consult li{font-size:14px}.consult .go{align-self:stretch;justify-content:center}}
+
+/* Для партнерів */
+.partners{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.pbtns{display:flex;flex-wrap:wrap;gap:10px}
+.pbtns a{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;text-decoration:none;border-radius:12px;padding:12px 18px;border:1px solid var(--line);color:var(--fg);background:var(--bg)}
+.pbtns a.pmain{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pbtns a:hover,.pbtns a:focus-visible{border-color:var(--accent);outline:none}
+.pbtns svg{width:18px;height:18px;fill:currentColor}
+@media (max-width:600px){.pbtns a{flex:1 1 100%;justify-content:center}}
+/* ===== Новое 11.11: цвета, чек-лист, обо мне, вопросы, значки услуг ===== */
+h1,h2{color:var(--sea)}
+.consult h2{color:var(--fg)}
+.checklist{display:flex;gap:18px;align-items:center;padding:20px 22px;border-radius:18px;
+  background:linear-gradient(120deg,#0f5a80,#1683a8);color:#fff;box-shadow:0 10px 30px rgba(15,90,128,.25)}
+.checklist .doc{flex:none;width:64px;height:76px;border-radius:10px;background:#fff;display:grid;place-items:center;
+  box-shadow:0 6px 14px rgba(0,0,0,.18);transform:rotate(-6deg)}
+.checklist .doc svg{width:36px;height:36px;fill:#0f5a80}
+.checklist .tx{flex:1;min-width:0}
+.checklist .free{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--sun);color:#3a2a00;border-radius:999px;padding:3px 10px;margin-bottom:6px}
+.checklist h2{color:#fff;margin:0 0 4px;font-size:21px}
+.checklist p{margin:0;opacity:.92;font-size:15px}
+.checklist .get{flex:none;display:inline-flex;align-items:center;gap:8px;background:var(--sun);color:#2b1f00;font-weight:700;
+  font-size:16px;text-decoration:none;border-radius:12px;padding:14px 20px;box-shadow:0 4px 0 #c98f1c}
+.checklist .get:hover{filter:brightness(1.05)}
+.checklist .get svg{width:18px;height:18px;fill:currentColor}
+.about{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;padding:22px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.about img{width:92px;height:92px;border-radius:50%;object-fit:cover}
+.about h2{margin:0 0 6px}
+.about p{margin:0;color:var(--fg);line-height:1.55}
+.faq{display:flex;flex-direction:column;gap:8px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:10px 0 0;color:var(--muted)}
+.card .ci{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--t) 14%,var(--surface));color:var(--t);margin-bottom:2px}
+.card .ci svg{width:19px;height:19px;fill:currentColor}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.reveal.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+/* вариант Б: деловая шапка без картинки */
+.hero-b{display:flex;gap:22px;align-items:center;padding:24px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.hero-b img{width:120px;height:120px;border-radius:50%;object-fit:cover;flex:none}
+.hero-b .t{flex:1;min-width:0}
+.hero-b h1{margin:0}
+.hero-b p{margin:6px 0 14px;color:var(--muted)}
+.hero-b .btns{display:flex;flex-wrap:wrap;gap:10px}
+.hero-b .btns a{display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none;border-radius:12px;padding:11px 16px;font-size:15px}
+.hero-b .b1{background:var(--accent);color:#fff}
+.hero-b .b2{background:var(--sun);color:#2b1f00}
+/* вариант В: узкая полоска моря */
+.v-c .cover{aspect-ratio:1600/230}
+.v-c .cover img{object-position:center 66%}
+.v-c .profile{margin-top:-58px}
+@media (max-width:600px){
+  .checklist{flex-direction:column;align-items:flex-start;padding:18px;gap:12px}
+  .checklist .doc{display:none}
+  .checklist .get{align-self:stretch;justify-content:center}
+  .about{grid-template-columns:1fr;text-align:left}
+  .about img{display:none}
+  .hero-b{flex-direction:column;align-items:flex-start;padding:18px}
+  .hero-b img{width:88px;height:88px}
+  .hero-b .btns a{flex:1 1 100%;justify-content:center}
+  .v-c .cover{aspect-ratio:1600/330}
+  .v-c .profile{margin-top:-30px}
+  .checklist h2{font-size:18px}
+  .checklist p{font-size:14px}
+}
+.card .ci{width:44px;height:44px;border-radius:12px}
+.card .ci svg{width:25px;height:25px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.steps li{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--surface);border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line));padding-left:12px}
+.steps li::before{display:none}
+.steps b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:14px}
+.steps span{font-size:14px;line-height:1.4}
+.gorow{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.tgalt{color:var(--sea);font-weight:700;font-size:15px}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+@media (max-width:600px){.steps{grid-template-columns:1fr}.gorow{flex-direction:column;align-items:stretch}.tgalt{text-align:center}}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+/* Окно заявки */
+dialog{border:0;border-radius:16px;padding:0;width:min(460px,calc(100% - 32px));background:var(--surface);color:var(--fg)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:22px;display:flex;flex-direction:column;gap:12px}
+dialog h3{font-family:var(--display);font-weight:500;font-size:18px;margin:0}
+.bot{font-size:14px;color:var(--muted);margin:0}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+textarea{min-height:90px;resize:vertical}
+.consent{flex-direction:row;align-items:flex-start;gap:8px}
+.consent input{width:auto;margin-top:3px}
+.row{display:flex;gap:8px;justify-content:flex-end}
+.row button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
+.send{background:var(--accent);color:var(--accent-ink)}
+.close{background:transparent;color:var(--muted)}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.ok{color:var(--fg);font-weight:700;margin:0}
+/* Кнопка WhatsApp: на компьютере плавает справа внизу, на телефоне — во всю ширину */
+.stickywa{display:flex;position:fixed;right:24px;bottom:24px;z-index:10;align-items:center;gap:8px;padding:14px 22px;
+  border-radius:999px;background:#1f9d55;color:#fff;font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.stickywa:hover{background:#178a49}
+.stickywa svg{width:20px;height:20px;fill:currentColor}
+.wrap{padding-bottom:110px}
+@media (max-width:600px){
+  .wrap{gap:18px;padding-top:12px;padding-bottom:96px}
+  /* шапка: обложка ниже, фото и имя рядом */
+  .cover{aspect-ratio:2.4/1;border-radius:14px}
+  .profile{margin-top:-30px;padding-inline:6px;gap:12px;flex-wrap:nowrap;align-items:flex-end}
+  .avatar{width:72px;height:72px;border-width:3px}
+  .who{padding:32px 0 2px;flex:1 1 auto;align-self:flex-end}
+  .card em .l{display:none}
+  h1{font-size:20px}
+  .path{font-size:13px;margin-top:2px;line-height:1.35}
+  /* соцсети: одна строка круглых значков */
+  .socials{grid-template-columns:repeat(8,1fr);gap:6px}
+  .socials a{padding:0;border:0;background:none;justify-content:center}
+  .socials a.main{background:none}
+  .socials span{display:none}
+  .socials .ic{width:100%;max-width:42px;height:auto;aspect-ratio:1;border-radius:50%}
+  .socials .ic svg{width:19px;height:19px}
+  /* услуги: заголовок короче, фильтры в одну строку с прокруткой, карточки по 2 */
+  h2{font-size:18px}
+  .lead{font-size:14px;line-height:1.4}
+  .filters{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filters button{flex:none}
+  .grid{grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:12px;gap:4px;border-radius:12px}
+  .tag{font-size:10px}
+  .card b{font-size:14px;line-height:1.25}
+  .card span{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card em{font-size:12px;padding-top:4px}
+  .soon{grid-template-columns:1fr}
+  .stickywa{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;
+    align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;background:#1f9d55;color:#fff;
+    font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .stickywa svg{width:20px;height:20px;fill:currentColor}
+}
+
+/* соцсети: круглые цветные значки с подписью снизу */
+.socials{display:flex!important;flex-wrap:wrap;justify-content:center;gap:18px 26px}
+.socials a{flex-direction:column;gap:6px;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;width:76px;align-items:center}
+.socials .ic{width:56px!important;height:56px!important;border-radius:50%!important;box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.socials .ic svg{width:26px!important;height:26px!important}
+.socials a:hover .ic{transform:translateY(-3px)}
+.socials .ic{transition:transform .15s}
+.socials span{display:block!important}
+.socials b{font-size:12.5px!important;font-weight:700;color:var(--fg);text-align:center}
+@media (max-width:600px){.socials{gap:12px 8px;justify-content:space-between}.socials a{width:40px}.socials .ic{width:40px!important;height:40px!important}.socials .ic svg{width:20px!important;height:20px!important}.socials span{display:none!important}}
+
+/* чек-лист 2.0 */
+.checklist{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:26px 28px;border-radius:22px;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 85% 20%,#fff3c4 0,transparent 45%),linear-gradient(120deg,#ffd166 0%,#ff9f5a 60%,#ff7a59 100%);color:#2a1a0e;box-shadow:0 14px 34px rgba(255,122,89,.28)}
+.checklist .doc{display:none}
+.checklist .free{background:#1d2b44;color:#ffd166}
+.checklist h2{color:#2a1a0e;font-size:24px;margin:6px 0}
+.checklist p{color:#3d2a17;opacity:1;margin:0 0 14px}
+.checklist .get{background:#1d2b44;color:#fff;box-shadow:0 5px 0 #0c1526;display:inline-flex}
+.checklist .get:hover{transform:translateY(-1px)}
+.checklist .paper{width:250px;background:#fff;border-radius:12px;padding:16px 16px 12px;transform:rotate(3deg);box-shadow:0 16px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:7px}
+.checklist .paper b{font-size:14px;color:#1d2b44;border-bottom:2px solid #ffd166;padding-bottom:6px}
+.checklist .paper i{font-style:normal;font-size:13px;color:#2a3a4a}
+.checklist .paper i.blur{filter:blur(2.5px);opacity:.7}
+.checklist .paper span{font-size:12px;font-weight:700;color:#ff7a59}
+@media (max-width:600px){.checklist{grid-template-columns:1fr;padding:20px}.checklist .paper{display:none}.checklist h2{font-size:19px}.checklist .get{display:flex;justify-content:center}}
+
+:root{--bg:#eef1f5!important;--surface:#ffffff!important;--fg:#16233a!important;--muted:#5f6b7a!important;--line:#dde3ea!important;--sea:#16294a!important;--accent:#ff6b4a!important}
+body{background:var(--bg)}
+h1,h2{color:#16294a}
+.card{background:#fff!important;border:0!important;box-shadow:0 2px 10px rgba(22,41,74,.07)}
+.card:hover{box-shadow:0 10px 26px rgba(22,41,74,.14)}
+.card .ci{background:var(--t)!important;color:#fff!important;border-radius:50%!important}
+.consult{background:#16294a!important;border:0!important;color:#fff}
+.consult h2,.consult li{color:#fff!important}
+.consult .kick{color:#ffd166!important}
+.consult .note{color:#c9d3e0!important}
+.steps li,.consult .prices p{background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.18)!important}
+.consult .prices span{color:#c9d3e0!important}
+.steps span{color:#fff}
+.tgalt{color:#8fd3ff!important}
+.socials a{background:#fff;border:0;box-shadow:0 1px 4px rgba(22,41,74,.07)}
+.about,.faq details,.soon div,.partners{background:#fff;border-color:transparent}
+
+.bonus{margin:28px 0;padding:24px 26px;border-radius:20px;background:#fff;border:2px solid #0050b3;box-shadow:0 10px 26px rgba(0,40,110,.10)}
+.bonus .bkick{display:inline-block;background:#0050b3;color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;letter-spacing:.3px}
+.bonus h2{margin:10px 0 8px;font-size:22px;color:#0b2a55}
+.bonus ul{margin:0 0 14px;padding-left:20px;color:#2a3a4a;line-height:1.55}
+.bonus .code{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#eef4ff;border:1px dashed #0050b3;border-radius:14px;padding:12px 14px}
+.bonus .code small{display:block;font-size:12px;color:#5a6b80}
+.bonus .code b{font-size:22px;letter-spacing:2px;color:#0b2a55;font-family:ui-monospace,Consolas,monospace}
+.bonus button{background:#0050b3;color:#fff;border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #003070}
+.bonus button.ok{background:#1f9d55;box-shadow:0 4px 0 #136b39}
+.bonus .how{margin:12px 0 0;font-size:13px;color:#64707b}
+@media (max-width:600px){.bonus{padding:20px}.bonus h2{font-size:19px}.bonus .code{flex-direction:column;align-items:stretch;text-align:center}.bonus button{width:100%}}
+@media (max-width:600px){.socials{flex-wrap:nowrap!important;gap:0!important;justify-content:space-between!important}.socials a{width:38px!important}.socials .ic{width:38px!important;height:38px!important}.socials .ic svg{width:19px!important;height:19px!important}}
+
+.stats{display:flex;justify-content:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+.stats div{background:#fff;border-radius:14px;padding:10px 16px;text-align:center;box-shadow:0 1px 4px rgba(22,41,74,.07);min-width:150px}
+.stats b{display:block;font-size:20px;color:#16294a}
+.stats span{font-size:12.5px;color:#5f6b7a}
+@media (max-width:600px){.stats{gap:6px;flex-wrap:nowrap}.stats div{min-width:0;flex:1;padding:8px 6px}.stats b{font-size:16px}.stats span{font-size:11px;line-height:1.25;display:block}}
+.match,.calc{margin:28px 0;padding:24px 26px;border-radius:20px;background:#fff;box-shadow:0 2px 10px rgba(22,41,74,.07)}
+.match{border-top:6px solid #ff6b4a}.calc{border-top:6px solid #16294a}
+.mkick{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#ff6b4a}
+.calc .mkick{color:#2f6fd6}
+.match h2,.calc h2{margin:6px 0 4px;font-size:23px;color:#16294a}
+.match .lead,.calc .lead{margin:0 0 14px}
+.q{margin:14px 0 0}.q>b{display:block;font-size:14.5px;margin-bottom:8px;color:#16233a}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1.5px solid #dde3ea;background:#f5f7fa;color:#16233a;border-radius:99px;padding:9px 15px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer}
+.chips button[aria-pressed="true"]{background:#16294a;border-color:#16294a;color:#fff}
+.chips button.no[aria-pressed="true"]{background:#9aa4b2;border-color:#9aa4b2}
+.q input{width:100%;max-width:340px;border:1.5px solid #dde3ea;border-radius:12px;padding:11px 13px;font:inherit;font-size:16px;background:#f5f7fa}
+.q input:focus{outline:2px solid #ff6b4a;border-color:transparent}
+.mnote{margin:16px 0 0;padding:12px 14px;border-radius:12px;background:#fff4e5;color:#7a4b00;font-size:14px}
+.mgo,.calc .go{margin-top:18px;display:inline-flex}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.cin label b{display:block;font-size:14.5px;margin-bottom:8px}
+.cin label input{width:100%;border:1.5px solid #dde3ea;border-radius:12px;padding:11px 13px;font:inherit;font-size:18px;font-weight:700;background:#f5f7fa}
+.cout{background:#16294a;color:#fff;border-radius:16px;padding:18px 18px 14px}
+.cout table{width:100%;border-collapse:collapse;font-size:14.5px}
+.cout td{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.cout td:last-child{text-align:right;white-space:nowrap;font-weight:700}
+.cout .tot td{border:0;padding-top:12px;font-size:17px;color:#ffd166}
+.cout p{margin:10px 0 0;font-size:13px;color:#c9d3e0}
+.cnote{margin:14px 0 0;font-size:12.5px;color:#64707b;line-height:1.5}
+@media (max-width:700px){.cgrid{grid-template-columns:1fr}.match,.calc{padding:20px}.match h2,.calc h2{font-size:20px}.mgo,.calc .go{display:flex;justify-content:center}}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+.dcard{display:flex;flex-direction:column;gap:3px;background:#fff;border-radius:16px;padding:16px 18px;text-decoration:none;color:#16233a;box-shadow:0 2px 10px rgba(22,41,74,.07);transition:transform .15s}
+.dcard:hover{transform:translateY(-3px)}
+.dcard small{font-size:12px;color:#5f6b7a;letter-spacing:.3px}
+.dcard b{font-size:18px;color:#16294a}
+.dcard span{font-size:14px;color:#5f6b7a}
+.dcard em{font-style:normal;font-weight:700;color:#ff6b4a;margin-top:6px}
+.dcard i{font-style:normal;font-size:13.5px;font-weight:700;color:#2f6fd6;margin-top:2px}
+@media (max-width:700px){.dgrid{grid-template-columns:1fr 1fr;gap:8px}.dcard{padding:13px}.dcard b{font-size:16px}.dcard span{font-size:12.5px}}
+.vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+.yt{position:relative;border:0;padding:0;border-radius:16px;overflow:hidden;background:#000;cursor:pointer;aspect-ratio:16/9;font:inherit;text-align:left}
+.yt img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+.yt b{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;color:#fff;font-size:15px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.yt .play{position:absolute;left:50%;top:45%;width:64px;height:44px;margin:-22px 0 0 -32px;border-radius:12px;background:#f00}
+.yt .play::after{content:"";position:absolute;left:26px;top:13px;border-left:16px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent}
+.yt iframe{width:100%;height:100%;border:0;display:block}
+@media (max-width:700px){.vgrid{grid-template-columns:1fr}}
+.reviews{margin:28px 0}.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.review{margin:0;background:#fff;border-radius:16px;padding:10px;box-shadow:0 2px 10px rgba(22,41,74,.07)}
+.review img{width:100%;border-radius:10px;display:block}.review figcaption{font-size:13px;color:#5f6b7a;padding:6px 4px 0}
+@media (max-width:700px){.rgrid{grid-template-columns:1fr}}
+.mgo,.calc .go{align-items:center;justify-content:center;gap:8px;background:#ff6b4a;color:#fff!important;text-decoration:none!important;font-weight:700;font-size:16px;border-radius:14px;padding:14px 22px;box-shadow:0 5px 0 #c94a2f}
+.mgo:hover,.calc .go:hover{transform:translateY(-1px)}
+
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 6px}
+.tiles>*{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;background:#fff;border:0;border-radius:18px;padding:16px;font:inherit;color:#16233a;text-decoration:none;cursor:pointer;box-shadow:0 2px 10px rgba(22,41,74,.08);transition:transform .15s,box-shadow .15s}
+.tiles>*:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(22,41,74,.14)}
+.tiles i{font-style:normal;font-size:26px;line-height:1;margin-bottom:6px}
+.tiles b{font-size:16px;color:#16294a}.tiles span{font-size:13px;color:#5f6b7a}
+.tiles>*:first-child{background:#ff6b4a}.tiles>*:first-child b,.tiles>*:first-child span{color:#fff}
+@media (max-width:700px){.tiles{grid-template-columns:1fr 1fr;gap:8px}.tiles>*{padding:13px}.tiles b{font-size:14.5px}.tiles span{font-size:12px}.tiles i{font-size:22px}}
+dialog.sheet{border:0;padding:0;border-radius:22px;width:min(760px,94vw);max-height:90vh;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+dialog.sheet::backdrop{background:rgba(10,20,40,.55)}
+dialog.sheet>section{margin:0;box-shadow:none;border-radius:0}
+dialog.sheet .x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:#eef1f5;font-size:17px;cursor:pointer;color:#16233a}
+.distw{padding:24px 26px}.distw .dgrid{margin-bottom:0}.distw h2{margin:0 0 4px;color:#16294a}
+@media (max-width:700px){dialog.sheet{width:100vw;max-width:100vw;max-height:92vh;margin:auto 0 0;border-radius:22px 22px 0 0}dialog.sheet[open]{animation:up .25s ease-out}.distw{padding:20px}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.grid:not(.all) .card:nth-child(n+7){display:none}
+.allsvc{display:block;margin:12px auto 28px;background:#fff;border:1.5px solid #16294a;color:#16294a;font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;cursor:pointer}
+.grid.all+.allsvc{display:none}
+.vgrid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px}
+.vgrid .yt{flex:0 0 46%;scroll-snap-align:start}
+@media (max-width:700px){.vgrid .yt{flex-basis:82%}}
+.soon{display:flex!important;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory}
+.soon div{flex:0 0 260px;scroll-snap-align:start;padding:12px 14px!important}
+.mbar{display:none}
+@media (max-width:600px){.stickywa{display:none!important}.mbar{display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;gap:8px}
+ .mbar>*{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:14px;padding:14px 8px;font:inherit;font-weight:700;font-size:15px;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+ .mbar a{background:#1fa855;color:#fff}.mbar a svg{width:18px;height:18px;fill:currentColor}.mbar button{background:#16294a;color:#fff}
+ body{padding-bottom:80px}}
+.savec{display:flex;justify-content:center;margin:24px auto 0;max-width:340px;background:#fff;border-radius:14px;padding:13px;font-weight:700;color:#16294a;text-decoration:none;box-shadow:0 2px 10px rgba(22,41,74,.08)}
+footer .legal a{color:#5f6b7a}
+
+/* праздники */
+.fest{position:absolute;right:12px;bottom:12px;z-index:4;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;font-size:14px;font-weight:700;background:#fff;color:#16294a;box-shadow:0 2px 8px rgba(22,41,74,.10)}
+.fest-ny .fest{background:#c62828;color:#fff}
+.fest-hw .fest{background:#1d1d1d;color:#ff9a3c}
+.fest-fl .fest{background:#ff6b4a;color:#fff}
+.fest-ea .fest{background:#fff6d6;color:#7a5a00}
+.garland{position:absolute;left:0;right:0;top:0;height:26px;pointer-events:none;z-index:3;display:flex;justify-content:space-around;padding:0 10px}
+.garland i{width:12px;height:16px;border-radius:50% 50% 45% 45%;margin-top:6px;box-shadow:0 0 10px currentColor;animation:blink 1.6s infinite alternate}
+.garland i:nth-child(4n+1){color:#ff3b3b;background:#ff3b3b}.garland i:nth-child(4n+2){color:#ffd166;background:#ffd166;animation-delay:.4s}
+.garland i:nth-child(4n+3){color:#3bd16f;background:#3bd16f;animation-delay:.8s}.garland i:nth-child(4n){color:#4fc3ff;background:#4fc3ff;animation-delay:1.2s}
+@keyframes blink{from{opacity:.35}to{opacity:1}}
+.cover{position:relative}
+.flake{position:fixed;top:-20px;z-index:30;pointer-events:none;color:#fff;text-shadow:0 0 4px rgba(22,41,74,.35);animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(200deg)}}
+@media (prefers-reduced-motion:reduce){.flake{display:none}.garland i{animation:none}}
+
+.langsw{position:absolute;left:12px;top:12px;z-index:5;display:flex;background:rgba(255,255,255,.92);border-radius:99px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.langsw a{padding:5px 11px;border-radius:99px;font-size:13px;font-weight:800;color:#16294a;text-decoration:none}
+.langsw a.on{background:#16294a;color:#fff}
+</style>
+</head>
+<body class="v-c">
+<div class="wrap">
+
+  <div>
+    <div class="cover"><nav class="langsw" aria-label="Мова"><a href="index.html" lang="ru" hreflang="ru">RU</a><a class="on" href="ua.html" lang="uk">UA</a></nav><img src="cover.jpg" alt="Узбережжя Коста-Бланки"></div>
+    <div class="profile">
+      <img class="avatar" src="photo.jpeg" alt="Євген Калмиков">
+      <div class="who">
+        <h1>Євген Калмиков</h1>
+        <p class="path">Життя в Іспанії · Валенсія. Переїзд, житло, документи, подорожі</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div><b>11 000+</b><span>підписників у Facebook</span></div>
+    <div><b>1 000+</b><span>роликів про життя в Іспанії</span></div>
+    <div><b>с 2025</b><span>живу у Валенсії</span></div>
+  </div>
+
+  <nav class="socials" aria-label="Соцмережі" id="socials"></nav>
+
+  <nav class="tiles" aria-label="Чим допомогти">
+    <button type="button" data-open="dlg-match"><i>🔑</i><b>Підібрати квартиру</b><span>Зняти, купити, продати або здати</span></button>
+    <a href="#h-consult"><i>📄</i><b>Розібрати договір</b><span>Письмово, від 50 €</span></a>
+    <button type="button" data-open="dlg-calc"><i>🧮</i><b>Калькулятор купівлі</b><span>Податки та витрати зверху</span></button>
+    <button type="button" data-open="dlg-dist"><i>📍</i><b>Райони Валенсії</b><span>Ціни оренди, плюси й мінуси</span></button>
+  </nav>
+
+  <section class="checklist reveal" aria-labelledby="h-check">
+    <div class="tx">
+      <span class="free">Безкоштовно</span>
+      <h2 id="h-check">Чек-лист: 10 пунктів, які перевірити до підпису договору оренди</h2>
+      <p>Щоб не втратити заставу і не натрапити на «господаря», який ним не є</p>
+      <a class="get" id="checkgo" target="_blank" rel="noopener">Отримати чек-лист</a>
+    </div>
+    <div class="paper" aria-hidden="true">
+      <b>Чек-лист орендаря</b>
+      <i>✓ Хто власник — nota simple</i>
+      <i>✓ Сума застави за законом</i>
+      <i>✓ Опис квартири при заїзді</i>
+      <i class="blur">✓ Строк і дострокове виселення</i>
+      <i class="blur">✓ Індексація ціни</i>
+      <span>ще 5 пунктів</span>
+    </div>
+  </section>
+
+
+
+  <section class="consult" aria-labelledby="h-consult">
+    <span class="kick">Моя консультація</span>
+    <h2 id="h-consult">Проблема з квартирою? Розберу ваш договір</h2>
+    <ul>
+      <li>Виїжджаєте достроково або мешканці йдуть раніше строку — розберу договір і підкажу, як розійтися без суду й без втрати застави</li>
+      <li>Знімаєте житло — перевірю, чи справді власник той, хто здає (виписка nota simple з реєстру), і вичитаю договір до підпису</li>
+      <li>Купуєте чи продаєте — підкажу, що перевірити до завдатку</li>
+    </ul>
+    <ol class="steps">
+      <li><b>1</b><span>Пишете у WhatsApp або Telegram, коротко ситуацію</span></li>
+      <li><b>2</b><span>Надсилаєте договір — фото або файл</span></li>
+      <li><b>3</b><span>Отримуєте письмовий розбір і що робити далі</span></li>
+    </ol>
+    <div class="prices">
+      <p><b>Розбір договору письмово — 50&nbsp;€</b><span>Мої рекомендації: що за законом, що ні, що виправити</span></p>
+      <p><b>Супровід до вирішення — від&nbsp;100&nbsp;€</b><span>Листи власнику, бурофакс, відповіді на його листи</span></p>
+    </div>
+    <p class="note">Моє завдання — допомогти владнати ситуацію і не довести до суду. Це в інтересах усіх. Якщо справа все ж дійде до суду — далі потрібен професійний юрист, контакти дам</p>
+    <div class="gorow"><a class="go" id="consultgo" target="_blank" rel="noopener">Записатися на консультацію</a><a class="tgalt" href="https://t.me/Kalmykov_broker" target="_blank" rel="noopener">або написати в Telegram</a></div>
+  </section>
+
+  <section class="head" aria-labelledby="h-help">
+    <h2 id="h-help">Переїжджаєте до Іспанії? Є перевірені люди</h2>
+    <p class="lead">Оберіть, що потрібно, — відкриється WhatsApp. Напишіть коротко свою ситуацію, я відповім і підкажу, до кого звернутися</p>
+    <div class="filters" id="filters"></div>
+  </section>
+  <div class="grid" id="grid"></div>
+  <button type="button" class="allsvc" id="allsvc">Усі послуги (14)</button>
+
+
+
+
+  <section class="head" aria-labelledby="h-vid"><h2 id="h-vid">Головне у відео</h2>
+    <p class="lead">Розбори на YouTube — документи, медицина, оренда</p></section>
+  <div class="vgrid">
+    <button type="button" class="yt" data-id="C5Y5ka8njw8" aria-label="Дивитися: Тимчасовий захист → ВНЖ на 4 роки і ПМП"><img src="https://i.ytimg.com/vi/C5Y5ka8njw8/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>Тимчасовий захист → ВНЖ на 4 роки і ПМП</b></button>
+    <button type="button" class="yt" data-id="6a1WSjx0vUY" aria-label="Дивитися: Медицина в Іспанії 2026"><img src="https://i.ytimg.com/vi/6a1WSjx0vUY/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>Медицина в Іспанії 2026</b></button>
+    <button type="button" class="yt" data-id="n4-DJCyKB9k" aria-label="Дивитися: 17 пасток при оренді в Іспанії"><img src="https://i.ytimg.com/vi/n4-DJCyKB9k/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>17 пасток при оренді в Іспанії</b></button>
+    <button type="button" class="yt" data-id="GFh4QCWANTo" aria-label="Дивитися: 15 штрафів в Іспанії"><img src="https://i.ytimg.com/vi/GFh4QCWANTo/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>15 штрафів в Іспанії</b></button>
+  </div>
+
+  <section class="about reveal" aria-labelledby="h-about">
+    <img src="photo.jpeg" alt="">
+    <div>
+      <h2 id="h-about">Коротко про мене</h2>
+      <p>Живу у Валенсії з липня 2025 року. Сам пройшов переїзд, пошук житла й документи, працюю з орендою. На повідомлення відповідаю сам, без менеджерів. Чого не знаю — підкажу, до кого звернутися</p>
+    </div>
+  </section>
+
+  <section class="reviews" id="reviews" aria-labelledby="h-rev" hidden>
+    <h2 id="h-rev">Відгуки</h2>
+    <div class="rgrid" id="rgrid"><!-- сюда: <figure class="review"><img src="otzyvy/1.jpg" alt="Отзыв"><figcaption>Аренда, Валенсия</figcaption></figure> --></div>
+  </section>
+
+  <section class="head" aria-labelledby="h-faq"><h2 id="h-faq">Часті запитання</h2></section>
+  <div class="faq reveal">
+    <details><summary>Ви юрист?</summary><p>Ні. Я розбираю договір і допомагаю вирішити ситуацію без суду. Якщо справа все ж іде до суду — даю контакти перевірених юристів</p></details>
+    <details><summary>Працюєте тільки у Валенсії?</summary><p>Консультації — онлайн, по всій Іспанії. Надсилаєте договір у WhatsApp, я відповідаю письмово</p></details>
+    <details><summary>Договір іспанською — розберете?</summary><p>Так. Майже всі договори тут іспанською — поясню українською, що в ньому написано і на що дивитися</p></details>
+    <details><summary>Як швидко відповідаєте?</summary><p>Намагаюся того ж дня, якщо написали не вночі. Якщо терміново — так і напишіть</p></details>
+    <details><summary>Скільки коштує?</summary><p>Розбір договору письмово — 50 €. Супровід до вирішення — від 100 €. Чек-лист — безкоштовно</p></details>
+  </div>
+
+  <section class="bonus reveal" aria-labelledby="h-bonus">
+    <span class="bkick">Бонус для новачків в Іспанії</span>
+    <h2 id="h-bonus">Відкрийте рахунок у BBVA й отримайте до 450 €</h2>
+    <ul>
+      <li>до <b>50 €</b> — за покупки карткою в перші 45 днів</li>
+      <li>ще <b>400 €</b> — якщо на рахунок надходить зарплата або пенсія від 800 €</li>
+    </ul>
+    <div class="code">
+      <div><small>Код запрошення</small><b id="bbvacode">14C70020F574B9</b></div>
+      <button type="button" id="copybbva">Скопіювати код</button>
+    </div>
+    <p class="how">Завантажте застосунок BBVA, під час відкриття рахунку введіть цей код. Умови встановлює банк і може їх змінювати — перевірте в застосунку перед відкриттям</p>
+  </section>
+  <section class="head" aria-labelledby="h-soon"><h2 id="h-soon">Незабаром</h2></section>
+  <div class="soon">
+    <div><small>січень</small><b>Гайд «Оренда житла в Іспанії»</b><span>Документи, перевірки, договір</span></div>
+    <div><small>пізніше</small><b>Міні-курс «Переїзд: перші 3 місяці»</b><span>Записи уроків і чек-лист</span></div>
+    <div><small>пізніше</small><b>Подорожі без переплат</b><span>Готелі й перельоти дешевше</span></div>
+  </div>
+
+  <section class="partners" aria-labelledby="h-partners">
+    <h2 id="h-partners">Для партнерів</h2>
+    <p class="lead">Маєте послугу, корисну тим, хто переїжджає або живе в Іспанії? Напишіть коротко: що робите, в якому місті та як з вами зв’язатися</p>
+    <div class="pbtns" id="pbtns"></div>
+  </section>
+
+  <dialog class="sheet" id="dlg-match"><button type="button" class="x" aria-label="Закрити">✕</button>
+  <section class="match" aria-labelledby="h-match">
+    <span class="mkick">Підбір за 1 хвилину</span>
+    <h2 id="h-match">Підібрати квартиру</h2>
+    <p class="lead">Дайте відповідь на кілька запитань — відповіді самі складуться в повідомлення у WhatsApp</p>
+    <div class="q" data-q="goal"><b>Що потрібно?</b><div class="chips">
+      <button type="button" data-v="Зняти">Зняти</button><button type="button" data-v="Купити">Купити</button><button type="button" data-v="Продати">Продати</button><button type="button" data-v="Здати">Здати свою</button></div></div>
+
+    <div class="branch" data-for="Зняти" hidden>
+      <div class="q"><b>Дохід сім’ї на місяць, €</b><input type="number" inputmode="numeric" min="0" step="100" id="m_inc" placeholder="наприклад, 2500"></div>
+      <div class="q" data-q="src"><b>Звідки дохід?</b><div class="chips">
+        <button type="button" data-v="контракт в Іспанії">Контракт в Іспанії</button><button type="button" data-v="автономо в Іспанії">Автономо в Іспанії</button><button type="button" data-v="Україна">Україна</button><button type="button" data-v="інша країна">Інша країна</button><button type="button" data-v="немає доходу" class="no">Немає доходу</button></div></div>
+      <div class="q" data-q="rb"><b>Бюджет оренди на місяць</b><div class="chips">
+        <button type="button" data-v="до 900 €">до 900 €</button><button type="button" data-v="900–1200 €">900–1200 €</button><button type="button" data-v="1200–1500 €">1200–1500 €</button><button type="button" data-v="від 1500 €">від 1500 €</button></div></div>
+      <div class="q" data-q="rw"><b>Коли заїзд?</b><div class="chips">
+        <button type="button" data-v="цього місяця">Цього місяця</button><button type="button" data-v="через 1–2 місяці">Через 1–2 місяці</button><button type="button" data-v="пізніше">Пізніше</button></div></div>
+    </div>
+
+    <div class="branch" data-for="Купити" hidden>
+      <div class="q" data-q="bb"><b>Бюджет купівлі</b><div class="chips">
+        <button type="button" data-v="до 150 000 €">до 150 000 €</button><button type="button" data-v="150–250 тис. €">150–250 тис. €</button><button type="button" data-v="250–400 тис. €">250–400 тис. €</button><button type="button" data-v="від 400 000 €">від 400 000 €</button></div></div>
+      <div class="q" data-q="bm"><b>Потрібна іпотека?</b><div class="chips">
+        <button type="button" data-v="так">Так</button><button type="button" data-v="ні, власні гроші">Ні, власні гроші</button><button type="button" data-v="не знаю">Не знаю</button></div></div>
+      <div class="q" data-q="bw"><b>Коли плануєте?</b><div class="chips">
+        <button type="button" data-v="найближчого місяця">Найближчого місяця</button><button type="button" data-v="за 3 місяці">За 3 місяці</button><button type="button" data-v="через пів року й пізніше">Через пів року й пізніше</button></div></div>
+    </div>
+
+    <div class="branch" data-for="Продати" hidden>
+      <div class="q" data-q="st"><b>Що продаєте?</b><div class="chips">
+        <button type="button" data-v="квартиру">Квартиру</button><button type="button" data-v="будинок">Будинок</button><button type="button" data-v="комерційне приміщення">Комерційне</button></div></div>
+      <div class="q" data-q="sw"><b>Коли хочете продати?</b><div class="chips">
+        <button type="button" data-v="терміново">Терміново</button><button type="button" data-v="за 3 місяці">За 3 місяці</button><button type="button" data-v="не поспішаю">Не поспішаю</button></div></div>
+    </div>
+
+    <div class="branch" data-for="Здати" hidden>
+      <div class="q"><b>Площа, м²</b><input type="number" inputmode="numeric" id="m_m2" placeholder="наприклад, 80"></div>
+      <div class="q"><b>Бажана ціна на місяць, €</b><input type="number" inputmode="numeric" step="50" id="m_rent" placeholder="наприклад, 1200"></div>
+      <div class="q" data-q="from"><b>Коли вільна?</b><div class="chips">
+        <button type="button" data-v="вже вільна">Вже вільна</button><button type="button" data-v="цього місяця">Цього місяця</button><button type="button" data-v="пізніше">Пізніше</button></div></div>
+    </div>
+
+    <div class="q area" hidden><b>Район або місто</b><input type="text" id="m_area" placeholder="наприклад, Русафа або «не важливо»"></div>
+    <div id="m_pre" hidden>
+      <p class="mnote" id="m_no">Зараз майже на всі квартири в оренду вимагають підтверджений дохід. Без доходу варіанти бувають, але рідко — зазвичай з оплатою наперед за пів року або за рік</p>
+      <div class="q" data-q="pre"><b>Готові оплатити наперед?</b><div class="chips">
+        <button type="button" data-v="так, за пів року">Так, за пів року</button><button type="button" data-v="так, за рік">Так, за рік</button><button type="button" data-v="ні">Ні</button></div></div>
+    </div>
+    <a class="go mgo" id="m_go" target="_blank" rel="noopener" hidden>Надіслати у WhatsApp</a>
+  </section>
+  </dialog>
+  <dialog class="sheet" id="dlg-calc"><button type="button" class="x" aria-label="Закрити">✕</button>
+  <section class="calc" aria-labelledby="h-calc">
+    <span class="mkick">Калькулятор</span>
+    <h2 id="h-calc">Скільки коштує купити квартиру у Валенсії</h2>
+    <p class="lead">Податки й витрати понад ціну квартири. Розрахунок приблизний — точні суми будуть під час угоди</p>
+    <div class="cgrid">
+      <div class="cin">
+        <label><b>Ціна квартири, €</b><input type="number" id="c_price" value="200000" min="10000" step="5000" inputmode="numeric"></label>
+        <div class="q" data-q="ctype"><b>Квартира</b><div class="chips">
+          <button type="button" data-v="old" aria-pressed="true">Вторинне</button><button type="button" data-v="new">Новобудова</button></div></div>
+        <div class="q" data-q="cmort"><b>Іпотека</b><div class="chips">
+          <button type="button" data-v="no" aria-pressed="true">Без іпотеки</button><button type="button" data-v="yes">З іпотекою</button></div></div>
+      </div>
+      <div class="cout" id="c_out"></div>
+    </div>
+    <p class="cnote">Ставки Валенсійської спільноти з 1 червня 2026: податок на купівлю вторинного житла (ITP) — 9 %, дорожче 1 млн € — 11 %; новобудова — IVA 10 % + 1,4 % (AJD). Молоді до 35 років, багатодітним та деяким іншим належать знижені ставки. Суми приблизні й можуть трохи відрізнятися — точний розрахунок буде під час угоди</p>
+    <a class="go" id="c_go" target="_blank" rel="noopener">Обговорити купівлю у WhatsApp</a>
+  </section>
+  </dialog>
+  <dialog class="sheet" id="dlg-dist"><button type="button" class="x" aria-label="Закрити">✕</button>
+  <section class="distw" aria-labelledby="h-dist"><h2 id="h-dist">Райони Валенсії</h2>
+    <p class="lead">Ціни оренди квартири 70 м² — приблизно, за даними Idealista за жовтень 2026</p>
+  <div class="dgrid">
+      <a class="dcard" href="rayony/ruzafa.html"><small>Ruzafa</small><b>Русафа</b><span>Кафе, ринок, життя в центрі</span><em>≈ 1 300 € / міс</em><i>Детальніше →</i></a>
+      <a class="dcard" href="rayony/benimaclet.html"><small>Benimaclet</small><b>Бенімаклет</b><span>Студенти й спокійне життя</span><em>≈ 1 020 € / міс</em><i>Детальніше →</i></a>
+      <a class="dcard" href="rayony/campanar.html"><small>Campanar</small><b>Кампанар</b><span>Нові будинки й парки</span><em>≈ 1 250 € / міс</em><i>Детальніше →</i></a>
+      <a class="dcard" href="rayony/cabanyal.html"><small>Cabanyal</small><b>Кабаньяль</b><span>Життя біля моря</span><em>≈ 1 160 € / міс</em><i>Детальніше →</i></a>
+      <a class="dcard" href="rayony/patraix.html"><small>Patraix</small><b>Патраїкс</b><span>Спокійно й доступно</span><em>≈ 950 € / міс</em><i>Детальніше →</i></a>
+      <a class="dcard" href="rayony/algiros.html"><small>Algirós</small><b>Алжирос</b><span>Університети й трамвай</span><em>≈ 1 040 € / міс</em><i>Детальніше →</i></a>
+  </div>
+  </section>
+  </dialog>
+
+  <div class="mbar"><a id="mbar_wa" target="_blank" rel="noopener">WhatsApp</a><button type="button" data-open="dlg-match">Підібрати квартиру</button></div>
+  <a class="stickywa" id="stickywa" target="_blank" rel="noopener">Написать в WhatsApp</a>
+
+  <a class="savec" href="kalmykov.vcf" download="Євген Калмиков.vcf">👤 Зберегти мій контакт у телефон</a>
+  <footer><span>Kalmykov Realty · Валенсія, Іспанія</span><span class="legal"><a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> · <a href="cookies.html">Cookies</a></span></footer>
+</div>
+
+
+<script>
+const ICON={
+  tg:'<svg viewBox="0 0 24 24"><path d="M21.5 3.6 2.9 10.8c-1 .4-1 1.6 0 1.9l4.6 1.5 1.8 5.6c.3.8 1.3 1 1.9.4l2.6-2.4 4.6 3.4c.7.5 1.7.1 1.9-.8l3-14.6c.2-1-.8-1.8-1.8-1.4ZM9.9 14.6l-.4 3.6-1.4-4.5 9.4-6.3-7.6 7.2Z"/></svg>',
+  yt:'<svg viewBox="0 0 24 24"><path d="M22.6 7.2a2.8 2.8 0 0 0-2-2C18.9 4.7 12 4.7 12 4.7s-6.9 0-8.6.5a2.8 2.8 0 0 0-2 2C1 8.9 1 12 1 12s0 3.1.4 4.8a2.8 2.8 0 0 0 2 2c1.7.5 8.6.5 8.6.5s6.9 0 8.6-.5a2.8 2.8 0 0 0 2-2c.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM9.8 15.2V8.8l5.7 3.2-5.7 3.2Z"/></svg>',
+  ig:'<svg viewBox="0 0 24 24"><path d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3Zm0 7.8a3.1 3.1 0 1 1 3.1-3.1 3.1 3.1 0 0 1-3.1 3.1Zm6-8a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1ZM12 3.6c2.7 0 3 0 4.1.1 2.8.1 4.1 1.4 4.2 4.2.1 1.1.1 1.4.1 4.1s0 3-.1 4.1c-.1 2.8-1.4 4.1-4.2 4.2-1.1.1-1.4.1-4.1.1s-3 0-4.1-.1c-2.8-.1-4.1-1.4-4.2-4.2-.1-1.1-.1-1.4-.1-4.1s0-3 .1-4.1C3.8 5.1 5.1 3.8 7.9 3.7c1.1-.1 1.4-.1 4.1-.1Z"/></svg>',
+  fb:'<svg viewBox="0 0 24 24"><path d="M13.5 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3a21 21 0 0 0-2.3-.1c-2.3 0-3.9 1.4-3.9 4v2.2H7.8v3h2.6V21h3.1Z"/></svg>',
+  tt:'<svg viewBox="0 0 24 24"><path d="M16.6 3h-3.1v12.3a2.7 2.7 0 1 1-2.7-2.7c.3 0 .5 0 .8.1V9.5a5.8 5.8 0 1 0 5 5.8V9.1a7.5 7.5 0 0 0 4.4 1.4V7.4a4.4 4.4 0 0 1-4.4-4.4Z"/></svg>',
+  wa:'<svg viewBox="0 0 24 24"><path d="M12 2.5A9.4 9.4 0 0 0 3.9 16.6L2.5 21.5l5-1.3A9.4 9.4 0 1 0 12 2.5Zm5.5 13.3c-.2.6-1.3 1.2-1.8 1.3-.5 0-1 .2-3.3-.7a11.6 11.6 0 0 1-4.6-4.1c-.4-.5-1.1-1.5-1.1-2.9a3.1 3.1 0 0 1 1-2.3 1 1 0 0 1 .8-.4h.5c.2 0 .4 0 .6.5l.9 2c0 .2.1.4 0 .6l-.4.6-.4.5c-.1.2-.3.3-.1.6a8.7 8.7 0 0 0 1.6 2 7.9 7.9 0 0 0 2.3 1.4c.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3a2.4 2.4 0 0 1-.2 1.4Z"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3L12 3Z"/></svg>',
+  cam:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>'
+};
+const socials=[
+  ["main","#229ed9","tg","Telegram","І знову все спочатку","https://t.me/tretiy_raz_s_nulya"],
+  ["","#d9342b","yt","YouTube","Життя в Іспанії","https://www.youtube.com/@StartSpainLife/videos"],
+  ["","#c13584","ig","Instagram","Валенсія щодня","https://www.instagram.com/kalmykov.rieltor.valencia"],
+  ["","#1877f2","fb","Facebook","Пости й ролики","https://www.facebook.com/kalmykov.rieltor.valencia/"],
+  ["","#3a3f45","tt","TikTok","Короткі відео","https://tiktok.com/@kalmykov_evgeniy"],
+  ["","#2a8bc7","home","Об’єкти","Оренда та продаж житла","https://t.me/kalmykov_realty"],
+  ["","#1f9d55","wa","WhatsApp","+34 624 916 605","https://wa.me/34624916605"],
+  ["","#d9691a","cam","Кружечки","Особистий канал","https://t.me/+99yGN60lBd85NTgy"]
+];
+const sw=document.getElementById("socials");
+socials.forEach(([cls,c,ic,t,s,href])=>{
+  const a=document.createElement("a");a.href=href;a.target="_blank";a.rel="noopener";if(cls)a.className=cls;a.style.setProperty("--c",c);
+  a.innerHTML=`<i class="ic">${ICON[ic]}</i><span><b>${t}</b><small>${s}</small></span>`;sw.appendChild(a);
+});
+
+const G={doc:["Документи","#2f6fd6"],money:["Гроші","#1f9a5a"],home:["Житло","#d9691a"],house:["Дім і побут","#0f8f8f"],more:["Ще","#7a52c7"]};
+const services=[
+  ["doc","Юрист: ВНЖ, документи, податки","Види ВНЖ, продовження, бізнес, податки"],
+  ["money","Легалізація коштів","Юридично правильно завести ваші гроші на іспанські рахунки"],
+  ["doc","Розмитнення авто","Перереєстрація машини з українськими номерами"],
+  ["home","Купити чи продати квартиру","Підбір і перевірка до завдатку або продаж вашої. Потрібна іпотека — підключимо"],
+  ["money","Іпотека","Допомагають і тим, кому відмовили в інших банках"],
+  ["home","Оренда житла","Зняти квартиру або здати свою"],
+  ["home","Управління нерухомістю","Здати й не займатися самому"],
+  ["house","Ремонт під ключ","Квартири й будинки у Валенсії"],
+  ["house","Меблі на замовлення","Кухні, шафи — проєкт і виготовлення"],
+  ["house","Штори, ролети, все для вікон","Підбір, пошиття й монтаж"],
+  ["house","Кондиціонери: встановлення й чистка","Уся провінція Валенсія і Коста-Бланка"],
+  ["doc","Запис на ситу","Допомога із записом до держустанов"],
+  ["more","Монтаж роликів","Бот сам монтує: субтитри, обкладинки. Мій код SYVWJSSP — 200 кредитів","https://t.me/accio_pro_bot?start=seed_ac_nova"],
+  ["more","Інше питання","Напишіть, що потрібно, — підкажу, до кого"]
+];
+const GI={
+  doc:'<svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12v2h10v-2H7Zm0 4v2h7v-2H7Z"/></svg>',
+  money:'<svg viewBox="0 0 24 24"><path d="M3 6h18v12H3V6Zm9 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM5 8v2a2 2 0 0 0 2-2H5Zm12 0a2 2 0 0 0 2 2V8h-2ZM5 14v2h2a2 2 0 0 0-2-2Zm14 0a2 2 0 0 0-2 2h2v-2Z"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3L12 3Z"/></svg>',
+  house:'<svg viewBox="0 0 24 24"><path d="M22 7.5 16.5 2l-2 2 1.3 1.3-7.6 7.6L6.9 11.6l-2 2 1.4 1.4L2 19.3 4.7 22 9 17.7l1.4 1.4 2-2-1.3-1.3 7.6-7.6 1.3 1.3 2-2Z"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm2.1-7.7-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3c.4-.4.6-.9.6-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 8 0c0 .9-.4 1.7-.9 2.3Z"/></svg>'
+};
+const SI={
+ law:'<svg viewBox="0 0 24 24"><path d="M13 7.83c.85-.3 1.53-.98 1.83-1.83H18l-3 7c0 1.66 1.57 3 3.5 3s3.5-1.34 3.5-3l-3-7h2V4h-6.17c-.41-1.17-1.52-2-2.83-2s-2.42.83-2.83 2H3v2h2l-3 7c0 1.66 1.57 3 3.5 3S9 14.66 9 13L6 6h3.17c.3.85.98 1.53 1.83 1.83V19H2v2h20v-2h-9V7.83zM20.37 13h-3.74l1.87-4.36L20.37 13zm-13 0H3.63L5.5 8.64 7.37 13zM12 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>',
+ bank:'<svg viewBox="0 0 24 24"><path d="M12 2 2 7v2h20V7L12 2ZM4 11v7h3v-7H4Zm6.5 0v7h3v-7h-3ZM17 11v7h3v-7h-3ZM2 20v2h20v-2H2Z"/></svg>',
+ car:'<svg viewBox="0 0 24 24"><path d="M5 11l1.6-4.5A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.5L19 11a2 2 0 0 1 2 2v5h-2v2h-3v-2H8v2H5v-2H3v-5a2 2 0 0 1 2-2Zm2.2 0h9.6l-1.1-3.5H8.3L7.2 11ZM6.5 13a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm11 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>',
+ mort:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h14v-9.5h3L12 3Zm-2.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm.6-3.6 1 1-6.2 6.2-1-1 6.2-6.2Z"/></svg>',
+ key:'<svg viewBox="0 0 24 24"><path d="M7 14a5 5 0 1 1 4.6-7H22v4h-2v3h-3v-3h-5.4A5 5 0 0 1 7 14Zm0-3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>',
+ manage:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h6v-2.1a5 5 0 0 1 0-5.8V11h2v2.1a5 5 0 0 1 6 0V11.5h3L12 3Zm4 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>',
+ tools:'<svg viewBox="0 0 24 24"><path d="M14.7 3.3a5 5 0 0 0-6.4 6.4L2 16v4h4l6.3-6.3a5 5 0 0 0 6.4-6.4l-3 3-2.8-.6-.6-2.8 3-3-.6-.6Z"/></svg>',
+ sofa:'<svg viewBox="0 0 24 24"><path d="M6 6h12a2 2 0 0 1 2 2v2.2a2.5 2.5 0 0 1 2 2.4V18h-2v2h-2v-2H6v2H4v-2H2v-5.4a2.5 2.5 0 0 1 2-2.4V8a2 2 0 0 1 2-2Zm0 4.2c1.2.3 2 1.3 2 2.4V14h8v-1.4c0-1.1.8-2.1 2-2.4V8H6v2.2Z"/></svg>',
+ window:'<svg viewBox="0 0 24 24"><path d="M3 3h18v2h-1v14h1v2H3v-2h1V5H3V3Zm3 2v14h5V5H6Zm7 0v14h5V5h-5Z"/></svg>',
+ snow:'<svg viewBox="0 0 24 24"><path d="M11 2h2v4.2l2.5-1.5 1 1.7L13 8.5V11h2.5l2.1-3.5 1.7 1L17.8 11H22v2h-4.2l1.5 2.5-1.7 1L15.5 13H13v2.5l3.5 2.1-1 1.7L13 17.8V22h-2v-4.2l-2.5 1.5-1-1.7 3.5-2.1V13H8.5l-2.1 3.5-1.7-1L6.2 13H2v-2h4.2L4.7 8.5l1.7-1L8.5 11H11V8.5L7.5 6.4l1-1.7L11 6.2V2Z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V2ZM5 9v11h14V9H5Zm2 2h4v4H7v-4Z"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><path d="M4 5h11a2 2 0 0 1 2 2v2.5l4-2.5v10l-4-2.5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>',
+ sale:'<svg viewBox="0 0 24 24"><path d="M21.4 11.6 12.4 2.6A2 2 0 0 0 11 2H4a2 2 0 0 0-2 2v7c0 .55.22 1.05.59 1.42l9 9a2 2 0 0 0 2.82 0l7-7a2 2 0 0 0 0-2.82ZM6.5 8A1.5 1.5 0 1 1 8 6.5 1.5 1.5 0 0 1 6.5 8Z"/></svg>',
+ ask:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm2.1-7.7-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3c.4-.4.6-.9.6-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 8 0c0 .9-.4 1.7-.9 2.3Z"/></svg>'
+};
+const pickIcon=t=>/Купити/.test(t)?SI.sale:/Юрист/.test(t)?SI.law:/Легаліз/.test(t)?SI.bank:/Розмитн/.test(t)?SI.car:/Іпотек/.test(t)?SI.mort:/Оренда/.test(t)?SI.key:/Управлін/.test(t)?SI.manage:/Ремонт/.test(t)?SI.tools:/Меблі/.test(t)?SI.sofa:/Штори/.test(t)?SI.window:/Кондиц/.test(t)?SI.snow:/ситу/i.test(t)?SI.cal:/Монтаж/.test(t)?SI.video:SI.ask;
+const grid=document.getElementById("grid");
+services.forEach(([g,t,h,link])=>{
+  const el=document.createElement("a");
+  el.className="card";el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
+  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту. Цікавить: "+t+".\nМоя ситуація: ");
+  el.href=link||wa;el.target="_blank";el.rel="noopener";
+  el.innerHTML=`<span class="ci">${pickIcon(t)}</span><i class="tag">${G[g][0]}</i><b>${t}</b><span>${h}</span><em>${link?"Відкрити бота →":'<i class="l">Написати в </i>WhatsApp →'}</em>`;
+  grid.appendChild(el);
+});
+const fl=document.getElementById("filters");
+[["all","Всі"],...Object.entries(G).map(([k,v])=>[k,v[0]])].forEach(([k,n])=>{
+  const b=document.createElement("button");b.type="button";b.textContent=n;b.setAttribute("aria-pressed",k==="all");
+  b.onclick=()=>{fl.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    grid.querySelectorAll(".card").forEach(c=>c.hidden=!(k==="all"||c.dataset.g===k))};
+  fl.appendChild(b);
+});
+
+const pb=document.getElementById("pbtns");
+[["pmain","Запропонувати свою послугу","Співпраця.\nПослуга: \nМісто: \nКонтакт: "],
+ ["","Реклама","Реклама.\nЩо рекламуєте: \nДе хочете (сайт, YouTube, Instagram, Telegram): "]
+].forEach(([cls,t,msg])=>{
+  const a=document.createElement("a");if(cls)a.className=cls;
+  a.href="https://wa.me/34624916605?text="+encodeURIComponent(msg);a.target="_blank";a.rel="noopener";
+  a.innerHTML=ICON.wa+t;pb.appendChild(a);
+});
+
+const cg=document.getElementById("consultgo");
+cg.href="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту. Консультація.\nМоє питання: ");
+cg.insertAdjacentHTML("afterbegin",ICON.wa);
+const ck=document.getElementById("checkgo");
+ck.href="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Надішліть, будь ласка, безкоштовний чек-лист щодо договору оренди");
+ck.insertAdjacentHTML("afterbegin",ICON.wa);
+document.querySelectorAll(".consult,.grid,.soon,.partners").forEach(e=>e.classList.add("reveal"));
+try{const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add("on");io.unobserve(x.target)}}),{threshold:.08});
+document.querySelectorAll(".reveal").forEach(e=>io.observe(e));}catch(e){document.querySelectorAll(".reveal").forEach(x=>x.classList.add("on"))}
+const sk=document.getElementById("stickywa");
+sk.href="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту.\nМоя ситуація: ");
+sk.insertAdjacentHTML("afterbegin",ICON.wa);
+</script>
+
+<script>
+(function(){var b=document.getElementById('copybbva');if(!b)return;b.addEventListener('click',function(){var c=document.getElementById('bbvacode').textContent;
+function done(){b.textContent='Скопійовано ✓';b.classList.add('ok');setTimeout(function(){b.textContent='Скопіювати код';b.classList.remove('ok')},2500)}
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(c).then(done,fallback)}else fallback();
+function fallback(){var t=document.createElement('textarea');t.value=c;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(t);done()}})})();
+</script>
+<script>
+(function(){
+var WA="https://wa.me/34624916605?text=";
+function chips(root,cb){root.querySelectorAll('.q[data-q] .chips').forEach(function(g){g.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});cb&&cb()})})}
+function val(root,q){var b=root.querySelector('.q[data-q="'+q+'"] button[aria-pressed="true"]');return b?b.dataset.v:''}
+/* подбор */
+var M=document.querySelector('.match');
+if(M){var go=document.getElementById('m_go'),no=document.getElementById('m_no'),area=M.querySelector('.area');
+ function upd(){var g=val(M,'goal');M.querySelectorAll('.branch').forEach(function(b){b.hidden=b.dataset.for!==g});area.hidden=!g;
+  var noinc=g==='Зняти'&&val(M,'src')==='немає доходу';document.getElementById('m_pre').hidden=!noinc;go.hidden=!g;area.querySelector('b').textContent=g==='Здати'||g==='Продати'?'Адреса або район':'Район або місто';
+  var a=document.getElementById('m_area').value.trim(),L=['Добрий день! Пишу з сайту. Підбір.'];
+  if(g==='Зняти'){var inc=document.getElementById('m_inc').value;L.push('Хочу зняти квартиру.');L.push('Дохід сім’ї: '+(inc?inc+' € на місяць':'—')+(val(M,'src')?', '+val(M,'src'):''));if(noinc)L.push('Оплата наперед: '+(val(M,'pre')||'—'));L.push('Бюджет: '+(val(M,'rb')||'—'));L.push('Заїзд: '+(val(M,'rw')||'—'))}
+  if(g==='Купити'){L.push('Хочу купити.');L.push('Бюджет: '+(val(M,'bb')||'—'));L.push('Іпотека: '+(val(M,'bm')||'—'));L.push('Коли: '+(val(M,'bw')||'—'))}
+  if(g==='Продати'){L.push('Хочу продати '+(val(M,'st')||'нерухомість')+'.');L.push('Коли: '+(val(M,'sw')||'—'))}
+  if(g==='Здати'){var m2=document.getElementById('m_m2').value,rt=document.getElementById('m_rent').value;L.push('Хочу здати свою квартиру.');L.push('Площа: '+(m2?m2+' м²':'—'));L.push('Ціна: '+(rt?rt+' € на місяць':'—'));L.push('Вільна: '+(val(M,'from')||'—'))}L.push((g==='Здати'||g==='Продати'?'Адреса/район: ':'Район: ')+(a||'—'));go.href=WA+encodeURIComponent(L.join('\n'))}
+ chips(M,upd);M.addEventListener('input',upd);upd()}
+/* калькулятор */
+var C=document.querySelector('.calc');
+if(C){var out=document.getElementById('c_out'),pr=document.getElementById('c_price'),cg=document.getElementById('c_go');
+ function f(n){return Math.round(n).toLocaleString('uk-UA').replace(/ /g,' ')+' €'}
+ function calc(){var p=+pr.value||0,isNew=val(C,'ctype')==='new',mort=val(C,'cmort')==='yes',rows=[],lo=0,hi=0;
+  if(isNew){rows.push(['IVA 10 %',p*.10,p*.10]);rows.push(['AJD 1,4 %',p*.014,p*.014])}
+  else{var r=p>1e6?.11:.09;rows.push(['Податок ITP '+(r*100)+' %',p*r,p*r])}
+  rows.push(['Нотаріус',600,1000]);rows.push(['Реєстрація',400,700]);rows.push(['Гесторія (оформлення)',300,500]);
+  if(mort)rows.push(['Оцінка для банку',300,500]);
+  rows.forEach(function(x){lo+=x[1];hi+=x[2]});
+  var h='<table>'+rows.map(function(x){return '<tr><td>'+x[0]+'</td><td>'+(x[1]===x[2]?f(x[1]):f(x[1])+' – '+f(x[2]))+'</td></tr>'}).join('')+
+   '<tr class="tot"><td>Витрати зверху</td><td>'+f(lo)+' – '+f(hi)+'</td></tr></table>';
+  if(mort)h+='<p>З іпотекою банк зазвичай дає до 80 % ціни (нерезидентам — менше). Власних грошей приблизно: '+f(p*.2+lo)+' – '+f(p*.2+hi)+'</p>';
+  else h+='<p>Разом із квартирою приблизно: '+f(p+lo)+' – '+f(p+hi)+'</p>';
+  out.innerHTML=h;
+  cg.href=WA+encodeURIComponent('Добрий день! Пишу з сайту. Купівля.\nЦіна близько '+f(p)+', '+(isNew?'новобудова':'вторинне')+', '+(mort?'потрібна іпотека':'без іпотеки')+'.\nМоє питання: ')}
+ chips(C,calc);pr.addEventListener('input',calc);calc()}
+/* ролики: грузим плеер только по нажатию */
+document.querySelectorAll('.yt').forEach(function(b){b.addEventListener('click',function(){b.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+b.dataset.id+'?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="YouTube"></iframe>'},{once:true})});
+/* отзывы: показываем блок, только когда есть хоть один */
+var R=document.getElementById('reviews');if(R&&R.querySelector('.review'))R.hidden=false;
+})();
+</script>
+<script>
+(function(){
+function op(id){var d=document.getElementById(id);if(d&&d.showModal){d.showModal();d.scrollTop=0}}
+document.querySelectorAll('[data-open]').forEach(function(b){b.addEventListener('click',function(){op(b.dataset.open)})});
+document.querySelectorAll('dialog.sheet').forEach(function(d){
+ d.querySelector('.x').addEventListener('click',function(){d.close()});
+ d.addEventListener('click',function(e){if(e.target===d)d.close()})});
+var g=document.getElementById('grid'),a=document.getElementById('allsvc');
+if(a)a.addEventListener('click',function(){g.classList.add('all')});
+var fl=document.getElementById('filters');if(fl)fl.addEventListener('click',function(e){if(e.target.closest('button'))g.classList.add('all')});
+var mw=document.getElementById('mbar_wa');if(mw){mw.href="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту.\nМоя ситуація: ");
+ mw.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1a15 15 0 0 1-6.4-5.6c-.5-.7-1-1.6-1-2.6 0-1 .5-1.5.7-1.7.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.1-.2.3-.1.5.5.9 1.2 1.8 2 2.4.9.8 1.7 1 1.9 1.1.2.1.4.1.5-.1l.8-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.5.3.1.2.1.8-.2 1.4Z"/></svg>')}
+})();
+</script>
+<script>
+(function(){
+/* какой праздник сегодня; для проверки можно открыть сайт с ?fest=ny / hw / fl / ea */
+var L=document.documentElement.lang==='uk'?'uk':'ru';
+var T={ru:{ny1:'🎄 С наступающим Новым годом!',ny2:'🎄 С Новым годом!',re:'👑 С праздником Трёх королей!',hw:'🎃 Счастливого Хэллоуина!',fl:'🎆 Фальяс в Валенсии!',ea:'🐣 Со Светлой Пасхой!'},
+       uk:{ny1:'🎄 З наступаючим Новим роком!',ny2:'🎄 З Новим роком!',re:'👑 Зі святом Трьох королів!',hw:'🎃 Щасливого Гелловіну!',fl:'🎆 Фальяс у Валенсії!',ea:'🐣 Зі Світлим Великоднем!'}}[L];
+function easter(y,orth){var a,b,c,d,e,m,day;
+ if(orth){a=y%4;b=y%7;c=y%19;d=(19*c+15)%30;e=(2*a+4*b-d+34)%7;m=Math.floor((d+e+114)/31);day=((d+e+114)%31)+1;return new Date(y,m-1,day+13)}
+ a=y%19;b=Math.floor(y/100);c=y%100;d=Math.floor(b/4);e=b%4;var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,mm=Math.floor((a+11*h+22*l)/451);
+ m=Math.floor((h+l-7*mm+114)/31);day=((h+l-7*mm+114)%31)+1;return new Date(y,m-1,day)}
+function near(d,ref,before,after){var t=(d-ref)/864e5;return t>=-before&&t<=after}
+var now=new Date(),y=now.getFullYear(),M=now.getMonth()+1,D=now.getDate(),f=null,txt='';
+var q=(location.search.match(/fest=(\w+)/)||[])[1];
+if(q){f=q;txt={ny:T.ny1,hw:T.hw,fl:T.fl,ea:T.ea}[q]||''}
+else if(M===12){f='ny';txt=T.ny1}
+else if(M===1&&D<=5){f='ny';txt=T.ny2}
+else if(M===1&&D===6){f='ny';txt=T.re}
+else if((M===10&&D>=28)||(M===11&&D===1)){f='hw';txt=T.hw}
+else if(M===3&&D>=15&&D<=19){f='fl';txt=T.fl}
+else{var t0=new Date(y,M-1,D);if(near(t0,easter(y,false),3,1)||near(t0,easter(y,true),1,1)){f='ea';txt=T.ea}}
+if(!f)return;
+document.body.classList.add('fest-'+f);
+var cv=document.querySelector('.cover');if(cv&&txt)cv.insertAdjacentHTML('beforeend','<span class="fest">'+txt+'</span>');
+if(f==='ny'&&cv){var g='<div class="garland" aria-hidden="true">';for(var i=0;i<14;i++)g+='<i></i>';cv.insertAdjacentHTML('afterbegin',g+'</div>')}
+var sym={ny:['❄','❅','❆'],hw:['🦇','🍂'],fl:['✨','🎉'],ea:['🌸','🌼']}[f];
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+var n=0,tm=setInterval(function(){if(++n>(f==='ny'?40:14)){clearInterval(tm);return}
+ var e=document.createElement('span');e.className='flake';e.textContent=sym[n%sym.length];
+ e.style.left=Math.random()*100+'vw';e.style.fontSize=(12+Math.random()*14)+'px';e.style.opacity=.5+Math.random()*.5;
+ e.style.animationDuration=(6+Math.random()*6)+'s';document.body.appendChild(e);setTimeout(function(){e.remove()},13000)},350);
+})();
+</script>
+</body>
+</html>

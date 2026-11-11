@@ -95,7 +95,7 @@ D = [
 ]
 def card(d):
     slug,ru,es,m2,tag,who,pl,mi,note = d
-    return f'''      <a class="dcard" href="rayony/{slug}.html"><small>{es}</small><b>{ru}</b><span>{tag}</span><em>≈ {round(m2*70/10)*10:,} € / мес</em><i>Подробнее →</i></a>'''.replace(',', ' ')
+    return f'''      <a class="dcard" href="rayony/{slug}.html"><small>{es}</small><b>{ru}</b><span>{tag}</span><em>≈ {format(round(m2*70/10)*10, ",").replace(",", " ")} € / мес</em><i>Подробнее →</i></a>'''
 districts = '''  <section class="head" aria-labelledby="h-dist"><h2 id="h-dist">Районы Валенсии</h2>
     <p class="lead">Цены аренды квартиры 70 м² — примерно, по данным Idealista за октябрь 2026</p></section>
   <div class="dgrid">
