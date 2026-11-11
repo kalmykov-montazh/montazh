@@ -100,6 +100,16 @@ jobs:
         run: |
           P="$PWD/hfp"; mkdir -p "$P" in
           rclone copy "montazh:Брокер/работа/$KEY" in --include osnova.mp4 --include osnova_words.json --include face.json --multi-thread-streams 8
+          # 11.11.2026 (Евгений 21:37): «МИР ЗА СПИНОЙ» встроен — если есть основа с фонами «работа/<ключ>_mir», берём её,
+          # а не старую без фонов. Если в novyj есть поле "mir" и в репо есть hf/mir.py — фоны делаются прямо здесь.
+          if [[ "$KEY" != *_mir ]] && rclone lsf "montazh:Брокер/работа/${KEY}_mir/osnova.mp4" 2>/dev/null | grep -q .; then
+            rm -f in/osnova.mp4; rclone copy "montazh:Брокер/работа/${KEY}_mir" in --include osnova.mp4 --include osnova_words.json --include face.json --multi-thread-streams 8
+            echo "::notice::Мир за спиной: основа с фонами ${KEY}_mir"
+          elif [ -f hf/mir.py ] && python3 -c "import json,sys;sys.exit(0 if json.load(open('novyj/$KEY.json')).get('mir') else 1)" 2>/dev/null; then
+            python3 hf/mir.py in/osnova.mp4 "novyj/$KEY.json" in/osnova_words.json in/face.json in/osnova_mir.mp4 && mv in/osnova_mir.mp4 in/osnova.mp4 \
+              && rclone copyto in/osnova.mp4 "montazh:Брокер/работа/${KEY}_mir/osnova.mp4" && rclone copy in "montazh:Брокер/работа/${KEY}_mir" --include osnova_words.json --include face.json \
+              && echo "::notice::Мир за спиной: фоны сделаны и сохранены в ${KEY}_mir" || echo "::warning::Мир за спиной НЕ вышел — собираю без фонов"
+          fi
           mv in/osnova.mp4 "$P/osnova.mp4"
           # 11.11.2026: кадры с места (broll в novyj) — из «работа/<ключ>/br», если есть
           rclone copy "montazh:Брокер/работа/$KEY/br" "$P/br" 2>/dev/null || true
