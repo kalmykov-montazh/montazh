@@ -105,7 +105,9 @@ for k, (t0, t1, (bg, frm)) in enumerate(segs):
         M = prev
         pa = np.asarray(P).astype(np.float32); ba = np.asarray(B).astype(np.float32); ma = np.asarray(M).astype(np.float32)[..., None] / 255.0
         # синее кресло за спиной вырезаем из маски по цвету (правило пробы 11.11)
-        blue = (pa[..., 2] > pa[..., 0] + 45) & (pa[..., 2] > pa[..., 1] + 15)
+        # 12.11.2026: только тёмно-насыщенный синий кресла (R низкий, G меньше половины B) —
+        # старое правило вырезало голубые и серо-голубые рубашки, фон «съедал» плечи
+        blue = (pa[..., 2] > 70) & (pa[..., 0] < 70) & (pa[..., 1] < pa[..., 2] * 0.5)
         if blue.any():
             bm_ = Image.fromarray((blue * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2))
             ma = ma * (1 - np.asarray(bm_).astype(np.float32)[..., None] / 255.0)
