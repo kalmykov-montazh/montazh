@@ -35,7 +35,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px
 
 /* Обложка: небо, море, солнце — пока без фото */
 .cover img{display:block;width:100%;height:100%;object-fit:cover}
-.cover{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:1983/793;max-width:100%;
+.cover{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:1600/520;max-width:100%;
   background:linear-gradient(180deg,#f6c99a 0%,#e9a774 38%,#3f6f93 38.5%,#24496b 70%,#1a3550 100%)}
 .cover .sun{position:absolute;left:62%;top:10%;width:14%;aspect-ratio:1;border-radius:50%;
   background:radial-gradient(circle,#fff3df 0%,#ffd8a8 45%,rgba(255,216,168,0) 70%)}
@@ -51,13 +51,15 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.4vw,36px);l
 .path{margin:6px 0 0;color:var(--muted);font-size:15px}
 
 /* Соцсети: ровные плитки, цвет только в значке */
-.socials{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.socials a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;min-width:0;
+.socials{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+@media (max-width:1000px){.socials{grid-template-columns:repeat(4,1fr)}}
+.socials a{display:flex;align-items:center;gap:7px;padding:7px 6px 7px 7px;border-radius:12px;min-width:0;
   background:var(--surface);border:1px solid var(--line);color:var(--fg);text-decoration:none;transition:border-color .15s,transform .15s}
-.socials .ic{flex:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
-  background:color-mix(in srgb,var(--c) 14%,var(--surface));color:var(--c);font-weight:700;font-size:15px}
-.socials .ic svg{width:20px;height:20px;fill:currentColor}
-.socials b{display:block;font-size:15px}
+.socials .ic{flex:none;width:36px;height:36px;border-radius:9px;display:grid;place-items:center;
+  background:var(--c);color:#fff;font-weight:700;font-size:15px}
+.socials .ic svg{width:21px;height:21px;fill:currentColor}
+.socials b{display:block;font-size:13.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.socials small{display:none!important}
 .socials small{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .socials span{min-width:0}
 .socials a:hover,.socials a:focus-visible{border-color:var(--c);transform:translateY(-1px);outline:none}
@@ -141,9 +143,7 @@ button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 @media (max-width:600px){
   .wrap{gap:18px;padding-top:12px;padding-bottom:96px}
   /* шапка: обложка ниже, фото и имя рядом */
-  .cover{aspect-ratio:2.8/1;border-radius:14px}
-  /* на телефоне: без надписи, только море и бассейн по центру */
-  .cover img{width:170%;max-width:none;margin-left:-35%;object-position:center bottom}
+  .cover{aspect-ratio:2.4/1;border-radius:14px}
   .profile{margin-top:-30px;padding-inline:6px;gap:12px;flex-wrap:nowrap;align-items:flex-end}
   .avatar{width:72px;height:72px;border-width:3px}
   .who{padding:32px 0 2px;flex:1 1 auto;align-self:flex-end}
@@ -247,7 +247,7 @@ const ICON={
   cam:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>'
 };
 const socials=[
-  ["main","#229ed9","tg","Telegram-канал","И снова всё сначала","https://t.me/tretiy_raz_s_nulya"],
+  ["main","#229ed9","tg","Telegram","И снова всё сначала","https://t.me/tretiy_raz_s_nulya"],
   ["","#d9342b","yt","YouTube","Жизнь в Испании","https://www.youtube.com/@StartSpainLife/videos"],
   ["","#c13584","ig","Instagram","Валенсия каждый день","https://www.instagram.com/kalmykov.rieltor.valencia"],
   ["","#1877f2","fb","Facebook","Посты и ролики","https://www.facebook.com/kalmykov.rieltor.valencia/"],
