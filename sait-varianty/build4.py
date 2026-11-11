@@ -45,3 +45,13 @@ for key in ('beliy', 'seryj'):
     s = s.replace('</body>', js + '</body>', 1)
     open(p, 'w', encoding='utf-8').write(s)
 print('ok')
+
+# телефон: все 8 значков соцсетей в одну строку
+fix = '@media (max-width:600px){.socials{flex-wrap:nowrap!important;gap:0!important;justify-content:space-between!important}.socials a{width:38px!important}.socials .ic{width:38px!important;height:38px!important}.socials .ic svg{width:19px!important;height:19px!important}}\n'
+for key in ('beliy', 'seryj'):
+    p = f'/tmp/claude-0/var/out/{key}.html'
+    s = open(p, encoding='utf-8').read()
+    if 'flex-wrap:nowrap!important;gap:0' not in s:
+        s = s.replace('</style>\n</head>', fix + '</style>\n</head>', 1)
+        open(p, 'w', encoding='utf-8').write(s)
+print('fix ok')
