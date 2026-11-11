@@ -33,7 +33,7 @@ def main():
     if ack != sw:
         print('компьютер ещё не подтвердил рубильник — жду'); return
     try:
-        mt = datetime.datetime.fromisoformat(json.loads(ack_ls)[0]['ModTime'].replace('Z', '+00:00')[:26] + '+00:00')
+        mt = datetime.datetime.fromisoformat(json.loads(ack_ls)[0]['ModTime'][:19] + '+00:00')
         if datetime.datetime.now(datetime.timezone.utc) - mt < datetime.timedelta(minutes=5):
             print('подтверждение свежее (<5 мин) — жду, пока Диск досинхронизирует'); return
     except Exception as ex:
