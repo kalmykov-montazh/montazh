@@ -141,6 +141,7 @@ jobs:
           NAME: ${{ matrix.v.name }}
           ENC: ${{ inputs.enc }}
           N: ${{ matrix.v.n }}
+          SRC: ${{ matrix.v.src }}
         run: |
           cd hfp
           ffmpeg -v error -y -i out.mp4 -c:v libx264 -crf 17 -preset medium -pix_fmt yuv420p -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart final.mp4
@@ -152,6 +153,8 @@ jobs:
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
           echo "::notice::Готово: $DEST ($D с)"
+          # 11.11.2026 (Евгений): сырой уезжает из «Сырые» в папку готового ролика — в «Сырые» остаётся только несделанное
+          if [[ "$SRC" == Брокер/Сырые/* ]] && rclone lsf "montazh:$SRC" 2>/dev/null | grep -q .; then rclone moveto "montazh:$SRC" "montazh:$DEST/$(basename "$SRC")" && echo "::notice::Сырой перенесён в папку ролика"; fi
           # для проверки Claude: кадр каждую секунду, листами по 30 (6×5), плюс обложка в полный размер
           mkdir -p pr; ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='%{eif\:t\:d}':x=6:y=6:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x5" -frames:v 9 pr/list_%d.jpg 2>/dev/null || ffmpeg -v error -y -i final.mp4 -vf "fps=1,scale=216:-2,tile=6x5" pr/list_%d.jpg
           cp oblozhka.jpg кадры.jpg ../build.txt pr/ 2>/dev/null; cp build.json overlay.log pr/ 2>/dev/null || true
