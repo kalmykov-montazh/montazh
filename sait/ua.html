@@ -377,7 +377,8 @@ dialog.sheet .x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-inde
 .distw{padding:24px 26px}.distw .dgrid{margin-bottom:0}.distw h2{margin:0 0 4px;color:#16294a}
 @media (max-width:700px){dialog.sheet{width:100vw;max-width:100vw;max-height:92vh;margin:auto 0 0;border-radius:22px 22px 0 0}dialog.sheet[open]{animation:up .25s ease-out}.distw{padding:20px}}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
-.grid:not(.all) .card:nth-child(n+7){display:none}
+.myobj{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;margin:10px 0 0;padding:10px 16px;border-radius:12px;background:#16294a;color:#fff;font-weight:700;text-decoration:none}.myobj small{font-weight:400;opacity:.8}
+.grid:not(.all) .card:nth-child(n+9){display:none}
 .allsvc{display:block;margin:12px auto 28px;background:#fff;border:1.5px solid #16294a;color:#16294a;font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;cursor:pointer}
 .grid.all+.allsvc{display:none}
 .vgrid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px}
@@ -437,7 +438,7 @@ footer .legal a{color:#5f6b7a}
   <nav class="socials" aria-label="Соцмережі" id="socials"></nav>
 
   <nav class="tiles" aria-label="Чим допомогти">
-    <button type="button" data-open="dlg-match"><i>🔑</i><b>Підібрати квартиру</b><span>Зняти, купити, продати або здати</span></button>
+    <button type="button" data-open="dlg-match"><i>🔑</i><b>Квартири</b><span>Здаю, продаю, допоможу знайти</span></button>
     <a href="#h-consult"><i>📄</i><b>Розібрати договір</b><span>Письмово, від 50 €</span></a>
     <button type="button" data-open="dlg-calc"><i>🧮</i><b>Калькулятор купівлі</b><span>Податки та витрати зверху</span></button>
     <button type="button" data-open="dlg-dist"><i>📍</i><b>Райони Валенсії</b><span>Ціни оренди, плюси й мінуси</span></button>
@@ -486,11 +487,12 @@ footer .legal a{color:#5f6b7a}
 
   <section class="head" aria-labelledby="h-help">
     <h2 id="h-help">Переїжджаєте до Іспанії? Є перевірені люди</h2>
-    <p class="lead">Оберіть, що потрібно, — відкриється WhatsApp. Напишіть коротко свою ситуацію, я відповім і підкажу, до кого звернутися</p>
+    <p class="lead">Свої квартири здаю і продаю сам. З рештою є люди, яких я перевірив: юристи, іпотека, агенти, майстри. Оберіть, що потрібно, — відкриється WhatsApp, напишіть коротко свою ситуацію</p>
+    <a class="myobj" href="https://t.me/kalmykov_realty" target="_blank" rel="noopener">🏠 Мої об’єкти <small>(оренда і продаж)</small> →</a>
     <div class="filters" id="filters"></div>
   </section>
   <div class="grid" id="grid"></div>
-  <button type="button" class="allsvc" id="allsvc">Усі послуги (14)</button>
+  <button type="button" class="allsvc" id="allsvc">Ще 6 послуг</button>
 
 
 
@@ -508,7 +510,7 @@ footer .legal a{color:#5f6b7a}
     <img src="photo.jpeg" alt="">
     <div>
       <h2 id="h-about">Коротко про мене</h2>
-      <p>Живу у Валенсії з липня 2025 року. Сам пройшов переїзд, пошук житла й документи, працюю з орендою. На повідомлення відповідаю сам, без менеджерів. Чого не знаю — підкажу, до кого звернутися</p>
+      <p>Живу у Валенсії з липня 2025 року. Сам пройшов переїзд, пошук житла й документи. Здаю і продаю свої об’єкти, веду соцмережі. На повідомлення відповідаю сам, без менеджерів. Де потрібен фахівець — передаю людям, яких перевірив</p>
     </div>
   </section>
 
@@ -554,9 +556,10 @@ footer .legal a{color:#5f6b7a}
 
   <dialog class="sheet" id="dlg-match"><button type="button" class="x" aria-label="Закрити">✕</button>
   <section class="match" aria-labelledby="h-match">
-    <span class="mkick">Підбір за 1 хвилину</span>
-    <h2 id="h-match">Підібрати квартиру</h2>
-    <p class="lead">Дайте відповідь на кілька запитань — відповіді самі складуться в повідомлення у WhatsApp</p>
+    <span class="mkick">Заявка за 1 хвилину</span>
+    <h2 id="h-match">Квартира: зняти, купити, продати, здати</h2>
+    <p class="lead">Дайте відповідь на кілька запитань — повідомлення складеться само. Підійде моя квартира — запропоную. Ні — передам агенту, з яким працюю</p>
+    <a class="myobj" href="https://t.me/kalmykov_realty" target="_blank" rel="noopener">🏠 Мої об’єкти <small>(оренда і продаж)</small> →</a>
     <div class="q" data-q="goal"><b>Що потрібно?</b><div class="chips">
       <button type="button" data-v="Зняти">Зняти</button><button type="button" data-v="Купити">Купити</button><button type="button" data-v="Продати">Продати</button><button type="button" data-v="Здати">Здати свою</button></div></div>
 
@@ -635,7 +638,7 @@ footer .legal a{color:#5f6b7a}
   </section>
   </dialog>
 
-  <div class="mbar"><a id="mbar_wa" target="_blank" rel="noopener">WhatsApp</a><button type="button" data-open="dlg-match">Підібрати квартиру</button></div>
+  <div class="mbar"><a id="mbar_wa" target="_blank" rel="noopener">WhatsApp</a><button type="button" data-open="dlg-match">Квартира</button></div>
   <a class="stickywa" id="stickywa" target="_blank" rel="noopener">Написать в WhatsApp</a>
 
   <a class="savec" href="kalmykov.vcf" download="Євген Калмиков.vcf">👤 Зберегти мій контакт у телефон</a>
@@ -672,14 +675,14 @@ socials.forEach(([cls,c,ic,t,s,href])=>{
 
 const G={doc:["Документи","#2f6fd6"],money:["Гроші","#1f9a5a"],home:["Житло","#d9691a"],house:["Дім і побут","#0f8f8f"],more:["Ще","#7a52c7"]};
 const services=[
-  ["doc","Юрист: ВНЖ, документи, податки","Види ВНЖ, продовження, бізнес, податки"],
+  ["doc","Юрист: ВНЖ, документи, податки","Юристи, з якими працюю. Види ВНЖ, продовження, бізнес, податки"],
+  ["home","Купити чи продати квартиру","Свої об’єкти продаю сам. Під ваш запит підключу колег-агентів, потрібна іпотека — теж є людина"],
+  ["money","Іпотека","Іпотечний брокер. Допомагає і тим, кому відмовили в інших банках"],
+  ["home","Оренда житла","Свої квартири здаю сам, свіжі — в Telegram-каналі. Потрібен підбір під вас — передам агенту, з яким працюю"],
   ["money","Легалізація коштів","Юридично правильно завести ваші гроші на іспанські рахунки"],
   ["doc","Розмитнення авто","Перереєстрація машини з українськими номерами"],
-  ["home","Купити чи продати квартиру","Підбір і перевірка до завдатку або продаж вашої. Потрібна іпотека — підключимо"],
-  ["money","Іпотека","Допомагають і тим, кому відмовили в інших банках"],
-  ["home","Оренда житла","Зняти квартиру або здати свою"],
+  ["house","Ремонт під ключ","Майстри, яким довіряю. Квартири й будинки у Валенсії"],
   ["home","Управління нерухомістю","Здати й не займатися самому"],
-  ["house","Ремонт під ключ","Квартири й будинки у Валенсії"],
   ["house","Меблі на замовлення","Кухні, шафи — проєкт і виготовлення"],
   ["house","Штори, ролети, все для вікон","Підбір, пошиття й монтаж"],
   ["house","Кондиціонери: встановлення й чистка","Уся провінція Валенсія і Коста-Бланка"],
@@ -767,7 +770,7 @@ var M=document.querySelector('.match');
 if(M){var go=document.getElementById('m_go'),no=document.getElementById('m_no'),area=M.querySelector('.area');
  function upd(){var g=val(M,'goal');M.querySelectorAll('.branch').forEach(function(b){b.hidden=b.dataset.for!==g});area.hidden=!g;
   var noinc=g==='Зняти'&&val(M,'src')==='немає доходу';document.getElementById('m_pre').hidden=!noinc;go.hidden=!g;area.querySelector('b').textContent=g==='Здати'||g==='Продати'?'Адреса або район':'Район або місто';
-  var a=document.getElementById('m_area').value.trim(),L=['Добрий день! Пишу з сайту. Підбір.'];
+  var a=document.getElementById('m_area').value.trim(),L=['Добрий день! Пишу з сайту. Квартира.'];
   if(g==='Зняти'){var inc=document.getElementById('m_inc').value;L.push('Хочу зняти квартиру.');L.push('Дохід сім’ї: '+(inc?inc+' € на місяць':'—')+(val(M,'src')?', '+val(M,'src'):''));if(noinc)L.push('Оплата наперед: '+(val(M,'pre')||'—'));L.push('Бюджет: '+(val(M,'rb')||'—'));L.push('Заїзд: '+(val(M,'rw')||'—'))}
   if(g==='Купити'){L.push('Хочу купити.');L.push('Бюджет: '+(val(M,'bb')||'—'));L.push('Іпотека: '+(val(M,'bm')||'—'));L.push('Коли: '+(val(M,'bw')||'—'))}
   if(g==='Продати'){L.push('Хочу продати '+(val(M,'st')||'нерухомість')+'.');L.push('Коли: '+(val(M,'sw')||'—'))}

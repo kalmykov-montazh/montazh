@@ -377,7 +377,8 @@ dialog.sheet .x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-inde
 .distw{padding:24px 26px}.distw .dgrid{margin-bottom:0}.distw h2{margin:0 0 4px;color:#16294a}
 @media (max-width:700px){dialog.sheet{width:100vw;max-width:100vw;max-height:92vh;margin:auto 0 0;border-radius:22px 22px 0 0}dialog.sheet[open]{animation:up .25s ease-out}.distw{padding:20px}}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
-.grid:not(.all) .card:nth-child(n+7){display:none}
+.myobj{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;margin:10px 0 0;padding:10px 16px;border-radius:12px;background:#16294a;color:#fff;font-weight:700;text-decoration:none}.myobj small{font-weight:400;opacity:.8}
+.grid:not(.all) .card:nth-child(n+9){display:none}
 .allsvc{display:block;margin:12px auto 28px;background:#fff;border:1.5px solid #16294a;color:#16294a;font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;cursor:pointer}
 .grid.all+.allsvc{display:none}
 .vgrid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px}
@@ -437,7 +438,7 @@ footer .legal a{color:#5f6b7a}
   <nav class="socials" aria-label="Соцсети" id="socials"></nav>
 
   <nav class="tiles" aria-label="Чем помочь">
-    <button type="button" data-open="dlg-match"><i>🔑</i><b>Подобрать квартиру</b><span>Снять, купить, продать или сдать</span></button>
+    <button type="button" data-open="dlg-match"><i>🔑</i><b>Квартиры</b><span>Сдаю, продаю, помогу найти</span></button>
     <a href="#h-consult"><i>📄</i><b>Разобрать договор</b><span>Письменно, от 50 €</span></a>
     <button type="button" data-open="dlg-calc"><i>🧮</i><b>Калькулятор покупки</b><span>Налоги и расходы сверху</span></button>
     <button type="button" data-open="dlg-dist"><i>📍</i><b>Районы Валенсии</b><span>Цены аренды, плюсы и минусы</span></button>
@@ -486,11 +487,12 @@ footer .legal a{color:#5f6b7a}
 
   <section class="head" aria-labelledby="h-help">
     <h2 id="h-help">Переезжаете в Испанию? Есть проверенные люди</h2>
-    <p class="lead">Выберите, что нужно, — откроется WhatsApp. Напишите коротко свою ситуацию, я отвечу и подскажу, к кому обратиться</p>
+    <p class="lead">Свои квартиры сдаю и продаю сам. По остальному есть люди, которых я проверил: юристы, ипотека, агенты, мастера. Выберите, что нужно, — откроется WhatsApp, напишите коротко свою ситуацию</p>
+    <a class="myobj" href="https://t.me/kalmykov_realty" target="_blank" rel="noopener">🏠 Мои объекты <small>(аренда и продажа)</small> →</a>
     <div class="filters" id="filters"></div>
   </section>
   <div class="grid" id="grid"></div>
-  <button type="button" class="allsvc" id="allsvc">Все услуги (14)</button>
+  <button type="button" class="allsvc" id="allsvc">Ещё 6 услуг</button>
 
 
 
@@ -508,7 +510,7 @@ footer .legal a{color:#5f6b7a}
     <img src="photo.jpeg" alt="">
     <div>
       <h2 id="h-about">Коротко обо мне</h2>
-      <p>Живу в Валенсии с июля 2025 года. Сам прошёл переезд, поиск жилья и документы, работаю с арендой. На сообщения отвечаю сам, без менеджеров. Чего не знаю — подскажу, к кому обратиться</p>
+      <p>Живу в Валенсии с июля 2025 года. Сам прошёл переезд, поиск жилья и документы. Сдаю и продаю свои объекты, веду соцсети. На сообщения отвечаю сам, без менеджеров. Где нужен специалист — передаю людям, которых проверил</p>
     </div>
   </section>
 
@@ -554,9 +556,10 @@ footer .legal a{color:#5f6b7a}
 
   <dialog class="sheet" id="dlg-match"><button type="button" class="x" aria-label="Закрыть">✕</button>
   <section class="match" aria-labelledby="h-match">
-    <span class="mkick">Подбор за 1 минуту</span>
-    <h2 id="h-match">Подобрать квартиру</h2>
-    <p class="lead">Ответьте на несколько вопросов — ответы сами сложатся в сообщение в WhatsApp</p>
+    <span class="mkick">Заявка за 1 минуту</span>
+    <h2 id="h-match">Квартира: снять, купить, продать, сдать</h2>
+    <p class="lead">Ответьте на пару вопросов — сообщение сложится само. Подойдёт моя квартира — предложу. Нет — передам агенту, с которым работаю</p>
+    <a class="myobj" href="https://t.me/kalmykov_realty" target="_blank" rel="noopener">🏠 Мои объекты <small>(аренда и продажа)</small> →</a>
     <div class="q" data-q="goal"><b>Что нужно?</b><div class="chips">
       <button type="button" data-v="Снять">Снять</button><button type="button" data-v="Купить">Купить</button><button type="button" data-v="Продать">Продать</button><button type="button" data-v="Сдать">Сдать свою</button></div></div>
 
@@ -635,7 +638,7 @@ footer .legal a{color:#5f6b7a}
   </section>
   </dialog>
 
-  <div class="mbar"><a id="mbar_wa" target="_blank" rel="noopener">WhatsApp</a><button type="button" data-open="dlg-match">Подобрать квартиру</button></div>
+  <div class="mbar"><a id="mbar_wa" target="_blank" rel="noopener">WhatsApp</a><button type="button" data-open="dlg-match">Квартира</button></div>
   <a class="stickywa" id="stickywa" target="_blank" rel="noopener">Написать в WhatsApp</a>
 
   <a class="savec" href="kalmykov.vcf" download="Евгений Калмыков.vcf">👤 Сохранить мой контакт в телефон</a>
@@ -672,14 +675,14 @@ socials.forEach(([cls,c,ic,t,s,href])=>{
 
 const G={doc:["Документы","#2f6fd6"],money:["Деньги","#1f9a5a"],home:["Жильё","#d9691a"],house:["Дом и быт","#0f8f8f"],more:["Ещё","#7a52c7"]};
 const services=[
-  ["doc","Юрист: ВНЖ, документы, налоги","Виды ВНЖ, продление, бизнес, налоги"],
+  ["doc","Юрист: ВНЖ, документы, налоги","Юристы, с которыми работаю. Виды ВНЖ, продление, бизнес, налоги"],
+  ["home","Купить или продать квартиру","Свои объекты продаю сам. Под ваш запрос подключу коллег-агентов, нужна ипотека — тоже есть человек"],
+  ["money","Ипотека","Ипотечный брокер. Помогает и тем, кому отказали в других банках"],
+  ["home","Аренда жилья","Свои квартиры сдаю сам, свежие — в Telegram-канале. Нужен подбор под вас — передам агенту, с которым работаю"],
   ["money","Легализация средств","Юридически правильно завести ваши деньги на испанские счета"],
   ["doc","Растаможка авто","Перерегистрация машины с украинскими номерами"],
-  ["home","Купить или продать квартиру","Подбор и проверка до задатка или продажа вашей. Нужна ипотека — подключим"],
-  ["money","Ипотека","Помогают и тем, кому отказали в других банках"],
-  ["home","Аренда жилья","Снять квартиру или сдать свою"],
+  ["house","Ремонт под ключ","Мастера, которым доверяю. Квартиры и дома в Валенсии"],
   ["home","Управление недвижимостью","Сдать и не заниматься самому"],
-  ["house","Ремонт под ключ","Квартиры и дома в Валенсии"],
   ["house","Мебель на заказ","Кухни, шкафы — проект и изготовление"],
   ["house","Шторы, ролеты, всё для окон","Подбор, пошив и установка"],
   ["house","Кондиционеры: установка и чистка","Вся провинция Валенсия и Коста-Бланка"],
@@ -767,7 +770,7 @@ var M=document.querySelector('.match');
 if(M){var go=document.getElementById('m_go'),no=document.getElementById('m_no'),area=M.querySelector('.area');
  function upd(){var g=val(M,'goal');M.querySelectorAll('.branch').forEach(function(b){b.hidden=b.dataset.for!==g});area.hidden=!g;
   var noinc=g==='Снять'&&val(M,'src')==='нет дохода';document.getElementById('m_pre').hidden=!noinc;go.hidden=!g;area.querySelector('b').textContent=g==='Сдать'||g==='Продать'?'Адрес или район':'Район или город';
-  var a=document.getElementById('m_area').value.trim(),L=['Здравствуйте! Пишу с сайта. Подбор.'];
+  var a=document.getElementById('m_area').value.trim(),L=['Здравствуйте! Пишу с сайта. Квартира.'];
   if(g==='Снять'){var inc=document.getElementById('m_inc').value;L.push('Хочу снять квартиру.');L.push('Доход семьи: '+(inc?inc+' € в месяц':'—')+(val(M,'src')?', '+val(M,'src'):''));if(noinc)L.push('Оплата вперёд: '+(val(M,'pre')||'—'));L.push('Бюджет: '+(val(M,'rb')||'—'));L.push('Въезд: '+(val(M,'rw')||'—'))}
   if(g==='Купить'){L.push('Хочу купить.');L.push('Бюджет: '+(val(M,'bb')||'—'));L.push('Ипотека: '+(val(M,'bm')||'—'));L.push('Когда: '+(val(M,'bw')||'—'))}
   if(g==='Продать'){L.push('Хочу продать '+(val(M,'st')||'недвижимость')+'.');L.push('Когда: '+(val(M,'sw')||'—'))}
