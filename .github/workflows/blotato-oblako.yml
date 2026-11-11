@@ -1,0 +1,38 @@
+name: Blotato — постановка роликов из облака
+
+# Для Claude (11.11.2026): ставит новые ролики из _план.json в Blotato (Instagram, TikTok, YouTube, Threads),
+# только когда включён рубильник «_задания/_blotato_облако_вкл.txt» и компьютер его подтвердил.
+# Facebook не трогает. Скрипт scripts/blotato_oblako/oblako.py
+on:
+  schedule:
+    - cron: "13,33,53 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "пусто — работать, «проверка» — только показать"
+        required: false
+        default: ""
+
+concurrency: blotato-oblako
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Europe/Madrid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: ffmpeg
+        run: which ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+      - name: Постановка
+        env:
+          M: ${{ inputs.mode }}
+        run: |
+          rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
+          python3 scripts/blotato_oblako/oblako.py "$M"
