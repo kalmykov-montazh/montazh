@@ -29,7 +29,7 @@ ea:'<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M20 100q40-30 80 0" s
 ind:'<svg viewBox="0 0 120 120" aria-hidden="true"><rect x="18" y="26" width="84" height="34" rx="4" fill="#0a6cff"/><rect x="18" y="60" width="84" height="34" rx="4" fill="#ffd500"/><path d="M60 40v40M50 46q0 22 10 30q10-8 10-30" stroke="#fff" stroke-width="3" fill="none" opacity=".9"/></svg>'}[f];
 var css=''+
 '.fx2-gar{position:sticky;top:62px;z-index:49;height:0;pointer-events:none}'+
-'.fx2-gar svg{position:absolute;left:0;top:-4px;width:100%;height:34px;overflow:visible}'+
+'.fx2-gar svg{position:absolute;left:0;top:-4px;width:100%;height:38px;overflow:visible}'+
 '.fx2-gar .b{animation:fx2b 2.4s ease-in-out infinite alternate}'+
 '@keyframes fx2b{from{opacity:.35}to{opacity:1}}'+
 '.fx2-card{position:relative;display:flex;align-items:center;gap:18px;margin:0 0 18px;padding:16px 22px;border-radius:14px;background:radial-gradient(120% 140% at 0% 0%,rgba(255,255,255,.06),rgba(255,255,255,0) 60%),#161616;border:1px solid '+A+'55;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 10px 40px -12px '+A+'55;overflow:hidden}'+
@@ -49,7 +49,7 @@ var hd=document.querySelector('header');
 if(hd){var W=1000,sv='<svg viewBox="0 0 '+W+' 34" preserveAspectRatio="none"><g fill="none" stroke="#3a3a3a" stroke-width="1.4">',bulbs='',seg=6,sw=W/seg,ci=0;
  for(var s=0;s<seg;s++){var x0=s*sw,x1=x0+sw;sv+='<path d="M'+x0+' 2Q'+(x0+sw/2)+' 30 '+x1+' 2"/>';
   for(var j=1;j<6;j++){var t=j/6,bx=x0+sw*t,by=2+28*2*t*(1-t)*1;var c=lights[ci++%lights.length];
-   bulbs+='<g class="b" style="animation-delay:'+((ci*0.37)%2.4).toFixed(2)+'s"><circle cx="'+bx.toFixed(1)+'" cy="'+(by+4).toFixed(1)+'" r="7" fill="'+c+'" opacity=".25"/><ellipse cx="'+bx.toFixed(1)+'" cy="'+(by+4).toFixed(1)+'" rx="2.6" ry="3.6" fill="'+c+'"/></g>'}}
+   bulbs+='<g class="b" style="animation-delay:'+((ci*0.37)%2.4).toFixed(2)+'s"><circle cx="'+bx.toFixed(1)+'" cy="'+(by+4).toFixed(1)+'" r="9" fill="'+c+'" opacity=".25"/><ellipse cx="'+bx.toFixed(1)+'" cy="'+(by+4).toFixed(1)+'" rx="3.4" ry="4.6" fill="'+c+'"/></g>'}}
  sv+='</g>'+bulbs+'</svg>';
  var g=document.createElement('div');g.className='fx2-gar';g.setAttribute('aria-hidden','true');g.innerHTML=sv;hd.insertAdjacentElement('afterend',g)}
 /* листівка над курсами */
