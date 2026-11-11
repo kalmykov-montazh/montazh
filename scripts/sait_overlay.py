@@ -21,7 +21,7 @@ F900 = f"{R}/hf/pustaya2/fonts/montserrat-900.ttf"
 F800 = f"{R}/hf/pustaya2/fonts/montserrat-800.ttf"
 SND = f"{R}/hf/pustaya2/snd"
 
-txt = text.strip().rstrip(".")
+txt = text.strip().rstrip(".").replace(" €", "\u00a0€").replace(" %", "\u00a0%")  # число и € не разрываются по строкам
 main, pill = (txt.rsplit(". ", 1) + [""])[:2] if ". " in txt else (txt, "Ссылка в шапке профиля")
 
 W = 1080 - 2 * 44
@@ -47,7 +47,7 @@ card.paste(sc, (ix, iy), m)
 # текст справа
 tx = ix + iw + 26; tw = PAD + W - 26 - tx
 def wrap(s, font, width):
-    words, lines, cur = s.split(), [], ""
+    words, lines, cur = s.split(" "), [], ""
     for w_ in words:
         c = (cur + " " + w_).strip()
         if d.textlength(c, font=font) <= width: cur = c
