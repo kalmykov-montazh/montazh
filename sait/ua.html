@@ -378,6 +378,11 @@ dialog.sheet .x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-inde
 @media (max-width:700px){dialog.sheet{width:100vw;max-width:100vw;max-height:92vh;margin:auto 0 0;border-radius:22px 22px 0 0}dialog.sheet[open]{animation:up .25s ease-out}.distw{padding:20px}}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
 .myobj{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;margin:10px 0 0;padding:10px 16px;border-radius:12px;background:#16294a;color:#fff;font-weight:700;text-decoration:none}.myobj small{font-weight:400;opacity:.8}
+.card .cimg{margin:-18px -18px 6px;height:124px;border-radius:14px 14px 0 0;background:#16294a center/cover no-repeat;position:relative;display:flex;align-items:flex-end;padding:12px 16px;overflow:hidden}
+.card .cimg::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,44,.05) 25%,rgba(10,22,44,.82))}
+.card .cimg b{position:relative;color:#fff!important;font-size:19px;line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.card.wide .cimg{height:170px}.card.wide .cimg b{font-size:24px}
+@media (max-width:700px){.card .cimg{margin:-12px -12px 4px;height:96px;padding:8px 10px;border-radius:12px 12px 0 0}.card .cimg b{font-size:14.5px}.card.wide .cimg{height:130px}.card.wide .cimg b{font-size:19px}}
 .card.wide{grid-column:1/-1}
 .card.wide>span{max-width:760px}
 .card .pts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0;padding:0;list-style:none}
@@ -720,13 +725,15 @@ const SI={
  ask:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm2.1-7.7-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3c.4-.4.6-.9.6-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 8 0c0 .9-.4 1.7-.9 2.3Z"/></svg>'
 };
 const pickIcon=t=>/Купити/.test(t)?SI.sale:/Юрист/.test(t)?SI.law:/ОА[ЭЕ]/.test(t)?SI.sale:/Легаліз/.test(t)?SI.bank:/Розмитн/.test(t)?SI.car:/Іпотек/.test(t)?SI.mort:/Оренда/.test(t)?SI.key:/Управлін/.test(t)?SI.manage:/Ремонт/.test(t)?SI.tools:/Меблі/.test(t)?SI.sofa:/Штори/.test(t)?SI.window:/Кондиц/.test(t)?SI.snow:/ситу/i.test(t)?SI.cal:/Монтаж/.test(t)?SI.video:SI.ask;
+const IMGS=[[/Юрист/,"1603796846097-bee99e4a601f"],[/ОА[ЭЕ]/,"1512453979798-5ea266f8880c"],[/Купит/,"1560518883-ce09059eeffa"],[/Ипотек|Іпотек/,"1633158829585-23ba8f7c8caf"],[/Аренд|Оренд/,"1522708323590-d24dbb6b0267"],[/Легализ|Легаліз/,"1621280336935-ed7cae618aac"],[/Растамож|Розмитн/,"1637763723578-79a4ca9225f7"],[/Ремонт/,"1517581177682-a085bb7ffb15"],[/Управл/,"1514895413746-feb3d266273d"],[/Мебел|Меблі/,"1556911220-bff31c812dba"],[/Штор/,"1609423433459-a65b330ef5da"],[/Кондиц|Кондиці/,"1718203862467-c33159fdc504"],[/ситу/i,"1506784365847-bbad939e9335"],[/Монтаж/,"1574717024653-61fd2cf4d44d"],[/./,"1529437971227-3344caa48ce2"]];
+const pickImg=t=>"https://images.unsplash.com/photo-"+IMGS.find(x=>x[0].test(t))[1]+"?auto=format&fit=crop&w=800&q=70";
 const grid=document.getElementById("grid");
 services.forEach(([g,t,h,link,pts])=>{
   const el=document.createElement("a");
   el.className=pts?"card wide":"card";el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
   const wa="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту. Цікавить: "+t+".\nМоя ситуація: ");
   el.href=link||wa;el.target="_blank";el.rel="noopener";
-  el.innerHTML=`<span class="ci">${pickIcon(t)}</span><i class="tag">${G[g][0]}</i><b>${t}</b><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}<em>${link?"Відкрити бота →":'<i class="l">Написати в </i>WhatsApp →'}</em>`;
+  el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}<em>${link?"Відкрити бота →":'<i class="l">Написати в </i>WhatsApp →'}</em>`;
   grid.appendChild(el);
 });
 const fl=document.getElementById("filters");
