@@ -105,7 +105,22 @@ if tc and len(tc[0]) <= 24 and not (_stems(tc[0]) & _stems(" ".join(lines))):
     stop = max(y + 20, 520)
     sticker = f'<div class="cst" style="top:{stop}px;font-size:{stl}px">{esc(st)}</div>'
 bgimg = '<img class="full" src="cover_bg.png"><div class="full cg"></div>' if os.path.exists(f"{P}/cover_bg.png") else ""
-H.append(f'<div id="cover" class="full cov">{bgimg}{"".join(cl)}{sticker}</div>')
+# 11.11.2026 (Евгений, 21:20): новый набор из 5 обложек — hf/oblozhka5.py рисует готовую картинку поверх кадра.
+# Старый стиль В остаётся только запасным (OBL5=0 или если отрисовка не удалась).
+_o5 = False
+if os.path.exists(f"{P}/cover_bg.png") and os.environ.get("OBL5", "1") == "1":
+    import subprocess
+    _r = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "oblozhka5.py"),
+                         f"{P}/cover_bg.png", f"{P}/cover_full.png", SPEC, os.path.splitext(os.path.basename(SPEC))[0]],
+                        capture_output=True, text=True)
+    if _r.returncode == 0 and os.path.exists(f"{P}/cover_full.png"):
+        _o5 = True
+        H.append('<div id="cover" class="full cov"><img class="full" src="cover_full.png"></div>')
+        log("обложка5:", (_r.stdout.strip().splitlines() or [""])[0])
+    else:
+        log("обложка5 НЕ ВЫШЛА, ставлю старый стиль В:", (_r.stderr or "").strip()[-300:])
+if not _o5:
+    H.append(f'<div id="cover" class="full cov">{bgimg}{"".join(cl)}{sticker}</div>')
 tl('tl.set("#cover",{opacity:1},0).set("#cover",{opacity:0},0.12);')
 log("обложка:", " / ".join(lines), "| наклейка:", tc[0] if sticker else "—", "| кегль", sz)
 
