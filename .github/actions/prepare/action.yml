@@ -17,8 +17,10 @@ runs:
       shell: bash
       run: |
         # 11.11.2026: при сбое DNS у машин GitHub зеркало azure не отвечает — берём основное зеркало Ubuntu, с таймаутами
-        getent hosts azure.archive.ubuntu.com >/dev/null || { echo "::warning::azure-зеркало не отвечает, беру archive.ubuntu.com"; sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true; }
-        for i in 1 2 3; do timeout 300 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 update -qq && timeout 600 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y -qq ffmpeg fonts-inter > /dev/null && break; echo "::warning::apt попытка $i не вышла"; sleep 20; done
+        if getent hosts azure.archive.ubuntu.com >/dev/null; then
+          for i in 1 2; do timeout 300 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 update -qq && timeout 600 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y -qq ffmpeg fonts-inter > /dev/null && break; sleep 20; done
+        fi
+        command -v ffmpeg >/dev/null && fc-list | grep -qi "Inter.*Black" || { echo "::warning::серверы Ubuntu не отвечают — ставлю ffmpeg и Inter с github"; bash scripts/bez_apt.sh; }
         fc-list | grep -qi "Inter.*Black" || { echo "::error::Нет шрифта Inter Black"; exit 1; }
         ffmpeg -hide_banner -filters 2>/dev/null | grep -q zscale || { echo "::error::ffmpeg без zscale"; exit 1; }
         # 21.10.2026: на новом образе Ubuntu цвет и звук поехали — машина закреплена на ubuntu-24.04, версия пишется в отчёт

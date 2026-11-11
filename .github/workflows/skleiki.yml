@@ -139,7 +139,7 @@ jobs:
       - name: Рендер HyperFrames
         if: inputs.osnova_only != '1'
         run: |
-          sudo apt-get install -y -qq fonts-inter > /dev/null 2>&1 || true
+          fc-list | grep -qi 'Inter.*Black' || timeout 120 sudo apt-get install -y -qq fonts-inter > /dev/null 2>&1 || true
           mkdir -p ~/.fonts && cp fonts/* ~/.fonts/ 2>/dev/null; fc-cache -f > /dev/null
           cd hfp
           npm i --silent hyperframes@0.9.20
