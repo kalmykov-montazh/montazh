@@ -81,7 +81,8 @@
  "cover": {
   "top": "КОФЕ НА ТЕРРАСЕ",
   "bot": "ДОРОЖЕ?",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#ff5a1f"
  },
  "pic_low": true,
  "mir": [

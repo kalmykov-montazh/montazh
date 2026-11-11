@@ -99,7 +99,8 @@
  "cover": {
   "top": "СКИНУЛИСЬ НА ЛОТЕРЕЮ?",
   "bot": "НЕ ОТДАЙТЕ|ЛИШНЕЕ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#13a865"
  },
  "pic_low": true,
  "mir": [

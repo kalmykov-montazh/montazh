@@ -87,7 +87,8 @@
  "cover": {
   "top": "ЧТО НЕ ОСТАВЛЯТЬ",
   "bot": "В МАШИНЕ|НА ВИДУ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#7b3fe4"
  },
  "pic_low": true
 }

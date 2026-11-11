@@ -74,7 +74,8 @@
  "cover": {
   "top": "УЖИН В ДЕСЯТЬ ВЕЧЕРА",
   "bot": "ВИНОВАТ|ОДИН ЧАС",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#ff5a1f"
  },
  "pic_low": true
 }

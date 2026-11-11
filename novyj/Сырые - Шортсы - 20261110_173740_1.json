@@ -89,7 +89,8 @@
  "cover": {
   "top": "ПЕРЕВОД ИЗ УКРАИНЫ",
   "bot": "БАНК СПРОСИТ|ОТКУДА",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#13a865"
  },
  "pic_low": true,
  "sait": {

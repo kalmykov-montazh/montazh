@@ -128,7 +128,8 @@
  "cover": {
   "top": "ОТКАЗАЛИ В IMV?",
   "bot": "3 ОШИБКИ|В ЗАЯВЛЕНИИ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#ff5a1f"
  },
  "mir": [
   {

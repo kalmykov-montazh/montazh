@@ -108,7 +108,8 @@
  "cover": {
   "top": "НАПРЯМУЮ В ОТЕЛЕ",
   "bot": "ДЕШЕВЛЕ,|ЧЕМ НА BOOKING",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#13a865"
  },
  "mir": [
   {

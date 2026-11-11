@@ -123,7 +123,8 @@
  "cover": {
   "top": "8 ВЕЩЕЙ",
   "bot": "ЗА КОТОРЫЕ|НЕ НАДО ПЛАТИТЬ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#ff5a1f"
  },
  "pic_low": true
 }

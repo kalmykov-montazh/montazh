@@ -73,7 +73,8 @@
  "cover": {
   "top": "ТЫСЯЧА ЕВРО",
   "bot": "ЗДЕСЬ|И ДОМА",
-  "s5": "chb"
+  "s5": "chb",
+  "color": "#ff5a1f"
  },
  "pic_low": true
 }

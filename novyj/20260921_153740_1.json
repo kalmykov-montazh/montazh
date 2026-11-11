@@ -172,6 +172,7 @@
  "cover": {
   "top": "ПОСОБИЕ IMV",
   "bot": "СКОЛЬКО ПЛАТЯТ|В 2026",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#ff5a1f"
  }
 }

@@ -83,7 +83,8 @@
  "cover": {
   "top": "ПРОПИСКУ",
   "bot": "МОГУТ|АННУЛИРОВАТЬ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#e3191c"
  },
  "pic_low": true,
  "sait": {

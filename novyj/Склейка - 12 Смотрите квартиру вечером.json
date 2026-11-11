@@ -82,7 +82,8 @@
  "cover": {
   "top": "СМОТРИТЕ КВАРТИРУ",
   "bot": "ДНЁМ|И ВЕЧЕРОМ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#1d5fd1"
  },
  "pic_low": true
 }

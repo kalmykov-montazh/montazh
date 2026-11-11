@@ -106,7 +106,8 @@
  "cover": {
   "top": "ДО 35 ЛЕТ?",
   "bot": "ИПОТЕКА|НА 95%",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#1d5fd1"
  },
  "pic_low": true,
  "sait": {

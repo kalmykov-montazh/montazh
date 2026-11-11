@@ -68,7 +68,8 @@
  "cover": {
   "top": "ДВА СЛОВА",
   "bot": "ПО-ИСПАНСКИ|И РЫБА",
-  "s5": "chb"
+  "s5": "chb",
+  "color": "#ff5a1f"
  },
  "pic_low": true,
  "mir": [

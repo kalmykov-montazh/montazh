@@ -97,7 +97,8 @@
   "top": "ПРОДАЁТЕ НА WALLAPOP?",
   "bot": "НАЛОГОВАЯ|ЗНАЕТ",
   "s5": "spina",
-  "word": "НАЛОГ"
+  "word": "НАЛОГ",
+  "color": "#13a865"
  },
  "pic_low": true
 }

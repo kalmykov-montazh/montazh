@@ -83,7 +83,8 @@
  "cover": {
   "top": "ПРОПИСАЛИСЬ В 2022?",
   "bot": "ВАС МОГЛИ|ВЫПИСАТЬ",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#e3191c"
  },
  "pic_low": true,
  "sait": {

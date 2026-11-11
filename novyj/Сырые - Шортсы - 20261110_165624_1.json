@@ -104,7 +104,8 @@
  "cover": {
   "top": "СКИДКА НА СВЕТ",
   "bot": "БОЛЬШЕ 40%",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#13a865"
  },
  "pic_low": true
 }

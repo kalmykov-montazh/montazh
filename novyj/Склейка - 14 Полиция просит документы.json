@@ -82,7 +82,8 @@
  "cover": {
   "top": "ПОЛИЦИЯ ПРОСИТ",
   "bot": "ДОКУМЕНТЫ|ЧТО ПОКАЗАТЬ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#e3191c"
  },
  "pic_low": true
 }

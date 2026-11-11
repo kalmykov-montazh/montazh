@@ -85,7 +85,8 @@
  "cover": {
   "top": "ПЛАТИТЕ БАНКУ",
   "bot": "БОЛЬШЕ 3 €?",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#13a865"
  },
  "pic_low": true,
  "sait": {

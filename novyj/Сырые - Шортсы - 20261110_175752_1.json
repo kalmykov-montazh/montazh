@@ -91,7 +91,8 @@
  "cover": {
   "top": "ПЕРВЫЙ ЭТАЖ",
   "bot": "А 3 ПРОЛЁТА?",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#1d5fd1"
  },
  "pic_low": true,
  "sait": {

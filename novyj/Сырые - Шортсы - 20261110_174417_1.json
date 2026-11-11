@@ -106,7 +106,8 @@
  "cover": {
   "top": "ЖИЛЕЦ НЕ ПЛАТИТ?",
   "bot": "ЕСТЬ|СТРАХОВКА",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#1d5fd1"
  },
  "pic_low": true,
  "sait": {

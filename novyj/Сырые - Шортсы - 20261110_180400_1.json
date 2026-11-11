@@ -91,7 +91,8 @@
  "cover": {
   "top": "НАШЛИ КОШЕЛЁК?",
   "bot": "ЭТО|УГОЛОВНОЕ ДЕЛО",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#ff5a1f"
  },
  "full": [
   {

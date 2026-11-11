@@ -99,7 +99,8 @@
  "cover": {
   "top": "УКРАИНСКИЕ ПРАВА",
   "bot": "СТАНУТ КАРТОНКОЙ",
-  "s5": "hormozi"
+  "s5": "hormozi",
+  "color": "#7b3fe4"
  },
  "pic_low": true,
  "sait": {

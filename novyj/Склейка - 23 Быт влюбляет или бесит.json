@@ -74,7 +74,8 @@
   "top": "ИСПАНИЯ",
   "bot": "ВЛЮБЛЯЕТ|ИЛИ БЕСИТ",
   "y": 760,
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#ff5a1f"
  },
  "top_px": 700,
  "pic_low": true

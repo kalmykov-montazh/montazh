@@ -96,7 +96,8 @@
  "cover": {
   "top": "СМЕНИЛИ АДРЕС?",
   "bot": "TIE НЕ МЕНЯЮТ|3 СПОСОБА",
-  "s5": "shapka"
+  "s5": "shapka",
+  "color": "#e3191c"
  },
  "pic_low": true,
  "sait": {
