@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Евгений Калмыков, Валенсия. Переезд в Испанию: юрист, ВНЖ, аренда, ипотека, растаможка, ремонт и другие проверенные специалисты. Все мои соцсети">
+<meta property="og:title" content="Евгений Калмыков · Жизнь в Испании">
+<meta property="og:description" content="Переезд в Испанию: проверенные специалисты и все мои соцсети">
+<meta property="og:image" content="https://kalmykov-realty.netlify.app/cover.jpg">
+<meta property="og:type" content="website">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Калмыков · Испания</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&display=swap">
+<style>
+/* Широкая страница: обложка (море Валенсии) → соцсети ровными плитками → услуги сеткой с мягким тоном → «Скоро» */
+:root{
+  --bg:#f6efe3; --surface:#fffaf3; --fg:#22313a; --muted:#6d6a63; --line:#eadcc6;
+  --ink:#0f4c6e; --sea:#0f5a80; --accent:#c4552f; --accent-ink:#ffffff; --sun:#f2b544;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14191d; --surface:#1d2429; --fg:#f1ede6; --muted:#a8a296; --line:#2f3840;
+  --ink:#0d1a26; --sea:#6cb7dd; --accent:#e27350; --accent-ink:#ffffff; --sun:#f2b544; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14191d; --surface:#1d2429; --fg:#f1ede6; --muted:#a8a296; --line:#2f3840;
+  --ink:#0d1a26; --sea:#6cb7dd; --accent:#e27350; --accent-ink:#ffffff; --sun:#f2b544; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:32px}
+.draft{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 14px;margin:0}
+
+/* Обложка: небо, море, солнце — пока без фото */
+.cover img{display:block;width:100%;height:100%;object-fit:cover}
+.cover{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:1600/520;max-width:100%;
+  background:linear-gradient(180deg,#f6c99a 0%,#e9a774 38%,#3f6f93 38.5%,#24496b 70%,#1a3550 100%)}
+.cover .sun{position:absolute;left:62%;top:10%;width:14%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,#fff3df 0%,#ffd8a8 45%,rgba(255,216,168,0) 70%)}
+.cover .glint{position:absolute;left:58%;top:40%;width:22%;height:40%;
+  background:repeating-linear-gradient(180deg,rgba(255,230,200,.35) 0 2px,transparent 2px 9px);
+  -webkit-mask:radial-gradient(ellipse at top,#000 20%,transparent 70%);mask:radial-gradient(ellipse at top,#000 20%,transparent 70%)}
+.cover .word{position:absolute;left:4%;top:12%;font-family:var(--display);font-weight:700;
+  font-size:clamp(14px,2.4vw,26px);letter-spacing:.14em;text-transform:uppercase;color:rgba(31,51,71,.55)}
+.profile{display:flex;gap:20px;align-items:flex-end;margin-top:-64px;padding-inline:24px;position:relative;flex-wrap:wrap}
+.avatar{flex:none;width:132px;height:132px;border-radius:50%;object-fit:cover;border:5px solid var(--bg);background:var(--ink)}
+.who{min-width:0;flex:1 1 280px;padding-top:72px;padding-bottom:6px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.4vw,36px);line-height:1.1;margin:0;text-wrap:balance}
+.path{margin:6px 0 0;color:var(--muted);font-size:15px}
+
+/* Соцсети: ровные плитки, цвет только в значке */
+.socials{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+@media (max-width:1000px){.socials{grid-template-columns:repeat(4,1fr)}}
+.socials a{display:flex;align-items:center;gap:7px;padding:7px 6px 7px 7px;border-radius:12px;min-width:0;
+  background:var(--surface);border:1px solid var(--line);color:var(--fg);text-decoration:none;transition:border-color .15s,transform .15s}
+.socials .ic{flex:none;width:36px;height:36px;border-radius:9px;display:grid;place-items:center;
+  background:var(--c);color:#fff;font-weight:700;font-size:15px}
+.socials .ic svg{width:21px;height:21px;fill:currentColor}
+.socials b{display:block;font-size:13.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.socials small{display:none!important}
+.socials small{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.socials span{min-width:0}
+.socials a:hover,.socials a:focus-visible{border-color:var(--c);transform:translateY(-1px);outline:none}
+.socials a.main{background:color-mix(in srgb,var(--c) 9%,var(--surface));border-color:color-mix(in srgb,var(--c) 35%,var(--line))}
+@media (prefers-reduced-motion:reduce){.socials a{transition:none}}
+
+/* Услуги */
+.head{display:flex;flex-direction:column;gap:4px}
+h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
+.lead{margin:0;color:var(--muted);max-width:65ch}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.filters button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  border-radius:999px;padding:6px 14px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:6px;text-align:left;font:inherit;color:var(--fg);cursor:pointer;text-decoration:none;min-width:0;
+  background:color-mix(in srgb,var(--t) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--t) 18%,var(--line));border-radius:14px;padding:18px}
+.card:hover,.card:focus-visible{border-color:var(--t);outline:none}
+.tag{align-self:flex-start;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t)}
+.card b{font-size:16px}
+.card span{color:var(--muted);font-size:14px}
+.card em .l{font-style:normal}
+.card em{margin-top:auto;padding-top:8px;font-style:normal;font-weight:700;font-size:13px;color:var(--t)}
+
+/* Скоро */
+.soon{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.soon div{padding:16px 18px;border:1px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;gap:4px}
+.soon small{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.soon span{color:var(--muted);font-size:14px}
+/* Моя консультация — сразу под соцсетями */
+.consult{display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:18px;
+  background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
+.consult .kick{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.consult ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.consult li{padding-left:18px;position:relative;font-size:15px;line-height:1.45}
+.consult li::before{content:"";position:absolute;left:0;top:.6em;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.consult .prices{display:flex;flex-direction:column;gap:8px}
+.consult .prices p{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.consult .prices b{font-size:15px}
+.consult .prices span{font-size:13px;color:var(--muted)}
+.consult .note{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+.consult .go{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:16px;text-decoration:none;
+  border-radius:12px;padding:13px 20px;background:var(--accent);color:var(--accent-ink)}
+.consult .go svg{width:18px;height:18px;fill:currentColor}
+@media (max-width:600px){.consult{padding:16px;gap:10px}.consult li{font-size:14px}.consult .go{align-self:stretch;justify-content:center}}
+
+/* Для партнёров */
+.partners{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.pbtns{display:flex;flex-wrap:wrap;gap:10px}
+.pbtns a{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;text-decoration:none;border-radius:12px;padding:12px 18px;border:1px solid var(--line);color:var(--fg);background:var(--bg)}
+.pbtns a.pmain{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pbtns a:hover,.pbtns a:focus-visible{border-color:var(--accent);outline:none}
+.pbtns svg{width:18px;height:18px;fill:currentColor}
+@media (max-width:600px){.pbtns a{flex:1 1 100%;justify-content:center}}
+/* ===== Новое 11.11: цвета, чек-лист, обо мне, вопросы, значки услуг ===== */
+h1,h2{color:var(--sea)}
+.consult h2{color:var(--fg)}
+.checklist{display:flex;gap:18px;align-items:center;padding:20px 22px;border-radius:18px;
+  background:linear-gradient(120deg,#0f5a80,#1683a8);color:#fff;box-shadow:0 10px 30px rgba(15,90,128,.25)}
+.checklist .doc{flex:none;width:64px;height:76px;border-radius:10px;background:#fff;display:grid;place-items:center;
+  box-shadow:0 6px 14px rgba(0,0,0,.18);transform:rotate(-6deg)}
+.checklist .doc svg{width:36px;height:36px;fill:#0f5a80}
+.checklist .tx{flex:1;min-width:0}
+.checklist .free{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--sun);color:#3a2a00;border-radius:999px;padding:3px 10px;margin-bottom:6px}
+.checklist h2{color:#fff;margin:0 0 4px;font-size:21px}
+.checklist p{margin:0;opacity:.92;font-size:15px}
+.checklist .get{flex:none;display:inline-flex;align-items:center;gap:8px;background:var(--sun);color:#2b1f00;font-weight:700;
+  font-size:16px;text-decoration:none;border-radius:12px;padding:14px 20px;box-shadow:0 4px 0 #c98f1c}
+.checklist .get:hover{filter:brightness(1.05)}
+.checklist .get svg{width:18px;height:18px;fill:currentColor}
+.about{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;padding:22px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.about img{width:92px;height:92px;border-radius:50%;object-fit:cover}
+.about h2{margin:0 0 6px}
+.about p{margin:0;color:var(--fg);line-height:1.55}
+.faq{display:flex;flex-direction:column;gap:8px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:10px 0 0;color:var(--muted)}
+.card .ci{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--t) 14%,var(--surface));color:var(--t);margin-bottom:2px}
+.card .ci svg{width:19px;height:19px;fill:currentColor}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.reveal.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+/* вариант Б: деловая шапка без картинки */
+.hero-b{display:flex;gap:22px;align-items:center;padding:24px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.hero-b img{width:120px;height:120px;border-radius:50%;object-fit:cover;flex:none}
+.hero-b .t{flex:1;min-width:0}
+.hero-b h1{margin:0}
+.hero-b p{margin:6px 0 14px;color:var(--muted)}
+.hero-b .btns{display:flex;flex-wrap:wrap;gap:10px}
+.hero-b .btns a{display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none;border-radius:12px;padding:11px 16px;font-size:15px}
+.hero-b .b1{background:var(--accent);color:#fff}
+.hero-b .b2{background:var(--sun);color:#2b1f00}
+/* вариант В: узкая полоска моря */
+.v-c .cover{aspect-ratio:1600/230}
+.v-c .cover img{object-position:center 66%}
+.v-c .profile{margin-top:-58px}
+@media (max-width:600px){
+  .checklist{flex-direction:column;align-items:flex-start;padding:18px;gap:12px}
+  .checklist .doc{display:none}
+  .checklist .get{align-self:stretch;justify-content:center}
+  .about{grid-template-columns:1fr;text-align:left}
+  .about img{display:none}
+  .hero-b{flex-direction:column;align-items:flex-start;padding:18px}
+  .hero-b img{width:88px;height:88px}
+  .hero-b .btns a{flex:1 1 100%;justify-content:center}
+  .v-c .cover{aspect-ratio:1600/330}
+  .v-c .profile{margin-top:-30px}
+  .checklist h2{font-size:18px}
+  .checklist p{font-size:14px}
+}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+/* Окно заявки */
+dialog{border:0;border-radius:16px;padding:0;width:min(460px,calc(100% - 32px));background:var(--surface);color:var(--fg)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:22px;display:flex;flex-direction:column;gap:12px}
+dialog h3{font-family:var(--display);font-weight:500;font-size:18px;margin:0}
+.bot{font-size:14px;color:var(--muted);margin:0}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+textarea{min-height:90px;resize:vertical}
+.consent{flex-direction:row;align-items:flex-start;gap:8px}
+.consent input{width:auto;margin-top:3px}
+.row{display:flex;gap:8px;justify-content:flex-end}
+.row button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
+.send{background:var(--accent);color:var(--accent-ink)}
+.close{background:transparent;color:var(--muted)}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.ok{color:var(--fg);font-weight:700;margin:0}
+/* Кнопка WhatsApp: на компьютере плавает справа внизу, на телефоне — во всю ширину */
+.stickywa{display:flex;position:fixed;right:24px;bottom:24px;z-index:10;align-items:center;gap:8px;padding:14px 22px;
+  border-radius:999px;background:#1f9d55;color:#fff;font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.stickywa:hover{background:#178a49}
+.stickywa svg{width:20px;height:20px;fill:currentColor}
+.wrap{padding-bottom:110px}
+@media (max-width:600px){
+  .wrap{gap:18px;padding-top:12px;padding-bottom:96px}
+  /* шапка: обложка ниже, фото и имя рядом */
+  .cover{aspect-ratio:2.4/1;border-radius:14px}
+  .profile{margin-top:-30px;padding-inline:6px;gap:12px;flex-wrap:nowrap;align-items:flex-end}
+  .avatar{width:72px;height:72px;border-width:3px}
+  .who{padding:32px 0 2px;flex:1 1 auto;align-self:flex-end}
+  .card em .l{display:none}
+  h1{font-size:20px}
+  .path{font-size:13px;margin-top:2px;line-height:1.35}
+  /* соцсети: одна строка круглых значков */
+  .socials{grid-template-columns:repeat(8,1fr);gap:6px}
+  .socials a{padding:0;border:0;background:none;justify-content:center}
+  .socials a.main{background:none}
+  .socials span{display:none}
+  .socials .ic{width:100%;max-width:42px;height:auto;aspect-ratio:1;border-radius:50%}
+  .socials .ic svg{width:19px;height:19px}
+  /* услуги: заголовок короче, фильтры в одну строку с прокруткой, карточки по 2 */
+  h2{font-size:18px}
+  .lead{font-size:14px;line-height:1.4}
+  .filters{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filters button{flex:none}
+  .grid{grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:12px;gap:4px;border-radius:12px}
+  .tag{font-size:10px}
+  .card b{font-size:14px;line-height:1.25}
+  .card span{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card em{font-size:12px;padding-top:4px}
+  .soon{grid-template-columns:1fr}
+  .stickywa{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;
+    align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;background:#1f9d55;color:#fff;
+    font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .stickywa svg{width:20px;height:20px;fill:currentColor}
+}
+</style>
+</head>
+<body class="v-c">
+<div class="wrap">
+
+  <div>
+    <div class="cover"><img src="cover.jpg" alt="Побережье Коста-Бланки"></div>
+    <div class="profile">
+      <img class="avatar" src="photo.jpeg" alt="Евгений Калмыков">
+      <div class="who">
+        <h1>Евгений Калмыков</h1>
+        <p class="path">Жизнь в Испании · Валенсия. Переезд, жильё, документы, путешествия</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="socials" aria-label="Соцсети" id="socials"></nav>
+
+  <section class="checklist reveal" aria-labelledby="h-check">
+    <div class="doc"><svg viewBox="0 0 24 24"><path d="M9 11.2 7.6 9.8 6.2 11.2 9 14l6-6-1.4-1.4L9 11.2ZM6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 14v2h12v-2H6Z"/></svg></div>
+    <div class="tx">
+      <span class="free">Бесплатно</span>
+      <h2 id="h-check">Чек-лист: 10 пунктов проверить до подписи договора аренды</h2>
+      <p>Что проверить у хозяина, в договоре и с залогом, чтобы потом не было проблем</p>
+    </div>
+    <a class="get" id="checkgo" target="_blank" rel="noopener">Получить чек-лист</a>
+  </section>
+
+  <section class="consult" aria-labelledby="h-consult">
+    <span class="kick">Моя консультация</span>
+    <h2 id="h-consult">Проблема с квартирой? Разберу ваш договор</h2>
+    <ul>
+      <li>Съезжаете досрочно или жильцы уходят раньше срока — разберу договор и подскажу, как расстаться без суда и без потери залога</li>
+      <li>Снимаете жильё — проверю, хозяин ли тот, кто сдаёт (выписка nota simple из реестра), и вычитаю договор до подписи</li>
+      <li>Покупаете или продаёте — подскажу, что проверить до задатка</li>
+    </ul>
+    <div class="prices">
+      <p><b>Разбор договора письменно — 50&nbsp;€</b><span>Мои рекомендации: что по закону, что нет, что поправить</span></p>
+      <p><b>Сопровождение до решения — от&nbsp;100&nbsp;€</b><span>Письма собственнику, бурофакс, ответы на его письма</span></p>
+    </div>
+    <p class="note">Моя задача — помочь разрулить ситуацию и не довести до суда. Это в интересах всех. Если дело всё же дойдёт до суда — дальше нужен профессиональный юрист, контакты дам</p>
+    <a class="go" id="consultgo" target="_blank" rel="noopener">Записаться на консультацию</a>
+  </section>
+
+  <section class="head" aria-labelledby="h-help">
+    <h2 id="h-help">Переезжаете в Испанию? Есть проверенные люди</h2>
+    <p class="lead">Выберите, что нужно, — откроется WhatsApp. Напишите коротко свою ситуацию, я отвечу и подскажу, к кому обратиться</p>
+    <div class="filters" id="filters"></div>
+  </section>
+  <div class="grid" id="grid"></div>
+
+  <section class="about reveal" aria-labelledby="h-about">
+    <img src="photo.jpeg" alt="">
+    <div>
+      <h2 id="h-about">Коротко обо мне</h2>
+      <p>Живу в Валенсии с июля 2025 года. Сам прошёл переезд, поиск жилья и документы, работаю с арендой. На сообщения отвечаю сам, без менеджеров. Чего не знаю — подскажу, к кому обратиться</p>
+    </div>
+  </section>
+
+  <section class="head" aria-labelledby="h-faq"><h2 id="h-faq">Частые вопросы</h2></section>
+  <div class="faq reveal">
+    <details><summary>Вы юрист?</summary><p>Нет. Я разбираю договор и помогаю решить ситуацию без суда. Если дело всё же идёт в суд — даю контакты проверенных юристов</p></details>
+    <details><summary>Работаете только в Валенсии?</summary><p>Консультации — онлайн, по всей Испании. Присылаете договор в WhatsApp, я отвечаю письменно</p></details>
+    <details><summary>Договор на испанском — разберёте?</summary><p>Да. Почти все договоры здесь на испанском — объясню по-русски, что в нём написано и на что смотреть</p></details>
+    <details><summary>Как быстро отвечаете?</summary><p>Обычно в тот же день. Если срочно — так и напишите</p></details>
+    <details><summary>Сколько стоит?</summary><p>Разбор договора письменно — 50 €. Сопровождение до решения — от 100 €. Чек-лист — бесплатно</p></details>
+  </div>
+
+  <section class="head" aria-labelledby="h-soon"><h2 id="h-soon">Скоро</h2></section>
+  <div class="soon">
+    <div><small>январь</small><b>Гайд «Аренда жилья в Испании»</b><span>Документы, проверки, договор</span></div>
+    <div><small>позже</small><b>Мини-курс «Переезд: первые 3 месяца»</b><span>Записи уроков и чек-лист</span></div>
+    <div><small>позже</small><b>Путешествия без переплат</b><span>Отели и перелёты дешевле</span></div>
+  </div>
+
+  <section class="partners" aria-labelledby="h-partners">
+    <h2 id="h-partners">Для партнёров</h2>
+    <p class="lead">Есть услуга, полезная тем, кто переезжает или живёт в Испании? Напишите коротко: что делаете, в каком городе и как с вами связаться</p>
+    <div class="pbtns" id="pbtns"></div>
+  </section>
+
+  <a class="stickywa" id="stickywa" target="_blank" rel="noopener">Написать в WhatsApp</a>
+
+  <footer>Kalmykov Realty · Валенсия, Испания</footer>
+</div>
+
+
+<script>
+const ICON={
+  tg:'<svg viewBox="0 0 24 24"><path d="M21.5 3.6 2.9 10.8c-1 .4-1 1.6 0 1.9l4.6 1.5 1.8 5.6c.3.8 1.3 1 1.9.4l2.6-2.4 4.6 3.4c.7.5 1.7.1 1.9-.8l3-14.6c.2-1-.8-1.8-1.8-1.4ZM9.9 14.6l-.4 3.6-1.4-4.5 9.4-6.3-7.6 7.2Z"/></svg>',
+  yt:'<svg viewBox="0 0 24 24"><path d="M22.6 7.2a2.8 2.8 0 0 0-2-2C18.9 4.7 12 4.7 12 4.7s-6.9 0-8.6.5a2.8 2.8 0 0 0-2 2C1 8.9 1 12 1 12s0 3.1.4 4.8a2.8 2.8 0 0 0 2 2c1.7.5 8.6.5 8.6.5s6.9 0 8.6-.5a2.8 2.8 0 0 0 2-2c.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM9.8 15.2V8.8l5.7 3.2-5.7 3.2Z"/></svg>',
+  ig:'<svg viewBox="0 0 24 24"><path d="M12 7.3A4.7 4.7 0 1 0 16.7 12 4.7 4.7 0 0 0 12 7.3Zm0 7.8a3.1 3.1 0 1 1 3.1-3.1 3.1 3.1 0 0 1-3.1 3.1Zm6-8a1.1 1.1 0 1 1-1.1-1.1A1.1 1.1 0 0 1 18 7.1ZM12 3.6c2.7 0 3 0 4.1.1 2.8.1 4.1 1.4 4.2 4.2.1 1.1.1 1.4.1 4.1s0 3-.1 4.1c-.1 2.8-1.4 4.1-4.2 4.2-1.1.1-1.4.1-4.1.1s-3 0-4.1-.1c-2.8-.1-4.1-1.4-4.2-4.2-.1-1.1-.1-1.4-.1-4.1s0-3 .1-4.1C3.8 5.1 5.1 3.8 7.9 3.7c1.1-.1 1.4-.1 4.1-.1Z"/></svg>',
+  fb:'<svg viewBox="0 0 24 24"><path d="M13.5 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3a21 21 0 0 0-2.3-.1c-2.3 0-3.9 1.4-3.9 4v2.2H7.8v3h2.6V21h3.1Z"/></svg>',
+  tt:'<svg viewBox="0 0 24 24"><path d="M16.6 3h-3.1v12.3a2.7 2.7 0 1 1-2.7-2.7c.3 0 .5 0 .8.1V9.5a5.8 5.8 0 1 0 5 5.8V9.1a7.5 7.5 0 0 0 4.4 1.4V7.4a4.4 4.4 0 0 1-4.4-4.4Z"/></svg>',
+  wa:'<svg viewBox="0 0 24 24"><path d="M12 2.5A9.4 9.4 0 0 0 3.9 16.6L2.5 21.5l5-1.3A9.4 9.4 0 1 0 12 2.5Zm5.5 13.3c-.2.6-1.3 1.2-1.8 1.3-.5 0-1 .2-3.3-.7a11.6 11.6 0 0 1-4.6-4.1c-.4-.5-1.1-1.5-1.1-2.9a3.1 3.1 0 0 1 1-2.3 1 1 0 0 1 .8-.4h.5c.2 0 .4 0 .6.5l.9 2c0 .2.1.4 0 .6l-.4.6-.4.5c-.1.2-.3.3-.1.6a8.7 8.7 0 0 0 1.6 2 7.9 7.9 0 0 0 2.3 1.4c.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3a2.4 2.4 0 0 1-.2 1.4Z"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3L12 3Z"/></svg>',
+  cam:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>'
+};
+const socials=[
+  ["main","#229ed9","tg","Telegram","И снова всё сначала","https://t.me/tretiy_raz_s_nulya"],
+  ["","#d9342b","yt","YouTube","Жизнь в Испании","https://www.youtube.com/@StartSpainLife/videos"],
+  ["","#c13584","ig","Instagram","Валенсия каждый день","https://www.instagram.com/kalmykov.rieltor.valencia"],
+  ["","#1877f2","fb","Facebook","Посты и ролики","https://www.facebook.com/kalmykov.rieltor.valencia/"],
+  ["","#3a3f45","tt","TikTok","Короткие видео","https://tiktok.com/@kalmykov_evgeniy"],
+  ["","#2a8bc7","home","Объекты","Аренда и продажа жилья","https://t.me/kalmykov_realty"],
+  ["","#1f9d55","wa","WhatsApp","+34 624 916 605","https://wa.me/34624916605"],
+  ["","#d9691a","cam","Кружочки","Личный канал","https://t.me/+99yGN60lBd85NTgy"]
+];
+const sw=document.getElementById("socials");
+socials.forEach(([cls,c,ic,t,s,href])=>{
+  const a=document.createElement("a");a.href=href;a.target="_blank";a.rel="noopener";if(cls)a.className=cls;a.style.setProperty("--c",c);
+  a.innerHTML=`<i class="ic">${ICON[ic]}</i><span><b>${t}</b><small>${s}</small></span>`;sw.appendChild(a);
+});
+
+const G={doc:["Документы","#2f6fd6"],money:["Деньги","#1f9a5a"],home:["Жильё","#d9691a"],house:["Дом и быт","#0f8f8f"],more:["Ещё","#7a52c7"]};
+const services=[
+  ["doc","Юрист: ВНЖ, документы, налоги","Виды ВНЖ, продление, бизнес, налоги"],
+  ["money","Легализация средств","Юридически правильно завести ваши деньги на испанские счета"],
+  ["doc","Растаможка авто","Перерегистрация машины с украинскими номерами"],
+  ["money","Ипотека","Помогают и тем, кому отказали в других банках"],
+  ["home","Аренда жилья","Снять квартиру или сдать свою"],
+  ["home","Управление недвижимостью","Сдать и не заниматься самому"],
+  ["house","Ремонт под ключ","Квартиры и дома в Валенсии"],
+  ["house","Мебель на заказ","Кухни, шкафы — проект и изготовление"],
+  ["house","Шторы, ролеты, всё для окон","Подбор, пошив и установка"],
+  ["house","Кондиционеры: установка и чистка","Вся провинция Валенсия и Коста-Бланка"],
+  ["doc","Запись на ситу","Помощь с записью в госорганы"],
+  ["more","Монтаж роликов","Бот сам монтирует: субтитры, обложки. Мой код SYVWJSSP — 200 кредитов","https://t.me/accio_pro_bot?start=seed_ac_nova"],
+  ["more","Другой вопрос","Напишите, что нужно, — подскажу, к кому"]
+];
+const GI={
+  doc:'<svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12v2h10v-2H7Zm0 4v2h7v-2H7Z"/></svg>',
+  money:'<svg viewBox="0 0 24 24"><path d="M3 6h18v12H3V6Zm9 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM5 8v2a2 2 0 0 0 2-2H5Zm12 0a2 2 0 0 0 2 2V8h-2ZM5 14v2h2a2 2 0 0 0-2-2Zm14 0a2 2 0 0 0-2 2h2v-2Z"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3L12 3Z"/></svg>',
+  house:'<svg viewBox="0 0 24 24"><path d="M22 7.5 16.5 2l-2 2 1.3 1.3-7.6 7.6L6.9 11.6l-2 2 1.4 1.4L2 19.3 4.7 22 9 17.7l1.4 1.4 2-2-1.3-1.3 7.6-7.6 1.3 1.3 2-2Z"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm2.1-7.7-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3c.4-.4.6-.9.6-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 8 0c0 .9-.4 1.7-.9 2.3Z"/></svg>'
+};
+const grid=document.getElementById("grid");
+services.forEach(([g,t,h,link])=>{
+  const el=document.createElement("a");
+  el.className="card";el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
+  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Интересует: "+t+".\nМоя ситуация: ");
+  el.href=link||wa;el.target="_blank";el.rel="noopener";
+  el.innerHTML=`<span class="ci">${GI[g]}</span><i class="tag">${G[g][0]}</i><b>${t}</b><span>${h}</span><em>${link?"Открыть бота →":'<i class="l">Написать в </i>WhatsApp →'}</em>`;
+  grid.appendChild(el);
+});
+const fl=document.getElementById("filters");
+[["all","Все"],...Object.entries(G).map(([k,v])=>[k,v[0]])].forEach(([k,n])=>{
+  const b=document.createElement("button");b.type="button";b.textContent=n;b.setAttribute("aria-pressed",k==="all");
+  b.onclick=()=>{fl.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    grid.querySelectorAll(".card").forEach(c=>c.hidden=!(k==="all"||c.dataset.g===k))};
+  fl.appendChild(b);
+});
+
+const pb=document.getElementById("pbtns");
+[["pmain","Предложить свою услугу","Сотрудничество.\nУслуга: \nГород: \nКонтакт: "],
+ ["","Реклама","Реклама.\nЧто рекламируете: \nГде хотите (сайт, YouTube, Instagram, Telegram): "]
+].forEach(([cls,t,msg])=>{
+  const a=document.createElement("a");if(cls)a.className=cls;
+  a.href="https://wa.me/34624916605?text="+encodeURIComponent(msg);a.target="_blank";a.rel="noopener";
+  a.innerHTML=ICON.wa+t;pb.appendChild(a);
+});
+
+const cg=document.getElementById("consultgo");
+cg.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Консультация.\nМой вопрос: ");
+cg.insertAdjacentHTML("afterbegin",ICON.wa);
+const ck=document.getElementById("checkgo");
+ck.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пришлите, пожалуйста, бесплатный чек-лист по договору аренды");
+ck.insertAdjacentHTML("afterbegin",ICON.wa);
+document.querySelectorAll(".consult,.grid,.soon,.partners").forEach(e=>e.classList.add("reveal"));
+try{const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add("on");io.unobserve(x.target)}}),{threshold:.08});
+document.querySelectorAll(".reveal").forEach(e=>io.observe(e));}catch(e){document.querySelectorAll(".reveal").forEach(x=>x.classList.add("on"))}
+const sk=document.getElementById("stickywa");
+sk.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта.\nМоя ситуация: ");
+sk.insertAdjacentHTML("afterbegin",ICON.wa);
+</script>
+
+</body>
+</html>
