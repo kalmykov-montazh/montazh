@@ -111,6 +111,31 @@ log("обложка:", " / ".join(lines), "| наклейка:", tc[0] if sticke
 
 H.append(f'<div id="cam" class="full"><video id="v" class="full" src="osnova.mp4" data-start="0" data-duration="{DUR:.3f}" data-has-audio="true"></video></div>')
 
+# ---------- кадры с места на весь экран вместо лица (11.11.2026, «Забастовка»: 40% лицо, 60% кадры) ----------
+# novyj: "broll": [{"at": фраза, "to": фраза (где снова лицо) или "sec", "file": "kolonna.mp4", "vol": 0.18}]
+# файлы — в P/br (задача кладёт из «работа/<ключ>/br»), рядом .wav с живым звуком улицы (тихо под голос)
+BROLL = []
+for k, b in enumerate(spec.get("broll", [])):
+    t0 = T(b["at"])
+    if t0 is None: log("кадры: не нашёл фразу", b["at"]); continue
+    t1 = T(b["to"], t0 + 0.3) if b.get("to") else None
+    if t1 is None: t1 = t0 + float(b.get("sec", 4))
+    fp = f"{P}/br/{b['file']}"
+    if not os.path.exists(fp): log("кадры: нет файла", b["file"]); continue
+    try:
+        import subprocess
+        cd = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", fp], capture_output=True, text=True).stdout.strip())
+    except Exception: cd = 99
+    t0 = max(t0 - 0.05, 0.4); t1 = min(t1 - 0.05, t0 + cd - 0.05, DUR - 0.3)
+    if t1 - t0 < 0.8: log("кадры: слишком коротко", b["file"]); continue
+    bid = f"br{k}"
+    H.append(f'<video id="{bid}" class="full" src="br/{b["file"]}" data-start="{t0:.3f}" data-duration="{t1 - t0:.3f}" data-has-audio="false" muted></video>')
+    wav = fp[:-4] + ".wav"
+    if os.path.exists(wav) and float(b.get("vol", 0.18)) > 0:
+        H.append(f'<audio id="{bid}a" src="br/{os.path.basename(wav)}" data-start="{t0:.3f}" data-duration="{t1 - t0:.3f}" data-volume="{float(b.get("vol", 0.18))}"></audio>')
+    BROLL.append((t0, t1)); log(f"кадры: {b['file']} {t0:.1f}–{t1:.1f} с")
+if BROLL: log(f"кадры с места: {sum(b - a for a, b in BROLL):.1f} из {DUR:.1f} с ({100 * sum(b - a for a, b in BROLL) / DUR:.0f}%)")
+
 # ---------- резкие наезды (как в эталоне): до 3 слов из punch, не чаще раза в 6 с ----------
 pt, last = [], -10
 for k in (spec.get("punch") or [])[:8]:

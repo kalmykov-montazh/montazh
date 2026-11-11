@@ -101,6 +101,8 @@ jobs:
           P="$PWD/hfp"; mkdir -p "$P" in
           rclone copy "montazh:Брокер/работа/$KEY" in --include osnova.mp4 --include osnova_words.json --include face.json --multi-thread-streams 8
           mv in/osnova.mp4 "$P/osnova.mp4"
+          # 11.11.2026: кадры с места (broll в novyj) — из «работа/<ключ>/br», если есть
+          rclone copy "montazh:Брокер/работа/$KEY/br" "$P/br" 2>/dev/null || true
           python3 - <<'PY'
           import json, os
           n = os.environ["NAME"]; out = {}
