@@ -94,9 +94,9 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "АВТОСТРАХОВКА",
-  "bot": "ДЕШЕВЛЕ|ВДВОЕ"
+  "bot": "ДЕШЕВЛЕ|ВДВОЕ",
+  "s5": "shapka"
  },
  "pic_low": true,
  "cover_t": 17.0

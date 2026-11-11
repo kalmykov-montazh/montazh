@@ -94,10 +94,10 @@
   }
  ],
  "cover": {
-  "style": "marker",
   "top": "КАКОЙ ЭТАЖ",
   "bot": "БРАТЬ|В ИСПАНИИ",
-  "y": 150
+  "y": 150,
+  "s5": "shapka"
  },
  "pic_low": true,
  "top_px": 700,
