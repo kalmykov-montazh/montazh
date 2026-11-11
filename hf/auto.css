@@ -24,3 +24,11 @@
 .photo2{width:400px}.photo2 img{width:376px;height:280px}
 .cov .cg{background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 62%,rgba(0,0,0,.55))}
 .cov img.full{object-fit:cover}
+
+/* 11.11.2026: всплывающий призыв на сайт (пункт 13) */
+.sait{position:absolute;left:44px;right:44px;z-index:14;display:flex;gap:26px;align-items:center;background:#fff;border-radius:30px;padding:14px 26px 14px 14px;box-shadow:0 22px 50px rgba(0,0,0,.55);border-left:12px solid #ffd23f;box-sizing:border-box}
+.sait img{height:100%;object-fit:cover;object-position:50% 0;border-radius:18px;flex:none;box-shadow:0 0 0 2px #e6e6e6}
+.sait .st{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sait u{text-decoration:none;font-family:M;font-weight:700;font-size:26px;color:#8a8a8a;letter-spacing:.5px}
+.sait b{font-family:M;font-weight:900;line-height:1.08;color:#111}
+.sait i{font-style:normal;font-family:M;font-weight:900;font-size:32px;background:#ffd23f;color:#000;padding:8px 18px;border-radius:12px;align-self:flex-start;line-height:1.1}

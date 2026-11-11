@@ -259,9 +259,46 @@ for n, (gi, built, te) in enumerate(clean):
         if k >= 1 and it["type"] != "stamp":
             tl(f'tl.to("#{gid}r{k-1}",{{opacity:0.55,duration:0.2}},{t-0.1:.3f});')
 
-# ---------- картинки-предметы (03.11.2026): фото-карточка сбоку сверху, только когда верх свободен ----------
+# ---------- всплывающий призыв на сайт (пункт 13, 11.11.2026): окошко-уведомление со скрином блока сайта ----------
+# spec["sait"] = {"img": "bbva.png", "text": "Основной текст. Ссылка в шапке профиля", "at": "фраза"}; 3,6 с, со «вжиком»,
+# сверху над головой (где нет плашек), иначе внизу под субтитрами; не на лице, не поверх белой карточки в конце
 KART = []
 PICB = []
+SAIT = spec.get("sait")
+if SAIT:
+    SD = 3.6
+    ws = sorted({w["s"] for w in W if max(start_min, 6.0) <= w["s"] <= CTA_T - 0.3 - SD})
+    ta = find(SAIT["at"]) if SAIT.get("at") else None
+    if ta is None: ta = DUR * 0.4
+    order = sorted(ws, key=lambda x: (0 if x >= ta - 0.2 else 1, abs(x - ta)))
+    my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
+    lowtop = my + 78; lowh = min(1920 - 30 - lowtop, 270)
+    pick = None
+    for t in order:
+        set_top(t)
+        if not any(a < t + SD and t < b for a, b in BUSY) and AVAIL >= 230: pick = (t, "верх"); break
+    if pick is None and lowh >= 190:
+        for t in order:
+            if not any(a < t + SD and t < b for a, b in PICB): pick = (t, "низ"); break
+    if pick is None: log("окошко сайта пропущено: нет места")
+    else:
+        t, where = pick; t1 = t + SD
+        os.makedirs(f"{P}/sait", exist_ok=True); shutil.copy(f"{B}/sait_skriny/{SAIT['img']}", f"{P}/sait/{SAIT['img']}")
+        txt = sanitize(SAIT["text"]).strip().rstrip(".")
+        main, pill = (txt.rsplit(". ", 1) + [""])[:2] if ". " in txt else (txt, "Ссылка в шапке профиля")
+        if where == "верх":
+            set_top(t); hc = min(AVAIL + 6, 330); top = TOP - 20; BUSY.append((t, t1))
+        else:
+            hc = lowh; top = lowtop; PICB.append((t, t1))
+        fs = 46 if len(main) <= 34 else (40 if len(main) <= 50 else 34)
+        H.append(f'<div id="sait" class="sait" style="top:{top}px;height:{hc}px"><img src="sait/{SAIT["img"]}" style="width:{int(hc*0.92)}px">'
+                 f'<div class="st"><u>kalmykov-realty · сайт</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
+        dy = -320 if where == "верх" else 320
+        tl(f'tl.from("#sait",{{y:{dy},opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).from("#sait i",{{scale:0,duration:0.35,ease:"back.out(3)"}},{t+0.5:.3f}).to("#sait",{{y:{dy//2},opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
+        snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2)
+        log(f"окошко сайта: {SAIT['img']} в {t:.1f} с ({where}), «{main}»")
+
+# ---------- картинки-предметы (03.11.2026): фото-карточка сбоку сверху, только когда верх свободен ----------
 BAD = {"receipt_1.jpg"}   # 07.11.2026: старая французская квитанция — негодная
 for k, (ph, img, opt) in enumerate(VST.get("ins", [])):
     if img in BAD: continue
