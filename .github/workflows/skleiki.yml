@@ -125,7 +125,7 @@ jobs:
           cp sk/osnova.mp4 "$P/osnova.mp4"
           # картинки-предметы — как в hf-pachka.yml (последний монтаж 09.11): план вставок у каждой склейки в поле "vst"
           python3 -c "import json;x=json.load(open('item.json'));json.dump(x.get('vst') or {},open('vst.json','w'),ensure_ascii=False)"
-          ( cd "$P" && ffmpeg -v error -y -i osnova.mp4 -vf "lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube" -c:v libx264 -crf 14 -preset medium -c:a aac -b:a 192k o2.mp4 && mv o2.mp4 osnova.mp4 )
+          ( cd "$P" && ffmpeg -v error -y -i osnova.mp4 -filter_complex "[0:v]split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35',deband=1thr=0.02:2thr=0.02:3thr=0.02:range=22:blur=1,noise=alls=2:allf=t,format=yuv420p" -map 0:a? -c:v libx264 -crf 14 -preset medium -c:a aac -b:a 192k o2.mp4 && mv o2.mp4 osnova.mp4 )
           # обложка: кадр с открытыми глазами — pick_frame; если в novyj задан cover_t (кадр проверен глазами) — берём его
           CT=$(python3 -c "import json;print(json.load(open('novyj/$KEY.json')).get('cover_t',''))")
           if [ -n "$CT" ]; then ffmpeg -v error -y -ss "$CT" -i "$P/osnova.mp4" -frames:v 1 "$P/cover_bg.png"; echo "обложка: кадр $CT с"
