@@ -39,7 +39,11 @@ d.rounded_rectangle((PAD + 12, PAD, PAD + W, PAD + HC), 26, fill=(255, 255, 255,
 ih = HC - 28; iw = int(ih * 0.92)
 sc = Image.open(f"{R}/hf/sait_skriny/{img}").convert("RGBA")
 k = iw / sc.width
-sc = sc.resize((iw, max(ih, int(sc.height * k))), Image.LANCZOS).crop((0, 0, iw, ih))
+if sc.height * k >= ih:
+    sc = sc.resize((iw, int(sc.height * k)), Image.LANCZOS).crop((0, 0, iw, ih))
+else:                         # низкий скрин (карточки услуг) — по высоте, обрезка по бокам, без растяжки
+    k2 = ih / sc.height; sc = sc.resize((int(sc.width * k2), ih), Image.LANCZOS)
+    x0 = (sc.width - iw) // 2; sc = sc.crop((x0, 0, x0 + iw, ih))
 m = Image.new("L", (iw, ih), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, iw - 1, ih - 1), 18, fill=255)
 ix, iy = PAD + 12 + 14, PAD + 14
 d.rounded_rectangle((ix - 2, iy - 2, ix + iw + 1, iy + ih + 1), 19, fill=(230, 230, 230, 255))
