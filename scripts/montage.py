@@ -100,6 +100,33 @@ for k_, n_ in json.loads(os.environ.get('TRIM', '{}')).items():
             p['words'] = p['words'][-n_:]
             p['text'] = ' '.join(w['w'] for w in p['words'])
 
+# 2в. 12.11.2026 (перезапуски пачки 2): вырезать слова ИЗ СЕРЕДИНЫ куска — файл cut.json в папке работы:
+# {"ключ куска": [[i, j], ...]} — выбросить слова i..j-1 (j = null — до конца куска). Кусок делится на части,
+# граница — начало первого выброшенного / следующего оставленного слова. Номера слов — по тексту из fixes.json.
+_CUTF = f'{OUT}/cut.json'
+if os.path.exists(_CUTF):
+    _CUTS = json.load(open(_CUTF)); _new = []
+    for p in plan:
+        k_ = f"{p['a']:.3f}-{p['b']:.3f}"
+        if not (p['keep'] and k_ in _CUTS):
+            _new.append(p); continue
+        ws = p['words']; drop = set()
+        for i_, j_ in _CUTS[k_]: drop.update(range(i_, len(ws) if j_ is None else j_))
+        runs, cur = [], []
+        for n_, w_ in enumerate(ws):
+            if n_ in drop:
+                if cur: runs.append(cur); cur = []
+            else: cur.append((n_, w_))
+        if cur: runs.append(cur)
+        for r in runs:
+            i0, i1 = r[0][0], r[-1][0]
+            q = dict(p); q['words'] = [w_ for _, w_ in r]
+            q['a'] = p['a'] if i0 == 0 else max(p['a'], ws[i0]['s'] - 0.04)
+            q['b'] = p['b'] if i1 == len(ws) - 1 else min(p['b'], ws[i1 + 1]['s'] - 0.04)
+            q['text'] = ' '.join(w_['w'] for w_ in q['words']); _new.append(q)
+        print('вырезано из куска', k_, ':', ' | '.join(' '.join(ws[n_]['w'] for n_ in sorted(drop) if a_ <= n_ < b_) for a_, b_ in [(x, len(ws) if y is None else y) for x, y in _CUTS[k_]]))
+    plan = _new
+
 # 3. оговорки: кусок, который начинается так же, как следующий, = неудачный дубль
 def norm(t):
     return re.sub(r'[^\w ]', '', t.lower().replace('ё', 'е')).split()

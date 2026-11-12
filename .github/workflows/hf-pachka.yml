@@ -83,7 +83,7 @@ jobs:
           if [ "$FORCE" = "0" ] && rclone lsf "montazh:Брокер/работа/$KEY/osnova_words.json" | grep -q osnova; then
             echo "::notice::Основа уже есть"; exit 0; fi
           rclone copyto "montazh:$SRC" raw/src.mp4 --multi-thread-streams 8
-          rclone copy "montazh:Брокер/работа/$KEY" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json
+          rclone copy "montazh:Брокер/работа/$KEY" "$W" --include asr_cache.json --include plan.json --include fixes.json --include face.json --include cut.json
           [ -f "$W/asr_cache.json" ] || { echo "::error::Нет распознанного текста в работа/$KEY"; exit 1; }
           [ -f "$W/fixes.json" ] || echo '{}' > "$W/fixes.json"
           python scripts/align.py raw/src.mp4 "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err" || { tail -5 "$W/align.err"; exit 1; }
