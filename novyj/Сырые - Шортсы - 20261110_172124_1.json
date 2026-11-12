@@ -100,12 +100,5 @@
   "label": "НОВОСТЬ",
   "color": "#e3191c"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "Встали поезда",
-   "src": "montazh:Брокер/Вставки/Фоны/apagon3.jpg",
-   "dur": 3.5
-  }
- ]
+ "pic_low": true
 }

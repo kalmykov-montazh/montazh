@@ -86,13 +86,5 @@
   "s5": "shapka",
   "color": "#ff5a1f"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "Деревья сажают",
-   "src": "montazh:Брокер/Вставки/Фоны/orange.mp4",
-   "dur": 3.5,
-   "from": 1
-  }
- ]
+ "pic_low": true
 }

@@ -84,19 +84,5 @@
   "s5": "shapka",
   "color": "#ff5a1f"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "Бар имеет право",
-   "src": "montazh:Брокер/Вставки/Фоны/cafe_sea.mp4",
-   "dur": 3.5,
-   "from": 3
-  },
-  {
-   "at": "испанцы часто пьют",
-   "src": "montazh:Брокер/Вставки/Фоны/cafe_in.mp4",
-   "dur": 3,
-   "from": 2
-  }
- ]
+ "pic_low": true
 }

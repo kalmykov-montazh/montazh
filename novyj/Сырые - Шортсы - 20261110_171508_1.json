@@ -102,13 +102,5 @@
   "s5": "hormozi",
   "color": "#13a865"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "Эль Гордо разыгрывают",
-   "src": "montazh:Брокер/Вставки/Фоны/xmas_eve.mp4",
-   "dur": 3.5,
-   "from": 40
-  }
- ]
+ "pic_low": true
 }

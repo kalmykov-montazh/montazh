@@ -96,13 +96,5 @@
   "s5": "hormozi",
   "color": "#13a865"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "обязательно к Рождеству",
-   "src": "montazh:Брокер/Вставки/Фоны/xmas_tree.mp4",
-   "dur": 3,
-   "from": 5
-  }
- ]
+ "pic_low": true
 }

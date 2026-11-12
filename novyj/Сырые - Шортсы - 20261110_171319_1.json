@@ -86,12 +86,5 @@
   "s5": "hormozi",
   "color": "#13a865"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "подаёт модель 600",
-   "src": "montazh:Брокер/Вставки/Фоны/hacienda8.jpg",
-   "dur": 3.5
-  }
- ]
+ "pic_low": true
 }

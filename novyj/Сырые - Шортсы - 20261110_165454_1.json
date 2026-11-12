@@ -101,12 +101,5 @@
   "s5": "shapka",
   "color": "#13a865"
  },
- "pic_low": true,
- "mir": [
-  {
-   "at": "Тяжёлая болезнь авария",
-   "src": "montazh:Брокер/Вставки/Фоны/hospital8.jpg",
-   "dur": 3.5
-  }
- ]
+ "pic_low": true
 }
