@@ -134,7 +134,7 @@ jobs:
           P: ${{ inputs.project }}
         run: |
           cd "$P"
-          npm i --silent hyperframes@0.9.20
+          npm i --silent hyperframes@0.9.36
           npx hyperframes telemetry disable > /dev/null 2>&1 || true
           s=$(date +%s)
           npx hyperframes render . -o out.mp4 -q delivery -w 4 2>&1 | tail -20
