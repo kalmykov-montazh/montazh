@@ -37,7 +37,7 @@ on:
         required: false
         default: ""
       enc:
-        description: "Ключ шифрования для лёгкой копии (ветка tmp-hf)"
+        description: "Ключ шифрования для лёгкой копии (ветка tmp-hf-old)"
         required: false
         default: ""
 
@@ -83,9 +83,9 @@ jobs:
           ffmpeg -v error -i "$W/ролик_B.mp4" -vf scale=540:-2 -c:v libx264 -crf 28 -preset veryfast -c:a aac -b:a 64k p/osnova540.mp4
           cp "$W/words_out.json" p/
           tar czf p.tgz p && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:ENC
-          mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf
+          mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf-old
           git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "hf $GITHUB_RUN_ID"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf-old
 
   render:
     if: ${{ inputs.stage == 'render' }}
@@ -134,7 +134,7 @@ jobs:
           P: ${{ inputs.project }}
         run: |
           cd "$P"
-          npm i --silent hyperframes@0.9.36
+          npm i --silent hyperframes@0.9.20
           npx hyperframes telemetry disable > /dev/null 2>&1 || true
           s=$(date +%s)
           npx hyperframes render . -o out.mp4 -q delivery -w 4 2>&1 | tail -20
@@ -179,7 +179,7 @@ jobs:
             echo "::add-mask::$ENC"
             mkdir -p p && ffmpeg -v error -i final.mp4 -vf scale=540:-2 -c:v libx264 -crf 26 -preset veryfast -c:a aac -b:a 96k p/final540.mp4 && cp кадры.jpg p/
             tar czf p.tgz p && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:ENC
-            mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf
+            mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-hf-old
             git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "hf $GITHUB_RUN_ID"
-            git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf
+            git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-hf-old
           fi
