@@ -70,5 +70,6 @@
   "bot": "РАСХОДЫ|КАЖДЫЙ ГОД",
   "s5": "shapka",
   "color": "#1d5fd1"
- }
+ },
+ "pic_low": true
 }
