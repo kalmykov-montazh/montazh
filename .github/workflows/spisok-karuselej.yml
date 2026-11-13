@@ -1,0 +1,32 @@
+name: Список папок каруселей (для Claude)
+
+# 13.11.2026: Claude без gh не видит Диск — задача по push кладёт список папок «Брокер/Посты/Карусели»
+# в ветку tmp-spisok-karuselej (файл spisok.txt). Перезапуск — поменять строку ниже.
+# запуск: 2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/spisok-karuselej.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Список
+        run: |
+          rclone lsf -R --max-depth 2 --format "tsp" "montazh:Брокер/Посты/Карусели" > /tmp/spisok.txt 2>&1 || true
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          git checkout -q --orphan tmp-spisok-karuselej; git rm -rfq . > /dev/null
+          cp /tmp/spisok.txt spisok.txt; git add spisok.txt; git commit -qm "список [skip ci]"; git push -fq origin tmp-spisok-karuselej
