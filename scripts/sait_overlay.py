@@ -81,8 +81,9 @@ card.save(cp)
 ta, te = t0 - 0.08, t0 + SD
 X = 44 - PAD; Y = TOP - PAD
 s = 1.5
-yin = f"({Y}+(-320)*(1-((({s}+1)*pow(min(1,(t-{ta})/0.5)-1,3))+{s}*pow(min(1,(t-{ta})/0.5)-1,2)+1)))"
-yout = f"({Y}-160*((t-{te - 0.32})/0.32))"
+DY = 320 if TOP > 900 else -320   # 14.11.2026: окошко внизу въезжает снизу
+yin = f"({Y}+({DY})*(1-((({s}+1)*pow(min(1,(t-{ta})/0.5)-1,3))+{s}*pow(min(1,(t-{ta})/0.5)-1,2)+1)))"
+yout = f"({Y}+({DY // 2})*((t-{te - 0.32})/0.32))"
 yexp = f"if(lt(t,{te - 0.32}),{yin},{yout})"
 dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", inp],
                            capture_output=True, text=True).stdout.strip())
@@ -100,7 +101,7 @@ if os.environ.get("KG") == "1":
     kgp = os.path.splitext(out)[0] + "_kg.png"
     kgi = Image.open(f"{R}/hf/kg.png").convert("RGBA").resize((ksz, ksz), Image.LANCZOS)
     a = kgi.getchannel("A").point(lambda v: int(v * 0.9)); kgi.putalpha(a); kgi.save(kgp)
-    fc = fc.replace("[v];", "[v0];[4:v]format=rgba[kg];[v0][kg]overlay=x=%d:y=%d:enable='not(between(t,%.3f,%.3f))'[v];" % (kx, ky, ta, te), 1)
+    fc = fc.replace("[v];", "[v0];[4:v]format=rgba[kg];[v0][kg]overlay=x=%d:y=%d:enable='gte(t,0.6)*not(between(t,%.3f,%.3f))'[v];" % (kx, ky, ta, te), 1)
     extra = ["-i", kgp]
 cmd = ["ffmpeg", "-v", "error", "-y", "-i", inp, "-loop", "1", "-t", f"{dur:.3f}", "-i", cp,
        "-i", f"{SND}/whoosh.wav", "-i", f"{SND}/ding.wav"] + extra + ["-filter_complex", fc, "-map", "[v]", "-map", "[a]",

@@ -1,0 +1,112 @@
+name: Окошко сайта «Б» и значок KG в готовые ролики
+
+# 14.11.2026, решение Евгения 00:26–00:28 («всё отлично, даю добро… запускай всё»): во все ещё не расставленные
+# роботом ролики из «Готовые» и «На проверке» — окошко сайта вида «Б» (чёрное, золотая рамка, KG + kalmykovgroup.com)
+# и значок KG в углу на весь ролик. Ролик НЕ пересобирается: всё накладывается поверх готового видео (scripts/sait_overlay.py).
+# Место окошка — индивидуально под ролик (scripts/sait_b_place.py: лицо, голова, плашки, слайды), группа «B» — ролики,
+# где уже стоит старое белое окошко 11.11: новое ложится ровно поверх старого (то же время, верх и высота, 3,6 с).
+# Оригинал — в «Брокер/Бэкап/До окошка Б 14.11/<путь>». Кадр проверки — «Брокер/работа/_sait_b_check/<n>.jpg».
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "Список в репо (hf/sait_skriny/sait_b_1411.json)"
+        required: true
+        default: "hf/sait_skriny/sait_b_1411.json"
+      only:
+        description: "Номера через запятую (пусто — все)"
+        required: false
+        default: ""
+      chunk:
+        description: "Роликов на одну машину"
+        required: false
+        default: "6"
+      dry:
+        description: "yes — только выбрать место и сделать кадр проверки, ролик не заменять"
+        required: false
+        default: "no"
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        env:
+          L: ${{ inputs.list }}
+          ONLY: ${{ inputs.only }}
+          CH: ${{ inputs.chunk }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          L = json.load(open(os.environ["L"]))
+          only = [int(x) for x in os.environ["ONLY"].replace(" ", "").split(",") if x]
+          idx = [i for i in range(len(L)) if not only or i in only]
+          ch = int(os.environ["CH"])
+          print("m=" + json.dumps([{"k": k, "ids": ",".join(map(str, idx[k:k + ch]))} for k in range(0, len(idx), ch)]))
+          PY
+
+  one:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        c: ${{ fromJSON(needs.plan.outputs.m) }}
+    name: "часть ${{ matrix.c.k }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Окошко и значок
+        env:
+          L: ${{ inputs.list }}
+          IDS: ${{ matrix.c.ids }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          mkdir -p w
+          for i in ${IDS//,/ }; do
+            eval "$(python3 - "$i" <<'PY'
+          import json, os, sys, shlex
+          x = json.load(open(os.environ["L"]))[int(sys.argv[1])]
+          for k in ("f", "g", "img", "text", "t", "top", "h"):
+              print(f"{k.upper()}={shlex.quote(str(x.get(k, '')))}")
+          PY
+            )"
+            echo "== $i $F"
+            rm -f w/*
+            rclone copyto "montazh:$F" w/in.mp4 --multi-thread-streams 8 || { echo "::warning::$i нет файла: $F"; continue; }
+            if [ "$G" = "B" ]; then
+              PL="{\"t\": $T, \"top\": $TOP, \"h\": $H, \"lay\": \"поверх старого\", \"kg_left\": 0, \"kg_s\": 84}"; SD=3.6
+            else
+              PL=$(python3 scripts/sait_b_place.py w/in.mp4 2>/dev/null) || { echo "::warning::$i место не выбрано"; continue; }; SD=4.0
+            fi
+            read PT PTOP PH KGL KGS <<< "$(python3 -c "import json,sys;d=json.loads(sys.argv[1]);print(d['t'],d['top'],d['h'],d.get('kg_left',0),d.get('kg_s',84))" "$PL")"
+            KG=1 KG_LEFT=$KGL KG_S=$KGS python3 scripts/sait_overlay.py w/in.mp4 w/out.mp4 "$IMG" "$TEXT" "$PT" "$PTOP" "$PH" "$SD" > w/log.txt 2>&1 || { echo "::warning::$i наложение не вышло: $(tail -2 w/log.txt)"; continue; }
+            # кадр проверки: окошко целиком + середина ролика (значок) + первый кадр (обложка без значка)
+            M=$(python3 -c "print(round($PT+1.6,2))"); D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 w/out.mp4)
+            ffmpeg -v error -y -ss "$M" -i w/out.mp4 -frames:v 1 -vf scale=360:-2 w/a.jpg
+            ffmpeg -v error -y -ss "$(python3 -c "print(round($D*0.25,2))")" -i w/out.mp4 -frames:v 1 -vf scale=360:-2 w/b.jpg
+            ffmpeg -v error -y -ss 0.03 -i w/out.mp4 -frames:v 1 -vf scale=360:-2 w/c.jpg
+            ffmpeg -v error -y -i w/a.jpg -i w/b.jpg -i w/c.jpg -filter_complex "[0][1][2]hstack=3,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='$i':x=8:y=8:fontsize=28:fontcolor=yellow:box=1:boxcolor=black@0.6" w/check.jpg
+            rclone copyto w/check.jpg "montazh:Брокер/работа/_sait_b_check/$(printf '%03d' $i).jpg"
+            echo "$i|$F|$PL" | rclone rcat "montazh:Брокер/работа/_sait_b_check/$(printf '%03d' $i).txt"
+            if [ "$DRY" != "yes" ]; then
+              B="Брокер/Бэкап/До окошка Б 14.11/${F#Брокер/}"
+              rclone lsf "montazh:$B" 2>/dev/null | grep -q . || rclone copyto "montazh:$F" "montazh:$B"
+              rclone copyto w/out.mp4 "montazh:$F" && echo "::notice::$i готово ($PL): $F"
+            else
+              echo "::notice::$i проба ($PL): $F"
+            fi
+          done
