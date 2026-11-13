@@ -69,7 +69,8 @@ for it in cfg['items']:
     try:
         sh('rclone', 'copy', remote, str(D), '--include', '[0-9][0-9].jpg', '--include', 'spec.json',
            '--include', 'karusel.json', '--include', '_отправлено.json', '--include', 'karusel_slajdy.json')
-        p = subprocess.run(['python3', str(ROOT / 'scripts/karusel/slajdshou.py'), str(D), str(D / 'reel.mp4')],
+        p = subprocess.run(['python3', str(ROOT / 'scripts/karusel/slajdshou.py'), str(D), str(D / 'reel.mp4')]
+                           + (['--trek', str(int(it['trek']) - 1)] if it.get('trek') else []),
                            capture_output=True, text=True)
         r['sborka'] = (p.stdout + p.stderr).strip()[-300:]
         v = D / 'reel.mp4'
