@@ -117,14 +117,16 @@
  "Гибридная аренда": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Edificio_Francisco_Sancho_Calle_Ruzafa_06.jpg/1280px-Edificio_Francisco_Sancho_Calle_Ruzafa_06.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Edificio Francisco Sancho Calle Ruzafa 06.jpg",
-  "t": 26,
-  "box": "798,790,85"
+  "t": 24,
+  "box": "895,930,125",
+  "frf": "Брокер/К публикации/83 СК Когда управляющий не нужен/!!! СК Когда управляющий не нужен.mp4"
  },
  "Лёгких путей": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Valencia-Ciutat_Vella%2C_straatzicht_Carrer_de_les_Barques_IMG_2637_2026-08-22_17.55.jpg/1280px-Valencia-Ciutat_Vella%2C_straatzicht_Carrer_de_les_Barques_IMG_2637_2026-08-22_17.55.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Valencia-Ciutat Vella, straatzicht Carrer de les Barque",
-  "t": 10,
-  "box": "912,928,122"
+  "t": 24,
+  "box": "895,930,125",
+  "frf": "Брокер/К публикации/83 СК Когда управляющий не нужен/!!! СК Когда управляющий не нужен.mp4"
  },
  "Въезд без фото": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Edificio_Francisco_Sancho_Calle_Ruzafa_04.jpg/1280px-Edificio_Francisco_Sancho_Calle_Ruzafa_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -205,8 +207,8 @@
  "Сколько платит Facebook": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Hands-coffee-smartphone-technology_%2823698591814%29.jpg/1280px-Hands-coffee-smartphone-technology_%2823698591814%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Hands-coffee-smartphone-technology (23698591814).jpg",
-  "t": 18,
-  "box": "380,560,320"
+  "t": 19,
+  "box": "90,800,480"
  },
  "Подарок на день": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Gift_box_II.jpg/1280px-Gift_box_II.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -294,7 +296,8 @@
  "Нашли кошелёк": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Lost_wallet_%2810623155873%29.jpg/1280px-Lost_wallet_%2810623155873%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Lost wallet (10623155873).jpg",
-  "t": 42
+  "t": 45,
+  "box": "270,860,450"
  },
  "Наличными больше": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/001_2013_07_02_Numbers.jpg/1280px-001_2013_07_02_Numbers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",

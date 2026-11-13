@@ -64,7 +64,7 @@ jobs:
               if only and n not in only: continue
               l1, l2, pl, q = T[k]; p = pr.get(k, {})
               items.append({"n": n, "name": folder[:50], "file": c[2], "l1": p.get("l1", l1), "l2": p.get("l2", l2),
-                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", "")), "fx": str(p.get("fx", "")), "box": str(p.get("box", ""))})
+                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", "")), "fx": str(p.get("fx", "")), "box": str(p.get("box", "")), "frf": p.get("frf", "")})
           print("m=" + json.dumps(items, ensure_ascii=False))
           PY
 
@@ -98,6 +98,7 @@ jobs:
           T: ${{ matrix.v.t }}
           FX: ${{ matrix.v.fx }}
           BOX: ${{ matrix.v.box }}
+          FRF: ${{ matrix.v.frf }}
           MODE: ${{ inputs.mode }}
           KEY: ${{ inputs.key }}
         run: |
@@ -106,6 +107,7 @@ jobs:
           rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
           if [ -z "$T" ]; then python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true
             python3 scripts/oblozhka_b_kadr.py in/v.mp4 in/кандидаты.txt in/fr.png
+          elif [ -n "$FRF" ]; then rclone copyto "montazh:$FRF" in/f.mp4; ffmpeg -v error -y -ss "$T" -i in/f.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с из $FRF"
           else ffmpeg -v error -y -ss "$T" -i in/v.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с (из правок)"; fi
           if [ -n "$URL" ]; then curl -fsSL -A "kalmykov-montazh/1.0" -o in/pic.jpg "$URL" || true
           else python3 scripts/oblozhka_b_kartinka.py "$Q" in/pic.jpg || true; fi
