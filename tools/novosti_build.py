@@ -104,7 +104,7 @@ def page(title, desc, canon, body, extra=''):
 <meta name="description" content="{esc(desc)}">
 <link rel="canonical" href="{canon}">
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
-<meta property="og:image" content="{BASE}/share.jpg"><meta property="og:url" content="{canon}">
+<meta property="og:image" content="{BASE}/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta property="og:url" content="{canon}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>{CSS}</style>{extra}</head>
 <body><div class="w">
@@ -120,7 +120,7 @@ def article_html(it):
     paras = ''.join('<p>' + '<br>'.join(esc(x) for x in p) + '</p>' for p in it['paras'])
     ld = {"@context": "https://schema.org", "@type": "NewsArticle", "headline": it['title'][:110],
           "datePublished": it['published'], "dateModified": it['published'], "inLanguage": "ru",
-          "image": [f'{BASE}/share.jpg'], "mainEntityOfPage": f"{BASE}/novosti/{it['slug']}",
+          "image": [f'{BASE}/og.jpg'], "mainEntityOfPage": f"{BASE}/novosti/{it['slug']}",
           "author": {"@type": "Person", "name": "Ievgen Kalmykov", "alternateName": "Евгений Калмыков", "url": BASE + '/'},
           "publisher": {"@type": "Organization", "name": "Kalmykov Group", "url": BASE + '/',
                         "logo": {"@type": "ImageObject", "url": f'{BASE}/favicon.svg'}},
