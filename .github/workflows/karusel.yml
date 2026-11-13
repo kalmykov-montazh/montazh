@@ -3,6 +3,9 @@ name: Карусель — поставить в Blotato
 # Для Claude (30.10.2026): папка карусели на Диске (внутри «Монтаж!»), режим post, status или retry (retry — сразу перевыложить упавшие сети).
 # post — грузит фото и ставит в Instagram, TikTok, Threads (+ YouTube Shorts из shorts.mp4) на время из karusel.json.
 # status — проверяет, вышло ли. Итог пишет в _отправлено.json в той же папке.
+# 13.11.2026: при post, если в папке нет shorts.mp4, видео-рилс собирается сам (scripts/karusel/slajdshou.py:
+# наезд, смена по длине текста, сайт в полосе, петля, своя лёгкая музыка) и кладётся обратно в папку.
+# Режим video — только собрать/пересобрать shorts.mp4, ничего не ставить.
 
 on:
   workflow_dispatch:
@@ -11,7 +14,7 @@ on:
         description: "Папка внутри «Монтаж!», например Брокер/Посты/Карусели/Зима в Валенсии"
         required: true
       mode:
-        description: "post, status или retry"
+        description: "post, status, retry или video (только собрать shorts.mp4)"
         required: false
         default: "post"
 
@@ -32,8 +35,20 @@ jobs:
         run: |
           rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
           rclone copy "montazh:$F" k --exclude "_превью*"
-          python3 scripts/karusel/karusel.py k "$M" 2>&1 | tee out.txt
-          rclone copyto k/_отправлено.json "montazh:$F/_отправлено.json"
+          if [ "$M" = "video" ] || { [ "$M" = "post" ] && [ ! -f k/shorts.mp4 ]; }; then
+            which ffmpeg > /dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg > /dev/null; }
+            pip install -q pillow numpy
+            rm -f k/shorts.mp4
+            python3 scripts/karusel/slajdshou.py k k/shorts.mp4 2>&1 | tee out.txt
+            rclone copyto k/shorts.mp4 "montazh:$F/shorts.mp4"
+            rclone copyto k/_музыка.txt "montazh:$F/_музыка.txt"
+          fi
+          if [ "$M" = "video" ]; then
+            touch k/_отправлено.json
+          else
+            python3 scripts/karusel/karusel.py k "$M" 2>&1 | tee -a out.txt
+          fi
+          [ "$M" = "video" ] || rclone copyto k/_отправлено.json "montazh:$F/_отправлено.json"
           python3 - <<'PY'
           t = open('out.txt', encoding='utf-8', errors='replace').read().replace('%', '%25').replace('\n', '%0A')
           print(f"::notice title=итог::{t[:2900]}")
