@@ -4,6 +4,7 @@ name: Новости на сайт kalmykovgroup.com/novosti
 # в «Брокер/Посты/Новости утро|день|вечер» и «Длинные» (ночная), робот после выхода переносит в «Опубликовано».
 # Здесь каждые 20 минут новые файлы «000 ДД.ММ тема.txt» превращаются в страницы сайта (tools/novosti_build.py),
 # убранные Евгением («На удаление») снимаются. Ссылки статей — в «_ссылки_новостей.txt» в корне Моего диска,
+# Дополнение для сайта (подробнее, что делать, источники) — «Брокер/Посты/Новости сайт/ДД.ММ тема.txt» (с 13.11.2026).
 # их читает задача ответов на комментарии и ставит ссылку комментарием под новостью.
 
 on:
@@ -34,10 +35,13 @@ jobs:
             rclone copy "montazh:Брокер/Посты/$d" n --include "000 *.txt" --max-depth 1 || true
           done
           rclone copy "montazh:Брокер/Посты/Опубликовано" n --include "* 000 *.txt" --max-depth 1 --max-age 10d || true
+          mkdir -p e
+          rclone mkdir "montazh:Брокер/Посты/Новости сайт" || true
+          rclone copy "montazh:Брокер/Посты/Новости сайт" e --include "*.txt" --max-depth 1 --max-age 12d || true
           rclone lsf -R "montazh:Брокер/На удаление" --include "*000 *.txt" > udal.txt 2>/dev/null || true
           ls n | tail -20
       - name: Собрать страницы
-        run: python3 tools/novosti_build.py n udal.txt
+        run: python3 tools/novosti_build.py n udal.txt e
       - name: Отправить на сайт
         run: |
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf

@@ -59,6 +59,29 @@ def parse(text):
 
 def esc(s): return html.escape(s, quote=True)
 
+def parse_extra(text):
+    """Файл «Новости сайт/ДД.ММ тема.txt»: разделы @что делать: / @подробнее: / @источники: (строки «ссылка | название»)"""
+    sec, out = None, {'todo': [], 'more': [], 'src': []}
+    cur = []
+    def flush():
+        if sec == 'more' and cur: out['more'].append(cur[:])
+    for l in text.replace('\r\n', '\n').replace('\ufeff', '').split('\n'):
+        t = l.strip()
+        low = t.lower()
+        if low.startswith('@что делать'): flush(); cur = []; sec = 'todo'; continue
+        if low.startswith('@подробнее'): flush(); cur = []; sec = 'more'; continue
+        if low.startswith('@источники'): flush(); cur = []; sec = 'src'; continue
+        if not t:
+            flush(); cur = []; continue
+        if sec == 'todo': out['todo'].append(t.lstrip('-•–— ').strip())
+        elif sec == 'more': cur.append(t)
+        elif sec == 'src':
+            url, _, name = t.partition('|')
+            url = url.strip()
+            if url.startswith('http'): out['src'].append([url, name.strip() or urllib.parse.urlparse(url).netloc])
+    flush()
+    return out if any(out.values()) else None
+
 CSS = """*{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#16233a;font:17px/1.7 Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .w{max-width:760px;margin:0 auto;padding:20px 16px 90px}a{color:#2f6fd6}
 .back{display:inline-block;margin-bottom:14px;font-weight:700;text-decoration:none}
@@ -68,7 +91,7 @@ h1{font-size:28px;line-height:1.25;color:#16294a;margin:0 0 8px}h2{font-size:20p
 .go{display:flex;justify-content:center;align-items:center;gap:8px;background:#ff6b4a;color:#fff;font-weight:700;text-decoration:none;border-radius:14px;padding:15px;font-size:16px;box-shadow:0 5px 0 #c94a2f;margin-top:14px}
 .list a{display:block;text-decoration:none;color:#16233a;padding:14px 0;border-bottom:1px solid #dde3ea}.list a:last-child{border:0}
 .list b{display:block;color:#16294a;font-size:17px;line-height:1.35}.list span{color:#5f6b7a;font-size:13px}
-.note{font-size:13px;color:#64707b}
+.note{font-size:13px;color:#64707b}.card h2{margin:24px 0 10px}.card ol,.card ul{margin:0 0 16px;padding-left:22px}.card li{margin:6px 0}.src{font-size:15px}
 @media (max-width:600px){h1{font-size:23px}.card{padding:18px}}"""
 
 def wa(text):
@@ -103,6 +126,13 @@ def article_html(it):
                         "logo": {"@type": "ImageObject", "url": f'{BASE}/favicon.svg'}},
           "description": it['desc']}
     extra = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + '</script>'
+    ex = it.get('extra') or {}
+    if ex.get('more'):
+        paras += '<h2>Подробнее</h2>' + ''.join('<p>' + '<br>'.join(esc(x) for x in p) + '</p>' for p in ex['more'])
+    if ex.get('todo'):
+        paras += '<h2>Что делать</h2><ol>' + ''.join(f'<li>{esc(x)}</li>' for x in ex['todo']) + '</ol>'
+    if ex.get('src'):
+        paras += '<h2>Источники</h2><ul class="src">' + ''.join(f'<li><a href="{esc(u)}" target="_blank" rel="noopener nofollow">{esc(n)}</a></li>' for u, n in ex['src']) + '</ul>'
     body = f"""<a class="back" href="/novosti/">← Все новости Испании</a>
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
 {paras}</article>
@@ -144,7 +174,7 @@ def update_sitemap(items):
     s = s.replace('\n</urlset>', add + '\n</urlset>')
     p.write_text(s, encoding='utf-8')
 
-def main(src_dir, removed_list):
+def main(src_dir, removed_list, extra_dir=None):
     now = datetime.datetime.now(TZ)
     NEWS.mkdir(parents=True, exist_ok=True)
     data = json.loads(DATA.read_text(encoding='utf-8')) if DATA.exists() else {}
@@ -187,6 +217,14 @@ def main(src_dir, removed_list):
                    'source': f.name}
         changed = True
         print('новая', k, '→', slug)
+    if extra_dir and Path(extra_dir).exists():
+        for f in Path(extra_dir).glob('*.txt'):
+            m = re.match(r'(?:000 )?(\d{2}\.\d{2} .+)\.txt$', f.name)
+            if not m or m.group(1).strip() not in data: continue
+            ex = parse_extra(f.read_text(encoding='utf-8', errors='replace'))
+            k = m.group(1).strip()
+            if ex and data[k].get('extra') != ex:
+                data[k]['extra'] = ex; changed = True; print('дополнено', k)
     items = sorted(data.values(), key=lambda x: x['published'], reverse=True)
     for it in items:
         (NEWS / f"{it['slug']}.html").write_text(article_html(it), encoding='utf-8')
@@ -194,9 +232,10 @@ def main(src_dir, removed_list):
     update_home(items); update_sitemap(items)
     DATA.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding='utf-8')
     links = ['обновлено ' + now.strftime('%Y-%m-%d %H:%M'), 'формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте']
-    links += [f"{k} | {BASE}/novosti/{data[k]['slug']}" for k in sorted(data, key=lambda k: data[k]['published'], reverse=True)[:40]]
+    links[1] = 'формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко'
+    links += [f"{k} | {BASE}/novosti/{data[k]['slug']} | {'полная' if data[k].get('extra') else 'коротко'}" for k in sorted(data, key=lambda k: data[k]['published'], reverse=True)[:40]]
     Path('_ссылки_новостей.txt').write_text('\n'.join(links) + '\n', encoding='utf-8')
     print('изменения' if changed else 'без изменений')
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None, sys.argv[3] if len(sys.argv) > 3 else None)
