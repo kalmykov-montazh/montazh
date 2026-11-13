@@ -42,7 +42,8 @@ if src.size != (W, H):
     src = src.crop(((src.width - W) // 2, (src.height - H) // 2, (src.width - W) // 2 + W, (src.height - H) // 2 + H))
 hx = os.environ.get("HAAR") or os.path.join(ROOT, "scripts", "haar.xml")
 sys.path.insert(0, os.path.join(ROOT, "scripts")); from litso import najti
-fb_ = najti(cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR), hx)
+FXH = float(os.environ["FX"]) if os.environ.get("FX") else None
+fb_ = najti(cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR), hx, fx=FXH)
 if fb_:
     fx, fy, fw, fh = fb_
 else:

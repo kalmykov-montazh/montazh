@@ -64,7 +64,7 @@ jobs:
               if only and n not in only: continue
               l1, l2, pl, q = T[k]; p = pr.get(k, {})
               items.append({"n": n, "name": folder[:50], "file": c[2], "l1": p.get("l1", l1), "l2": p.get("l2", l2),
-                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", ""))})
+                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", "")), "fx": str(p.get("fx", ""))})
           print("m=" + json.dumps(items, ensure_ascii=False))
           PY
 
@@ -96,6 +96,7 @@ jobs:
           Q: ${{ matrix.v.q }}
           URL: ${{ matrix.v.url }}
           T: ${{ matrix.v.t }}
+          FX: ${{ matrix.v.fx }}
           MODE: ${{ inputs.mode }}
           KEY: ${{ inputs.key }}
         run: |
