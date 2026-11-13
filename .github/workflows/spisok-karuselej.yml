@@ -2,7 +2,7 @@ name: Список папок каруселей (для Claude)
 
 # 13.11.2026: Claude без gh не видит Диск — задача по push кладёт список папок «Брокер/Посты/Карусели»
 # в ветку tmp-spisok-karuselej (файл spisok.txt). Перезапуск — поменять строку ниже.
-# запуск: 2
+# запуск: 3
 
 on:
   workflow_dispatch:
@@ -27,6 +27,13 @@ jobs:
       - name: Список
         run: |
           rclone lsf -R --max-depth 2 --format "tsp" "montazh:Брокер/Посты/Карусели" > /tmp/spisok.txt 2>&1 || true
+          mkdir -p /tmp/t; for d in "NIE и TIE" "Зима в Валенсии" "Город искусств и наук" "Старый центр Валенсии" "Валенсия ночью"; do
+            mkdir -p "/tmp/t/$d"; rclone copy "montazh:Брокер/Посты/Карусели/$d" "/tmp/t/$d" --include "*.txt" --include "*.json" || true
+          done
+          rclone lsf "montazh:К публикации!/_задания" > /tmp/t/zadaniya.txt 2>&1 || true
+          mkdir -p /tmp/t/robot; rclone copy "montazh:Общее/Робот" /tmp/t/robot --include "*.py" --max-depth 1 || true
+          rclone lsf "montazh:Общее/Робот" > /tmp/t/robot_ls.txt 2>&1 || true
+          rclone lsf "montazh:К публикации!" --max-depth 1 > /tmp/t/kpub_ls.txt 2>&1 || true
           git config user.name montazh; git config user.email montazh@users.noreply.github.com
           git checkout -q --orphan tmp-spisok-karuselej; git rm -rfq . > /dev/null
-          cp /tmp/spisok.txt spisok.txt; git add spisok.txt; git commit -qm "список [skip ci]"; git push -fq origin tmp-spisok-karuselej
+          cp /tmp/spisok.txt spisok.txt; cp -r /tmp/t teksty; git add spisok.txt teksty; git commit -qm "список [skip ci]"; git push -fq origin tmp-spisok-karuselej
