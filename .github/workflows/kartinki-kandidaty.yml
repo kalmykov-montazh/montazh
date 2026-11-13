@@ -1,0 +1,25 @@
+name: Картинки — листы кандидатов (обложки Б)
+on:
+  workflow_dispatch:
+    inputs:
+      key:
+        description: "Ключ шифрования"
+        required: true
+permissions:
+  contents: write
+jobs:
+  k:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          pip install -q pillow
+          python3 scripts/kartinki_kandidaty.py out
+          tar czf p.tgz out && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out p.enc -pass env:KEY
+          mkdir g && cd g && cp ../p.enc . && git init -q && git checkout -q -b tmp-kand
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "k $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-kand
