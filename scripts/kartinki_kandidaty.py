@@ -1,9 +1,11 @@
 # 13.11.2026 (Евгений, 22:47: «картинки чтобы касались Испании и нашей темы»):
 # листы кандидатов картинок по темам обложек «Б» — Wikimedia Commons + Openverse, смотреть глазами и выбрать.
 #   python3 scripts/kartinki_kandidaty.py outdir
-import sys, os, json, io, urllib.request, urllib.parse
+import sys, os, json, io, time, urllib.request, urllib.error, urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, "hf/oblozhki"); from b_tekst import T
+from b_zaprosy import Q as QZ
+ONLY = [x for x in os.environ.get("ONLY", "").split("|") if x]
 OUT = sys.argv[1]; os.makedirs(OUT, exist_ok=True)
 UA = {"User-Agent": "kalmykov-montazh/1.0 (covers; github actions)"}
 X = {
@@ -49,8 +51,13 @@ X = {
  "Автостраховка дешевле": ["coche Valencia calle", "car keys insurance"],
  "Отель подешевел": ["hotel Valencia", "habitación de hotel"],
 }
-def get(u, t=15): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=t).read()
-def commons(q, n=5):
+def get(u, t=15):
+    for a in range(4):
+        try: return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=t).read()
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 503) and a < 3: time.sleep(3 + 4 * a); continue
+            raise
+def commons(q, n=7):
     api = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "format": "json", "generator": "search",
         "gsrnamespace": 6, "gsrlimit": 12, "gsrsearch": f"{q} filetype:bitmap", "prop": "imageinfo", "iiprop": "url|size|mime", "iiurlwidth": 1000})
     r = []
@@ -78,8 +85,9 @@ def one(k):
 def one_(k):
     l1, l2, pl, q = T[k]; t0 = time.time()
     cand, seen = [], set()
-    for qq in [q] + X.get(k, []):
-        for fn in (commons, openverse):
+    qs = QZ.get(k) or ([q] + X.get(k, []))
+    for qq in qs:
+        for fn in ((commons,) if k in QZ else (commons, openverse)):
             try:
                 for c in fn(qq):
                     if c["url"] not in seen: seen.add(c["url"]); c["q"] = qq; cand.append(c)
@@ -95,4 +103,4 @@ def one_(k):
     res[k] = ok; idx = list(T).index(k)
     sheet.save(f"{OUT}/{idx:02d}.jpg", quality=80); print(idx, k, len(ok), int(time.time() - t0), "с", flush=True)
     with LK: json.dump(res, open(f"{OUT}/kand.json", "w"), ensure_ascii=False, indent=1)
-with cf.ThreadPoolExecutor(10) as ex: list(ex.map(one, list(T)))
+with cf.ThreadPoolExecutor(3) as ex: list(ex.map(one, [k for k in T if not ONLY or k in ONLY]))

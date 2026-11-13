@@ -5,6 +5,10 @@ on:
       key:
         description: "Ключ шифрования"
         required: true
+      only:
+        description: "Темы через | (пусто — все из b_zaprosy)"
+        required: false
+        default: ""
 permissions:
   contents: write
 jobs:
@@ -15,10 +19,11 @@ jobs:
       - uses: actions/checkout@v4
       - env:
           KEY: ${{ inputs.key }}
+          ONLY: ${{ inputs.only }}
         run: |
           echo "::add-mask::$KEY"
           pip install -q pillow
-          timeout 2400 python3 scripts/kartinki_kandidaty.py out || true
+          [ -n "$ONLY" ] || ONLY=$(python3 -c 'import sys;sys.path.insert(0,"hf/oblozhki");from b_zaprosy import Q;print("|".join(Q))'); export ONLY; timeout 2400 python3 scripts/kartinki_kandidaty.py out || true
           tar czf p.tgz out && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out p.enc -pass env:KEY
           mkdir g && cd g && cp ../p.enc . && git init -q && git checkout -q -b tmp-kand
           git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "k $GITHUB_RUN_ID"
