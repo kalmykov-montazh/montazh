@@ -41,10 +41,10 @@ if src.size != (W, H):
     src = src.resize((round(src.width * s), round(src.height * s)), Image.LANCZOS)
     src = src.crop(((src.width - W) // 2, (src.height - H) // 2, (src.width - W) // 2 + W, (src.height - H) // 2 + H))
 hx = os.environ.get("HAAR") or os.path.join(ROOT, "scripts", "haar.xml")
-g = cv2.cvtColor(np.array(src), cv2.COLOR_RGB2GRAY)
-fs = cv2.CascadeClassifier(hx).detectMultiScale(g, 1.1, 5, minSize=(60, 60))
-if len(fs):
-    fx, fy, fw, fh = max(fs, key=lambda r: r[2] * r[3])
+sys.path.insert(0, os.path.join(ROOT, "scripts")); from litso import najti
+fb_ = najti(cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR), hx)
+if fb_:
+    fx, fy, fw, fh = fb_
 else:
     fx, fy, fw, fh = 340, 600, 400, 400
     print("oblozhka_b: лицо не найдено — кроп по центру")
