@@ -29,7 +29,7 @@ except Exception:
 bltxt = json.dumps(bl, ensure_ascii=False)
 locked = bool(open(LOCK).read().strip()) if os.path.exists(LOCK) else False
 
-files = [l.strip() for l in open(ALL, encoding="utf-8") if l.strip().endswith(".mp4")]
+files = sorted(l.strip() for l in open(ALL, encoding="utf-8") if l.strip().endswith(".mp4"))   # порядок постоянный — номера не скачут между запусками
 items, rows, n = [], [], 0
 only = {int(x) for x in ONLY.replace(" ", "").split(",") if x}
 for f in files:
