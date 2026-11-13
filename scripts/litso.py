@@ -9,6 +9,6 @@ def najti(img_bgr, hx):
         r = cv2.cvtColor(img_bgr[y:y + h, x:x + w], cv2.COLOR_BGR2YCrCb)
         skin = ((r[..., 1] > 133) & (r[..., 1] < 178) & (r[..., 2] > 80) & (r[..., 2] < 130)).mean()
         if skin < 0.35: continue
-        sc = skin * (w ** 0.5)
+        sc = skin * w * w                                   # самое крупное настоящее лицо, не глаз и не пятно
         if best is None or sc > best[0]: best = (sc, (x, y, w, h))
     return best[1] if best else None

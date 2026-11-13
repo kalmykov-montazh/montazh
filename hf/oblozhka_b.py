@@ -48,21 +48,38 @@ if fb_:
 else:
     fx, fy, fw, fh = 340, 600, 400, 400
     print("oblozhka_b: лицо не найдено — кроп по центру")
+# 13.11.2026: старые субтитры у подбородка (белые/жёлтые/зелёные буквы с чёрной обводкой) — закрашиваем фоном вокруг
+arr = cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR)
+y0s, y1s = max(0, int(fy + fh * 0.8)), min(H, int(fy + fh * 2.2))
+x0s, x1s = max(0, fx - fw), min(W, fx + 2 * fw)
+hsv = cv2.cvtColor(arr[y0s:y1s, x0s:x1s], cv2.COLOR_BGR2HSV)
+hh_, ss_, vv_ = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+txt = (((ss_ < 45) & (vv_ > 225)) | ((hh_ > 15) & (hh_ < 38) & (ss_ > 140) & (vv_ > 170)) | ((hh_ > 45) & (hh_ < 85) & (ss_ > 140) & (vv_ > 150))).astype(np.uint8)
+dark = (vv_ < 60).astype(np.uint8)
+near = cv2.dilate(dark, np.ones((7, 7), np.uint8))
+letters = cv2.dilate(txt & near, np.ones((3, 3), np.uint8))
+letters = cv2.morphologyEx(letters, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+mask = cv2.dilate(letters | (dark & cv2.dilate(letters, np.ones((9, 9), np.uint8))), np.ones((5, 5), np.uint8)) * 255
+if mask.mean() > 0.5:
+    full = np.zeros(arr.shape[:2], np.uint8); full[y0s:y1s, x0s:x1s] = mask
+    arr = cv2.inpaint(arr, full, 9, cv2.INPAINT_TELEA)
+    src = Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
+    print(f"oblozhka_b: стёрты старые субтитры ({(full > 0).mean() * 100:.2f}% кадра)")
 # кроп: голова и плечи, лицо ~38% ширины кропа
-cw = int(fw / 0.40); chh = int(cw * 1.18)
+cw = int(fw / 0.52); chh = int(fh * 1.95)          # 13.11.2026: только голова, без груди со старыми субтитрами
 cx = fx + fw // 2; top = fy - int(fh * 0.55)
 box = (cx - cw // 2, top, cx + cw // 2, top + chh)
 pad = Image.new("RGB", (W * 3, H * 3), "#0d1220"); pad.paste(src, (W, H))
 face = pad.crop((box[0] + W, box[1] + H, box[2] + W, box[3] + H))
 face = ImageEnhance.Contrast(face).enhance(1.06)
 FW = 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
-FY0 = 560; fh_ = min(face.height, 1390 - FY0)
+FY0 = max(520, 1370 - face.height); fh_ = min(face.height, 1380 - FY0)
 face = face.crop((0, 0, FW, fh_))
 hh = face.height
 xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
 ys = np.minimum(np.arange(hh) / 70.0, 1.0)[:, None]                                   # и верх
-chin = int(((fy + fh * 1.05) - top) * FW / cw)                                        # грудь со старыми субтитрами
-yc = np.clip(1.0 - (np.arange(hh) - chin) / 110.0, 0, 1)[:, None]
+chin = int(((fy + fh * 1.12) - top) * FW / cw)                                        # грудь со старыми субтитрами
+yc = np.clip(1.0 - (np.arange(hh) - chin) / 70.0, 0, 1)[:, None]
 m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8), "L")
 bg.paste(face, (W - FW, FY0), m)
 
