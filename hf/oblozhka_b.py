@@ -77,9 +77,10 @@ FY0 = max(520, 1370 - face.height); fh_ = min(face.height, 1380 - FY0)
 face = face.crop((0, 0, FW, fh_))
 hh = face.height
 xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
-ys = np.minimum(np.arange(hh) / 70.0, 1.0)[:, None]                                   # и верх
-chin = int(((fy + fh * 1.02) - top) * FW / cw)                                        # грудь со старыми субтитрами
-yc = np.clip(1.0 - (np.arange(hh) - chin) / 60.0, 0, 1)[:, None]
+ht = max(70.0, ((fy - fh * 0.12) - top) * FW / cw)                                    # 13.11.2026: верх до макушки уходит в тёмное —
+ys = np.clip(np.arange(hh) / ht, 0, 1) ** 1.6; ys = ys[:, None]; print("верх затемнён до", int(ht), "из", hh)                       # старые плашки над головой не видны
+chin = int(((fy + fh * 0.96) - top) * FW / cw)                                        # грудь со старыми субтитрами
+yc = np.clip(1.0 - (np.arange(hh) - chin) / 45.0, 0, 1)[:, None]
 m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8), "L")
 bg.paste(face, (W - FW, FY0), m)
 
