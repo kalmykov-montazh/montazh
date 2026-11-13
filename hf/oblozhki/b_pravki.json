@@ -1,1 +1,14 @@
-{}
+{
+  "У моря налог выше": {"q": "beach umbrellas sea Spain"},
+  "Хозяин продал": {"q": "sold sign house"},
+  "Аптека не магазин": {"q": "pharmacy shelves medicines"},
+  "Задержка оплаты": {"q": "wall calendar"},
+  "Чеклист перед подписью": {"q": "fountain pen signature"},
+  "Временный договор аренды": {"q": "fountain pen signature"},
+  "Номер для самоката": {"q": "electric kick scooter"},
+  "Банк заморозит": {"q": "credit cards"},
+  "Мусор мимо": {"q": "garbage bins street"},
+  "Звонят из банка": {"q": "smartphone screen hand"},
+  "Слабый контракт": {"q": "contract signature pen"},
+  "Документы из Украины": {"q": "documents folder papers"}
+}

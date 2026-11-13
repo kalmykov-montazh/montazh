@@ -58,9 +58,12 @@ face = ImageEnhance.Contrast(face).enhance(1.06)
 FW = 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
 FY0 = 560; fh_ = min(face.height, 1390 - FY0)
 face = face.crop((0, 0, FW, fh_))
-m = Image.new("L", face.size, 255); md = ImageDraw.Draw(m)
-for i in range(140): md.line((i, 0, i, face.height), fill=int(255 * i / 140))           # мягкий левый край
-for i in range(70): md.line((0, i, FW, i), fill=min(255, int(255 * i / 70)))             # и верх
+hh = face.height
+xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
+ys = np.minimum(np.arange(hh) / 70.0, 1.0)[:, None]                                   # и верх
+chin = int(((fy + fh * 1.45) - top) * FW / cw)                                        # грудь со старыми субтитрами
+yc = np.clip(1.0 - (np.arange(hh) - chin) / 170.0, 0, 1)[:, None]
+m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8), "L")
 bg.paste(face, (W - FW, FY0), m)
 
 d = ImageDraw.Draw(bg)

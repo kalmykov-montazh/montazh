@@ -52,6 +52,7 @@ if cands:
         im = c[5].copy(); cv2.putText(im, f'{c[0]:.1f}', (6, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
         sheet[(i // 4) * 320:(i // 4 + 1) * 320, (i % 4) * 180:(i % 4 + 1) * 180] = im
     cv2.imwrite(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.jpg'), sheet)
+    open(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.txt'), 'w').write('\n'.join(f'{c[0]:.2f}' for c in pick))
 t = best[1] if best else 1.0
 # 13.11.2026 (Евгений: «глаза полностью закрыты… сколько тебя учить»): если строгих кадров нет — не брать секунду наугад,
 # а самый открытый глаз при самом закрытом рте среди всех кадров с лицом
