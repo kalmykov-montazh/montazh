@@ -57,7 +57,7 @@ hh_, ss_, vv_ = hsv[..., 0], hsv[..., 1], hsv[..., 2]
 txt = (((ss_ < 45) & (vv_ > 225)) | ((hh_ > 15) & (hh_ < 38) & (ss_ > 140) & (vv_ > 170)) | ((hh_ > 45) & (hh_ < 85) & (ss_ > 140) & (vv_ > 150))).astype(np.uint8)
 dark = (vv_ < 60).astype(np.uint8)
 near = cv2.dilate(dark, np.ones((7, 7), np.uint8))
-letters = cv2.dilate(txt & near, np.ones((3, 3), np.uint8))
+letters = cv2.dilate((txt & near) | (txt & (ss_ > 140)), np.ones((7, 7), np.uint8))
 letters = cv2.morphologyEx(letters, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
 mask = cv2.dilate(letters | (dark & cv2.dilate(letters, np.ones((9, 9), np.uint8))), np.ones((5, 5), np.uint8)) * 255
 if mask.mean() > 0.5:
@@ -78,8 +78,8 @@ face = face.crop((0, 0, FW, fh_))
 hh = face.height
 xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
 ys = np.minimum(np.arange(hh) / 70.0, 1.0)[:, None]                                   # и верх
-chin = int(((fy + fh * 1.12) - top) * FW / cw)                                        # грудь со старыми субтитрами
-yc = np.clip(1.0 - (np.arange(hh) - chin) / 70.0, 0, 1)[:, None]
+chin = int(((fy + fh * 1.02) - top) * FW / cw)                                        # грудь со старыми субтитрами
+yc = np.clip(1.0 - (np.arange(hh) - chin) / 60.0, 0, 1)[:, None]
 m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8), "L")
 bg.paste(face, (W - FW, FY0), m)
 
