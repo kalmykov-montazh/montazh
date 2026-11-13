@@ -1,0 +1,147 @@
+name: Обложки Б — картинка-предмет (шортсы из лонгов и старый монтаж)
+
+# 13.11.2026 (Евгений, 20:38): «давай сделаем всё по варианту Б… глаза открыты, рот закрыт… поперерисовывай всё».
+# Список — те ролики из описи oblozhki-krupno (опись в tmp-obl-opis), у которых «нет ключа» или «нет cover»,
+# тексты и запрос картинки — hf/oblozhki/b_tekst.py (по куску имени папки). Кадр — pick_frame по самому ролику
+# (или поле t в правках hf/oblozhki/b_pravki.json), картинка — Wikimedia Commons (или своя url в правках).
+# proba — только картинки обложек в tmp-obl-pics; zamena — обложка в первые 0,12 с ролика + обложка.jpg.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "proba / zamena"
+        required: true
+        default: "proba"
+      only:
+        description: "Номера из описи через запятую (пусто — все)"
+        required: false
+        default: ""
+      key:
+        description: "Ключ шифрования"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - id: m
+        env:
+          ONLY: ${{ inputs.only }}
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          rclone copyto "montazh:Брокер/К публикации/_задания/_blotato.json" bl.json 2>/dev/null || echo '{}' > bl.json
+          rclone lsf "montazh:Брокер/К публикации/_задания/" --include "_blotato.lock" > lock.txt 2>/dev/null || true
+          : > all.txt
+          for r in "Брокер/На проверке" "Брокер/Готовые/Шортсы" "Брокер/К публикации"; do rclone lsf -R --files-only --include "*.mp4" "montazh:$r" | sed "s#^#$r/#" >> all.txt || true; done
+          python3 scripts/oblozhki_opis.py all.txt bl.json lock.txt "" > opis.txt
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, re, sys
+          sys.path.insert(0, "hf/oblozhki"); from b_tekst import T
+          pr = json.load(open("hf/oblozhki/b_pravki.json")) if os.path.exists("hf/oblozhki/b_pravki.json") else {}
+          only = {int(x) for x in os.environ["ONLY"].replace(" ", "").split(",") if x}
+          items = []
+          for l in open("opis.txt", encoding="utf-8"):
+              c = [x.strip() for x in l.split("|")]
+              if len(c) < 5 or not c[0].isdigit(): continue
+              n = int(c[0])
+              if c[4] not in ("нет ключа (старый монтаж)", "нет cover в novyj") or "ПРОБА HF" in c[2]: continue
+              folder = os.path.basename(os.path.dirname(c[2]))
+              k = next((k for k in T if k.lower() in folder.lower()), None)
+              if not k: print(f"::warning::нет текста для {folder}", file=sys.stderr); continue
+              if only and n not in only: continue
+              l1, l2, pl, q = T[k]; p = pr.get(k, {})
+              items.append({"n": n, "name": folder[:50], "file": c[2], "l1": p.get("l1", l1), "l2": p.get("l2", l2),
+                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", ""))})
+          print("m=" + json.dumps(items, ensure_ascii=False))
+          PY
+
+  one:
+    needs: plan
+    if: ${{ needs.plan.outputs.m != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        v: ${{ fromJSON(needs.plan.outputs.m) }}
+    name: "${{ matrix.v.n }} ${{ matrix.v.name }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Обложка Б
+        env:
+          F: ${{ matrix.v.file }}
+          N: ${{ matrix.v.n }}
+          L1: ${{ matrix.v.l1 }}
+          L2: ${{ matrix.v.l2 }}
+          PL: ${{ matrix.v.pl }}
+          Q: ${{ matrix.v.q }}
+          URL: ${{ matrix.v.url }}
+          T: ${{ matrix.v.t }}
+          MODE: ${{ inputs.mode }}
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          mkdir -p in out
+          rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
+          if [ -z "$T" ]; then python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true
+            T=$(grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}'); [ -n "$T" ] || T=2; fi
+          echo "кадр: $T с"
+          ffmpeg -v error -y -ss "$T" -i in/v.mp4 -frames:v 1 in/fr.png
+          if [ -n "$URL" ]; then curl -fsSL -A "kalmykov-montazh/1.0" -o in/pic.jpg "$URL" || true
+          else python3 scripts/oblozhka_b_kartinka.py "$Q" in/pic.jpg || true; fi
+          P=in/pic.jpg; [ -s "$P" ] || P=-
+          python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
+          ffmpeg -v error -y -i out/cover.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
+          if [ "$MODE" = "zamena" ]; then
+            D=$(dirname "$F")
+            ffmpeg -v error -y -i in/v.mp4 -i out/cover.png -filter_complex "[1:v]scale=1080:1920,format=rgba[c];[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[b];[b][c]overlay=0:0:enable='lt(t,0.12)',format=yuv420p" \
+              -map 0:a? -c:v libx264 -crf 15 -preset medium -x264-params aq-mode=3 -c:a copy -movflags +faststart in/new.mp4
+            a=$(ffprobe -v error -show_entries format=duration -of csv=p=0 in/v.mp4); b=$(ffprobe -v error -show_entries format=duration -of csv=p=0 in/new.mp4)
+            python3 -c "import sys;sys.exit(0 if abs($a-$b)<0.2 else 1)" || { echo "::error::длительность не совпала $a / $b"; exit 1; }
+            ffmpeg -v error -y -ss 0.03 -i in/new.mp4 -frames:v 1 -q:v 2 in/oblozhka.jpg
+            rclone copyto in/new.mp4 "montazh:$F"
+            rclone copyto in/oblozhka.jpg "montazh:$D/обложка.jpg"
+            echo "::notice::Заменено: $F"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obb-${{ matrix.v.n }}
+          path: out/*.jpg
+          retention-days: 3
+
+  list:
+    needs: one
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: a
+          merge-multiple: true
+      - env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          tar czf p.tgz a && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out p.enc -pass env:KEY
+          mkdir g && cd g && cp ../p.enc . && git init -q && git checkout -q -b tmp-obl-b
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "b $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-obl-b
