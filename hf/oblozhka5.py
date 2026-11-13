@@ -203,6 +203,14 @@ elif S5 == "hormozi":
             out.append(fit(d, t, MONT, int(base * k), W - 90, 44))
         return out
     y, fonts, hs = chest_block(lines, sz)
+    # 13.11.2026: на груди тесно (шрифт сжался) — первая белая строка уходит над голову крупно, на груди остальное
+    if len(lines) > 1 and above_ok and fonts[0].size < 112:
+        t0 = lines[0]; f0 = fit(d, t0, MONT, 124, W - 90, 52)
+        h0 = tsize(d, t0, f0)[1]
+        if h0 + 40 <= ABOVE[1] - ABOVE[0]:
+            ctext(d, ABOVE[1] - h0 - 30, t0, f0, "white", 10)
+            lines = lines[1:]; l1 = ""
+            y, fonts, hs = chest_block(lines, lambda k: [fit(d, t, MONT, int((124 if t != l3 or not l3 else 84) * k), W - 90, 44) for t in lines])
     for t, f, h in zip(lines, fonts, hs):
         if t == l2:
             w, _, b = tsize(d, t, f); x = (W - w) // 2
