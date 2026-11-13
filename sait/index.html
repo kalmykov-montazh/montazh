@@ -423,6 +423,24 @@ footer .legal a{color:#5f6b7a}
 .langsw{position:absolute;left:12px;top:12px;z-index:5;display:flex;background:rgba(255,255,255,.92);border-radius:99px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .langsw a{padding:5px 11px;border-radius:99px;font-size:13px;font-weight:800;color:#16294a;text-decoration:none}
 .langsw a.on{background:#16294a;color:#fff}
+
+/* 13.11.2026: соцсети — прямоугольники на всю строку; плитки — с фото */
+nav.socials#socials{display:grid!important;grid-template-columns:repeat(8,1fr)!important;gap:8px!important;flex-wrap:initial!important}
+nav.socials#socials a{width:auto!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important;padding:11px 8px!important;border-radius:12px!important;background:var(--c)!important;box-shadow:0 3px 10px color-mix(in srgb,var(--c) 35%,transparent)!important;color:#fff!important;transition:transform .15s,box-shadow .15s}
+nav.socials#socials a:hover{transform:translateY(-2px)!important;box-shadow:0 8px 18px color-mix(in srgb,var(--c) 45%,transparent)!important}
+nav.socials#socials .ic{width:auto!important;height:auto!important;max-width:none!important;aspect-ratio:auto!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:#fff}
+nav.socials#socials .ic svg{width:20px!important;height:20px!important;fill:#fff}
+nav.socials#socials span{display:block!important}
+nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weight:700}
+@media (max-width:1000px){nav.socials#socials{grid-template-columns:repeat(4,1fr)!important}}
+@media (max-width:600px){nav.socials#socials{gap:6px!important}nav.socials#socials a{padding:10px 4px!important;gap:5px!important;width:auto!important}nav.socials#socials .ic{width:auto!important;height:auto!important}nav.socials#socials .ic svg{width:17px!important;height:17px!important}nav.socials#socials span{display:block!important}nav.socials#socials b{font-size:11.5px!important}}
+.tiles>*{padding:0!important;overflow:hidden;background:#fff!important}
+.tiles>*:first-child{outline:3px solid #ff6b4a;outline-offset:-3px}
+.tiles>*:first-child b{color:#16294a!important}.tiles>*:first-child span{color:#5f6b7a!important}
+.tiles i.timg{display:block;width:100%;height:96px;margin:0!important;background:#16294a center/cover no-repeat;position:relative}
+.tiles i.timg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,44,0) 40%,rgba(10,22,44,.35))}
+.tiles b,.tiles span{padding:0 14px}.tiles b{padding-top:10px}.tiles span{padding-bottom:13px}
+@media (max-width:700px){.tiles i.timg{height:78px}.tiles b{padding:8px 11px 0}.tiles span{padding:0 11px 11px}}
 </style>
 </head>
 <body class="v-c">
@@ -448,10 +466,10 @@ footer .legal a{color:#5f6b7a}
   <nav class="socials" aria-label="Соцсети" id="socials"></nav>
 
   <nav class="tiles" aria-label="Чем помочь">
-    <button type="button" data-open="dlg-match"><i>🔑</i><b>Квартиры</b><span>Сдаю, продаю, помогу найти</span></button>
-    <a href="#h-consult"><i>📄</i><b>Разобрать договор</b><span>Письменно, от 50 €</span></a>
-    <button type="button" data-open="dlg-calc"><i>🧮</i><b>Калькулятор покупки</b><span>Налоги и расходы сверху</span></button>
-    <button type="button" data-open="dlg-dist"><i>📍</i><b>Районы Валенсии</b><span>Цены аренды, плюсы и минусы</span></button>
+    <button type="button" data-open="dlg-match"><i class="timg" style="background-image:url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&h=300&q=70)"></i><b>Квартиры</b><span>Сдаю, продаю, помогу найти</span></button>
+    <a href="#h-consult"><i class="timg" style="background-image:url(https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=600&h=300&q=70)"></i><b>Разобрать договор</b><span>Письменно, от 50 €</span></a>
+    <button type="button" data-open="dlg-calc"><i class="timg" style="background-image:url(https://images.unsplash.com/photo-1648201637025-1c77b9be3013?auto=format&fit=crop&w=600&h=300&q=70)"></i><b>Калькулятор покупки</b><span>Налоги и расходы сверху</span></button>
+    <button type="button" data-open="dlg-dist"><i class="timg" style="background-image:url(https://images.unsplash.com/photo-1526578664097-be6599f42415?auto=format&fit=crop&w=600&h=300&q=70)"></i><b>Районы Валенсии</b><span>Цены аренды, плюсы и минусы</span></button>
   </nav>
 
   <section class="checklist reveal" aria-labelledby="h-check">
