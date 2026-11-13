@@ -93,8 +93,11 @@ jobs:
           OK="Брокер/работа/$K"
           rclone lsf "montazh:Брокер/работа/${K}_mir/osnova.mp4" 2>/dev/null | grep -q . && OK="Брокер/работа/${K}_mir"
           rclone copyto "montazh:$OK/osnova.mp4" in/osnova.mp4 --multi-thread-streams 8 || { echo "::warning::нет основы $OK"; exit 0; }
-          python3 scripts/pick_frame.py in/osnova.mp4 in/pick.png > pick.txt 2>&1 || true
-          T=$(grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}'); [ -n "$T" ] || T=1
+          # кадр, проверенный глазами (cover_t в novyj), важнее автовыбора — как в skleiki.yml
+          T=$(python3 -c "import json;print(json.load(open('novyj/$K.json')).get('cover_t',''))")
+          if [ -z "$T" ]; then python3 scripts/pick_frame.py in/osnova.mp4 in/pick.png > pick.txt 2>&1 || true
+            T=$(grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}'); [ -n "$T" ] || T=1; fi
+          echo "кадр обложки: $T с"
           ffmpeg -v error -y -ss "$T" -i in/osnova.mp4 -frames:v 1 \
             -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
           python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
