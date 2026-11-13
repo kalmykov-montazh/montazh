@@ -1,0 +1,44 @@
+name: Рилсы из каруселей — пачка (для Claude)
+
+# 14.11.2026: собирает рилсы с музыкой из старых каруселей, ставит Instagram/TikTok в Blotato,
+# меняет видео отложенного YouTube Shorts, кладёт задание роботу Facebook. Итог и кадры — в ветку tmp-rilsy.
+# Запуск — push этого файла. РЕЖИМ ниже: dry (только собрать и показать) или post.
+# РЕЖИМ: dry
+# ФАЙЛ: karuseli/rilsy_1411.json
+# запуск: 1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/rilsy-partiya.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Пачка
+        run: |
+          which ffmpeg > /dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg > /dev/null; }
+          pip install -q pillow numpy
+          rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
+          M=$(grep -m1 '^# РЕЖИМ:' .github/workflows/rilsy-partiya.yml | awk '{print $3}')
+          F=$(grep -m1 '^# ФАЙЛ:' .github/workflows/rilsy-partiya.yml | awk '{print $3}')
+          A=""; [ "$M" = "dry" ] && A="--dry"
+          python3 scripts/karusel/rilsy_partiya.py "$F" $A 2>&1 | tee out_log.txt || true
+          mkdir -p out; cp out_log.txt out/
+          rm -f key.txt
+          git config user.name montazh; git config user.email montazh@users.noreply.github.com
+          cp -r out /tmp/out
+          git checkout -q --orphan tmp-rilsy; git rm -rfq . > /dev/null; rm -rf k out
+          cp -r /tmp/out out; git add out; git commit -qm "итог [skip ci]"; git push -fq origin tmp-rilsy
