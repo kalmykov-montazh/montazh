@@ -49,7 +49,7 @@ X = {
  "Автостраховка дешевле": ["coche Valencia calle", "car keys insurance"],
  "Отель подешевел": ["hotel Valencia", "habitación de hotel"],
 }
-def get(u, t=30): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=t).read()
+def get(u, t=15): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=t).read()
 def commons(q, n=5):
     api = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "format": "json", "generator": "search",
         "gsrnamespace": 6, "gsrlimit": 12, "gsrsearch": f"{q} filetype:bitmap", "prop": "imageinfo", "iiprop": "url|size|mime", "iiurlwidth": 1000})
@@ -70,24 +70,26 @@ def openverse(q, n=5):
     return r
 try: F = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
 except Exception: F = ImageFont.load_default()
+import concurrent.futures as cf, time
 res = {}
-for k, (l1, l2, pl, q) in T.items():
+def one(k):
+    l1, l2, pl, q = T[k]; t0 = time.time()
     cand, seen = [], set()
     for qq in [q] + X.get(k, []):
         for fn in (commons, openverse):
             try:
                 for c in fn(qq):
                     if c["url"] not in seen: seen.add(c["url"]); c["q"] = qq; cand.append(c)
-            except Exception as e: print("ошибка", k, qq, fn.__name__, e)
+            except Exception as e: print("ошибка", k, qq, fn.__name__, e, flush=True)
     cand = cand[:20]; ok = []
     sheet = Image.new("RGB", (5 * 300, 4 * 260), "white"); d = ImageDraw.Draw(sheet)
     for c in cand:
-        try: im = Image.open(io.BytesIO(get(c["th"], 20))).convert("RGB")
+        try: im = Image.open(io.BytesIO(get(c["th"], 12))).convert("RGB")
         except Exception: continue
         i = len(ok); im.thumbnail((296, 220)); x, y = (i % 5) * 300, (i // 5) * 260
         sheet.paste(im, (x + 2, y + 2)); d.rectangle([x + 2, y + 2, x + 40, y + 28], fill="yellow"); d.text((x + 6, y + 4), str(i), fill="black", font=F)
         d.text((x + 4, y + 226), c["t"][:30], fill="black", font=F); ok.append(c)
-        if len(ok) >= 20: break
     res[k] = ok; idx = list(T).index(k)
-    sheet.save(f"{OUT}/{idx:02d}.jpg", quality=80); print(idx, k, len(ok))
-json.dump(res, open(f"{OUT}/kand.json", "w"), ensure_ascii=False, indent=1)
+    sheet.save(f"{OUT}/{idx:02d}.jpg", quality=80); print(idx, k, len(ok), int(time.time() - t0), "с", flush=True)
+    json.dump(res, open(f"{OUT}/kand.json", "w"), ensure_ascii=False, indent=1)
+with cf.ThreadPoolExecutor(10) as ex: list(ex.map(one, list(T)))
