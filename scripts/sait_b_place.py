@@ -55,7 +55,8 @@ else:
     if avail >= 170: h = int(min(320, avail)); top = 120; lay = "верх"
     else: h = 200; top = 1690; lay = "низ"
 # движение и надписи в полосе окошка
-y0, y1 = int(top / K), int(min(SH - 1, (top + h) / K))
+# зона проверки — окошко и 130 px вокруг (плашка сразу под окошком тоже мешает, проба «Автостраховка»)
+y0, y1 = int(max(0, top - 40) / K), int(min(SH - 1, (top + h + 130) / K))
 act = np.zeros(n)
 for i in range(1, n):
     reg = fr[i][y0:y1]; prv = fr[i - 1][y0:y1]
