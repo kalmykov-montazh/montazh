@@ -304,7 +304,7 @@ for n, (gi, built, te) in enumerate(clean):
 # сверху над головой (где нет плашек), иначе внизу под субтитрами; не на лице, не поверх белой карточки в конце
 KART = []
 PICB = []
-SAIT = spec.get("sait")
+SAIT = spec.get("sait"); SAIT_T = []
 if SAIT:
     SD = float(SAIT.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
     ws = sorted({w["s"] for w in W if max(start_min, 6.0) <= w["s"] <= CTA_T - 0.3 - SD})
@@ -329,7 +329,7 @@ if SAIT:
         t = order[0]; t1 = t + SD; shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
         H.append(f'<div id="sait" class="sait mini" style="top:{max(40, TOP - 110)}px"><u><img src="kg.svg">kalmykovgroup.com</u><i>Ссылка в шапке профиля</i></div>')
         tl(f'tl.from("#sait",{{y:-200,opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).to("#sait",{{y:-100,opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
-        snd("whoosh", t - 0.12, 0.25); log(f"окошко сайта: МИНИ-полоска в {t:.1f} с (нет места)")
+        snd("whoosh", t - 0.12, 0.25); SAIT_T.append((t, t1)); log(f"окошко сайта: МИНИ-полоска в {t:.1f} с (нет места)")
     elif pick is None: log("окошко сайта пропущено: нет места")
     else:
         t, where = pick; t1 = t + SD
@@ -349,7 +349,7 @@ if SAIT:
                  f'<div class="st"><u><img src="kg.svg">kalmykovgroup.com</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
         dy = 320 if where == "низ" or (where == "ручное" and top > 900) else -320
         tl(f'tl.from("#sait",{{y:{dy},opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).from("#sait i",{{scale:0,duration:0.35,ease:"back.out(3)"}},{t+0.5:.3f}).to("#sait",{{y:{dy//2},opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
-        snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2)
+        snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2); SAIT_T.append((t, t1))
         log(f"окошко сайта: {SAIT['img']} в {t:.1f} с ({where}), «{main}»")
 
 # ---------- картинки-предметы (03.11.2026): фото-карточка сбоку сверху, только когда верх свободен ----------
@@ -395,6 +395,8 @@ if CTA:
 if not spec.get("no_kg"):
     shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
     H.append('<img id="kgw" class="kgw" src="kg.svg">')
+    # пока окошко сайта на экране — значок прячется (в окошке свой KG)
+    for _a, _b in SAIT_T: tl(f'tl.to("#kgw",{{opacity:0,duration:0.2}},{_a-0.1:.3f}).to("#kgw",{{opacity:0.9,duration:0.3}},{_b:.3f});')
 
 # ---------- субтитры «микс» (overlay.py поверх рендера) ----------
 mix = spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))] * 4
