@@ -11,12 +11,16 @@
 #   chb     — Ч/Б + КРАСНОЕ СЛОВО: кадр ч/б, top — белая строка над головой, bot — крупно красным на груди
 # Автовыбор: тег НОВ → novost, ПУТЬ / ХРОН → chb, cover.word задан → spina, иначе shapka.
 # Правила: текст никогда на лице и голове, весь текст в полосе y 300–1450 (сетка профиля 3:4), главное слово крупно.
+# 13.11.2026 (Евгений, скрин сетки Instagram 18:29): «сильно мелко» — все 5 стилей КРУПНЕЕ (×1.2–1.3, минимумы выше),
+# новость: метка «НОВОСТЬ · <top>», bot одной жёлтой строкой во всю ширину (230 → не меньше 110), полоса сразу под подбородком, низ не ниже 1500
+# (ниже — счётчик просмотров в сетке).
 import os, sys, json, re, subprocess
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 
 W, H = 1080, 1920
-Y0, Y1 = 300, 1450
+Y0, Y1 = 300, 1500   # 13.11.2026: низ 1450 → 1500 (в сетке 3:4 видно до 1680, счётчик просмотров ниже 1560)
+YN = 1500   # низ полосы новости: выше счётчика просмотров в сетке
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FD = os.path.join(ROOT, "fonts")
 
@@ -139,15 +143,15 @@ if S5 == "shapka":
     small = TOP if BOT else ""
     big = BOT or TOP
     top = HEAD_TOP - 25
-    bl = split2(big, d, lambda s: UNB(s), 118, W - 110)
-    fb = fit(d, max(bl, key=len), UNB, 118, W - 110, 52)
-    fsm = fit(d, small, UNB, 56, W - 140, 34) if small else None
+    bl = split2(big, d, lambda s: UNB(s), 148, W - 80)
+    fb = fit(d, max(bl, key=len), UNB, 148, W - 80, 64)
+    fsm = fit(d, small, UNB, 70, W - 120, 44) if small else None
     hb = tsize(d, "ЁЙ", fb)[1]; hs = tsize(d, "ЁЙ", fsm)[1] if fsm else 0
     need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 24 if fsm else 0) + 40
     if top - Y0 < need:                      # голова высоко — шапка ниже не опускается, уменьшаем
         for k in (0.9, 0.8, 0.7, 0.6):
-            fb = fit(d, max(bl, key=len), UNB, int(118 * k), W - 110, 40); hb = tsize(d, "ЁЙ", fb)[1]
-            if fsm: fsm = UNB(max(30, int(56 * k))); hs = tsize(d, "ЁЙ", fsm)[1]
+            fb = fit(d, max(bl, key=len), UNB, int(148 * k), W - 80, 52); hb = tsize(d, "ЁЙ", fb)[1]
+            if fsm: fsm = UNB(max(40, int(70 * k))); hs = tsize(d, "ЁЙ", fsm)[1]
             need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 24 if fsm else 0) + 40
             if top - Y0 >= need: break
         top = max(top, Y0 + need)
@@ -177,14 +181,14 @@ elif S5 == "spina":
     d = ImageDraw.Draw(im)
     y = CHEST[0]
     if TOP:
-        fp = fit(d, TOP, lambda s: RUB(s), 74, W - 180, 34)
+        fp = fit(d, TOP, lambda s: RUB(s), 96, W - 140, 48)
         tw, th, tb = tsize(d, TOP, fp)
         bx = (W - tw - 68) // 2
         d.rounded_rectangle([bx, y, bx + tw + 68, y + th + 44], radius=12, fill="#ffd400")
         d.text((bx + 34 - tb[0], y + 22 - tb[1]), TOP, font=fp, fill="black")
         y += th + 44 + 22
     if BOT and y < Y1 - 60:
-        ctext(d, y, BOT.lower(), fit(d, BOT.lower(), CAV, 110, W - 120, 50), "white", 5, "#111")
+        ctext(d, y, BOT.lower(), fit(d, BOT.lower(), CAV, 140, W - 80, 64), "white", 5, "#111")
 
 elif S5 == "hormozi":
     l1 = TOP or (BOTL[0] if len(BOTL) > 1 else "")
@@ -195,8 +199,8 @@ elif S5 == "hormozi":
     def sz(k):
         out = []
         for i, t in enumerate(lines):
-            base = 96 if t != l3 or not l3 else 64
-            out.append(fit(d, t, MONT, int(base * k), W - 120, 34))
+            base = 124 if t != l3 or not l3 else 80
+            out.append(fit(d, t, MONT, int(base * k), W - 90, 44))
         return out
     y, fonts, hs = chest_block(lines, sz)
     for t, f, h in zip(lines, fonts, hs):
@@ -209,26 +213,42 @@ elif S5 == "hormozi":
         y += h + 30
 
 elif S5 == "novost":
+    # 13.11.2026: крупно. Метка «НОВОСТЬ · <top>», bot — жёлтым во всю ширину, полоса сразу под подбородком
     lab = up(cov.get("label")) or "ВАЖНО"
-    tf = OSW(52); w, h, b = tsize(d, lab, tf)
-    ly = Y0 + 50 if above_ok else CHEST[0] - h - 60
-    d.rectangle([50, ly, 50 + w + 100, ly + h + 30], fill="#e3191c")
-    d.ellipse([74, ly + (h + 30) // 2 - 12, 98, ly + (h + 30) // 2 + 12], fill="white")
-    d.text((122 - b[0], ly + 15 - b[1]), lab, font=tf, fill="white")
-    l1, l2 = (TOP, BOT) if TOP and BOT else (BOTL[0] if len(BOTL) > 1 else (TOP or BOT), " ".join(BOTL[1:]) if len(BOTL) > 1 and not TOP else "")
-    lines = [x for x in (l1, l2) if x]
-    f = fit(d, max(lines, key=len), OSW, 110, W - 110, 44)
-    hh = tsize(d, "ЁЙ", f)[1]
-    top = CHEST[0]; bot = top + 40 + hh * len(lines) + 20 * (len(lines) - 1)
-    if bot > Y1 + 20:
-        f = fit(d, max(lines, key=len), OSW, int(110 * (Y1 - top - 40) / (bot - top)), W - 110, 40); hh = tsize(d, "ЁЙ", f)[1]
-        bot = top + 40 + hh * len(lines) + 20 * (len(lines) - 1)
+    lines = BOTL or ([TOP] if TOP else [])
+    if TOP and BOTL: lab = f"{lab} · {TOP}"
+    tf = fit(d, lab, OSW, 66, W - 230, 44); w, h, b = tsize(d, lab, tf)
+    lab_in_band = not above_ok
+    if not lab_in_band:
+        ly = Y0 + 40
+        d.rectangle([40, ly, 40 + w + 104, ly + h + 36], fill="#e3191c")
+        d.ellipse([64, ly + (h + 36) // 2 - 13, 90, ly + (h + 36) // 2 + 13], fill="white")
+        d.text((112 - b[0], ly + 18 - b[1]), lab, font=tf, fill="white")
+    one = " ".join(lines)
+    f1 = fit(d, one, OSW, 230, W - 90, 60)
+    if f1.size >= 150 or len(lines) == 1 and " " not in one:
+        rows = [one]; f = f1
+    else:
+        rows = lines if len(lines) > 1 else split2(one, d, OSW, 200, W - 90)
+        f = fit(d, max(rows, key=len), OSW, 200, W - 90, 60)
+    def band(fnt):
+        hh_ = tsize(d, "ЁЙ", fnt)[1]
+        lh = (tsize(d, "ЁЙ", tf)[1] + 26) if lab_in_band else 0
+        return hh_, lh, 48 + lh + hh_ * len(rows) + 22 * (len(rows) - 1)
+    hh, lh, bh = band(f)
+    top = max(CHIN + 10, 820)
+    while top + bh > YN and f.size > 110:
+        f = OSW(f.size - 6); hh, lh, bh = band(f)
+    if top + bh > YN: top = max(700, YN - bh)
+    bot = top + bh
     ov = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(ov).rectangle([0, top, W, bot], fill=(10, 12, 16, 235))
     im.alpha_composite(ov); d = ImageDraw.Draw(im)
-    d.rectangle([0, top, 22, bot], fill="#e3191c")
-    y = top + 20
-    for i, t in enumerate(lines):
-        _, _, b = tsize(d, t, f); d.text((60, y - b[1]), t, font=f, fill="white" if i == 0 else "#ffd400"); y += hh + 20
+    d.rectangle([0, top, 24, bot], fill="#e3191c")
+    y = top + 24
+    if lab_in_band:
+        _, _, bb = tsize(d, lab, tf); d.text((60 - bb[0], y - bb[1]), lab, font=tf, fill="white"); y += lh
+    for t in rows:
+        _, _, bb = tsize(d, t, f); d.text((56 - bb[0], y - bb[1]), t, font=f, fill="#ffd400"); y += hh + 22
 
 elif S5 == "chb":
     gimg = ImageEnhance.Contrast(ImageOps.grayscale(src)).enhance(1.35).convert("RGBA")
@@ -236,12 +256,16 @@ elif S5 == "chb":
     red = BOT or TOP
     small = TOP if BOT else ""
     if small:
-        fs_ = fit(d, small, lambda s: RUB(s, 800), 76, W - 100, 34)
+        fs_ = fit(d, small, lambda s: RUB(s, 800), 96, W - 80, 48)
         if above_ok: ctext(d, ABOVE[1] - tsize(d, small, fs_)[1] - 30, small, fs_, "white")
-    rl = split2(red, d, RUSSO, 150, W - 70)
-    f = fit(d, max(rl, key=len), RUSSO, 150, W - 70, 50)
+    rl = split2(red, d, RUSSO, 190, W - 50)
+    f = fit(d, max(rl, key=len), RUSSO, 190, W - 50, 70)
     hh = tsize(d, "ЁЙ", f)[1]
     y = CHEST[0] + (0 if above_ok or not small else tsize(d, small, fs_)[1] + 30)
+    while y + hh * len(rl) + 16 * (len(rl) - 1) > Y1 and f.size > 70:   # 13.11.2026: не вылезать ниже полосы
+        f = RUSSO(f.size - 6); hh = tsize(d, "ЁЙ", f)[1]
+    f1 = fit(d, red, RUSSO, 190, W - 50, 60)                              # одной строкой крупнее? — берём одну
+    if len(rl) > 1 and f1.size > f.size: rl, f = [red], f1; hh = tsize(d, "ЁЙ", f)[1]
     if not above_ok and small: ctext(d, CHEST[0], small, fs_, "white")
     sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
     yy = y

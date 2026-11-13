@@ -1,0 +1,137 @@
+name: Обложки крупно — перерисовать у готовых роликов
+
+# 13.11.2026 (Евгений, 18:35): «Выбираем максимально крупные обложки… пройдёмся по всем обложкам: что на проверке,
+# что в папке готовое… если не изменит то, что уже в Blotato, — меняй, если надо снимать и ставить заново — не надо».
+# Обложку рисует hf/oblozhka5.py (крупная версия 13.11). Кадр — лучший из основы «работа/<ключ>/osnova.mp4»
+# (тёплый цвет как в пачке), стиль и текст — novyj/<ключ>.json → cover. Новая обложка встаёт в первые 0,12 с ролика
+# (как в монтаже) и в обложка.jpg рядом. Ролики, уже загруженные в Blotato (есть в _blotato.json), НЕ трогаются.
+# mode: spisok — только опись; proba — нарисовать обложки (без замены), лист для проверки; zamena — заменить.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "spisok / proba / zamena"
+        required: true
+        default: "spisok"
+      roots:
+        description: "Папки через ;"
+        required: false
+        default: "Брокер/На проверке;Брокер/Готовые/Шортсы;Брокер/К публикации"
+      only:
+        description: "Номера из описи через запятую (пусто — все)"
+        required: false
+        default: ""
+      key:
+        description: "Ключ шифрования для описи и картинок"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - id: m
+        env:
+          ROOTS: ${{ inputs.roots }}
+          ONLY: ${{ inputs.only }}
+          MODE: ${{ inputs.mode }}
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          rclone copyto "montazh:Брокер/К публикации/_задания/_blotato.json" bl.json 2>/dev/null || echo '{}' > bl.json
+          rclone lsf "montazh:Брокер/К публикации/_задания/" --include "_blotato.lock" > lock.txt 2>/dev/null || true
+          : > all.txt
+          IFS=';' read -ra RS <<< "$ROOTS"
+          for r in "${RS[@]}"; do rclone lsf -R --files-only --include "*.mp4" "montazh:$r" | sed "s#^#$r/#" >> all.txt || true; done
+          python3 scripts/oblozhki_opis.py all.txt bl.json lock.txt "$ONLY" > opis.txt
+          tail -3 opis.txt
+          python3 -c "import json;print('m='+json.dumps(json.load(open('items.json')),ensure_ascii=False))" >> "$GITHUB_OUTPUT"
+          mkdir -p o && cp opis.txt items.json o/ && tar czf o.tgz o && openssl enc -aes-256-cbc -pbkdf2 -salt -in o.tgz -out opis.enc -pass env:KEY
+          mkdir g && cd g && cp ../opis.enc . && git init -q && git checkout -q -b tmp-obl-opis
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "opis $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-obl-opis
+
+  one:
+    needs: plan
+    if: ${{ inputs.mode != 'spisok' && needs.plan.outputs.m != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        v: ${{ fromJSON(needs.plan.outputs.m) }}
+    name: "${{ matrix.v.n }} ${{ matrix.v.name }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Обложка
+        env:
+          K: ${{ matrix.v.key }}
+          F: ${{ matrix.v.file }}
+          N: ${{ matrix.v.n }}
+          MODE: ${{ inputs.mode }}
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          mkdir -p in out
+          OK="Брокер/работа/$K"
+          rclone lsf "montazh:Брокер/работа/${K}_mir/osnova.mp4" 2>/dev/null | grep -q . && OK="Брокер/работа/${K}_mir"
+          rclone copyto "montazh:$OK/osnova.mp4" in/osnova.mp4 --multi-thread-streams 8 || { echo "::warning::нет основы $OK"; exit 0; }
+          python3 scripts/pick_frame.py in/osnova.mp4 in/pick.png > pick.txt 2>&1 || true
+          T=$(grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}'); [ -n "$T" ] || T=1
+          ffmpeg -v error -y -ss "$T" -i in/osnova.mp4 -frames:v 1 \
+            -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
+          python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
+          ffmpeg -v error -y -i out/cover_full.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
+          if [ "$MODE" = "zamena" ]; then
+            D=$(dirname "$F")
+            rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
+            ffmpeg -v error -y -i in/v.mp4 -i out/cover_full.png -filter_complex "[1:v]scale=1080:1920,format=rgba[c];[0:v][c]overlay=0:0:enable='lt(t,0.12)',format=yuv420p" \
+              -map 0:a? -c:v libx264 -crf 15 -preset medium -x264-params aq-mode=3 -c:a copy -movflags +faststart in/new.mp4
+            ffmpeg -v error -y -ss 0.03 -i in/new.mp4 -frames:v 1 -q:v 2 in/oblozhka.jpg
+            a=$(ffprobe -v error -show_entries format=duration -of csv=p=0 in/v.mp4); b=$(ffprobe -v error -show_entries format=duration -of csv=p=0 in/new.mp4)
+            python3 -c "import sys;sys.exit(0 if abs($a-$b)<0.2 else 1)" || { echo "::error::длительность не совпала $a / $b"; exit 1; }
+            rclone copyto in/new.mp4 "montazh:$F"
+            rclone copyto in/oblozhka.jpg "montazh:$D/обложка.jpg"
+            echo "::notice::Заменено: $F"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obl-${{ matrix.v.n }}
+          path: out/*.jpg
+          retention-days: 3
+
+  list:
+    needs: one
+    if: ${{ always() && inputs.mode != 'spisok' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: a
+          merge-multiple: true
+      - env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          ls a | wc -l
+          tar czf p.tgz a && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out p.enc -pass env:KEY
+          mkdir g && cd g && cp ../p.enc . && git init -q && git checkout -q -b tmp-obl-pics
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "pics $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-obl-pics
