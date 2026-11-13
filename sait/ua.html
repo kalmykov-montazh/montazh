@@ -10,6 +10,7 @@
 <meta property="og:type" content="website">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://kalmykovgroup.com/ua">
 <link rel="alternate" hreflang="ru" href="https://kalmykovgroup.com/">
 <link rel="alternate" hreflang="uk" href="https://kalmykovgroup.com/ua.html">
 <title>Євген Калмиков — оренда, купівля та переїзд до Валенсії, Іспанія</title>
@@ -867,6 +868,22 @@ var cv=document.querySelector('.cover'),im=cv&&cv.querySelector('img'),set=IMG[f
 function swap(el,src){if(!el||!src)return;var p=new Image();p.onload=function(){el.src=src;el.classList.add('fest2img')};p.src=src}
 swap(im,set.cover);swap(document.querySelector('.avatar'),set.ava);
 document.body.classList.add('fest2-on');var t=T[k],h='<div class="fcard"><i>'+t[0]+'</i><div><b>'+t[1]+'</b><span>'+t[2]+'</span></div></div>';var pr=document.querySelector('.profile');if(window.matchMedia('(max-width:600px)').matches&&pr){pr.insertAdjacentHTML('afterend',h)}else if(cv){cv.insertAdjacentHTML('beforeend',h)}
+})();
+</script>
+<script>
+/* 13.11.2026: откуда пришёл человек (короткие ссылки /ig /fb /tt…) — дописывается в сообщение WhatsApp */
+(function(){
+var N={ig:'Instagram',fb:'Facebook',tt:'TikTok',yt:'YouTube',tg:'Telegram',th:'Threads',ob:'Telegram «Объекты»',kr:'Telegram «Кружочки»',x:'X',bs:'Bluesky',wa:'WhatsApp',gm:'Google Карты'};
+var k=(location.pathname.match(/^\/(ig|fb|tt|yt|tg|th|ob|kr|x|bs|wa|gm)(-ua)?\/?$/)||[])[1]||(location.search.match(/[?&]src=(\w+)/)||[])[1];
+try{if(k&&N[k])sessionStorage.setItem('src',k);else k=sessionStorage.getItem('src')}catch(e){}
+if(!k||!N[k])return;
+var tag=' (из '+N[k]+')';
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href*="wa.me/"]');if(!a)return;
+ var h=a.getAttribute('href');if(h.indexOf('%20(%D0%B8%D0%B7%20')>-1)return;
+ var m=h.match(/text=([^&]*)/);
+ if(m){var t=decodeURIComponent(m[1]);t=/Пишу с сайта|Пишу з сайту/.test(t)?t.replace(/(Пишу с сайта|Пишу з сайту)/,'$1'+tag):t+'\n(с сайта'+tag+')';a.setAttribute('href',h.replace(m[0],'text='+encodeURIComponent(t)))}
+ else a.setAttribute('href',h+(h.indexOf('?')>-1?'&':'?')+'text='+encodeURIComponent('Здравствуйте! Пишу с сайта'+tag+'.'));
+},true);
 })();
 </script>
 </body>
