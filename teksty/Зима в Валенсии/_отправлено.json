@@ -1,0 +1,30 @@
+{
+ "instagram": {
+  "id": "d53f63c7-a759-49c5-8622-e5d5500c5752",
+  "status": "published",
+  "at": "2026-10-30T20:00:00+01:00",
+  "url": "https://www.instagram.com/p/DfISQXrIMGF/",
+  "error": null
+ },
+ "tiktok": {
+  "id": "ee178283-2983-4360-a29b-3e3560789921",
+  "status": "published",
+  "at": "2026-10-30T20:00:00+01:00",
+  "url": "https://www.tiktok.com/@kalmykov_evgeniy/photo/7702537831603899666",
+  "error": null
+ },
+ "threads": {
+  "id": "cae59e40-a8a6-4450-a8d8-7e27ac8fc202",
+  "status": "scheduled",
+  "at": "2026-10-30T20:00:00+01:00",
+  "url": null,
+  "error": null
+ },
+ "youtube": {
+  "id": "fdc77d79-3131-444f-9a3a-9cd8225acec4",
+  "status": "published",
+  "at": "2026-10-30T20:00:00+01:00",
+  "url": "https://www.youtube.com/watch?v=SxS-ZMcjE70",
+  "error": null
+ }
+}

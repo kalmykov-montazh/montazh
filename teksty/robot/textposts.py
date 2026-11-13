@@ -1,0 +1,1234 @@
+# Текстовые посты Facebook: 1 коротыш (цветной фон) утром + 1 короткий пост с фото днём + 1 длинный (с фото) ночью, сразу в 9 групп.
+# С 25.10.2026: второй коротыш заменён постом с фото (папка «Фото-посты»); после выхода коротыш и фото-пост
+# копируются заданием в «Посты!\Соцсети» (Threads; коротыш ещё в X и Bluesky). Новости («000 …») копирует новостная задача сама.
+# Решения Евгения 15.10.2026 — файл проекта «Публикатор — коротыши и длинные посты (решения)».
+#
+# Папки: «Монтаж!\Посты!\Коротыши», «Длинные», «Фото», «Опубликовано», служебное — «Посты!\_служебное».
+# Файл поста — .txt. Необязательные первые строки:
+#   @тема: испания | новости | общая | юмор   (иначе «общая»; файл «000 …» — всегда «новости»)
+#   @регион: тенериф, канар   (12.11.2026: группы с этими словами в названии — первыми)
+#   Тематика групп (решение Евгения 27.10.2026): у каждой группы «жанр» — испания / юмор / мудрость /
+#   интересное / эмиграция. Новости и испанские темы НЕ идут в юмор; юмор — только в юмор и общие.
+#   @фото: имя.jpg         (длинные и фото-посты; иначе фото подбирается по теме текста — см. «фото по смыслу»)
+#   @фото-тема: еда, дом   (необязательно: подсказка темы фото, теги из «Фото\_темы фото.json»)
+#   @threads+:             (31.10.2026, необязательно, в любом месте текста) всё после — только для Threads,
+#                          вставляется перед последним абзацем; Facebook-текст держим 300–400 знаков
+#   Фото в Facebook: вертикаль выше 4:5 режется по центру до 4:5 (копия в «Робот\_tmp_фото»), см. photo_4x5
+# Публикуем СРАЗУ, не отложкой: в отложке Facebook выключает «Поделиться в группах».
+import json, random, re, shutil, datetime, time
+from pathlib import Path
+from common import ROOT, QUEUE, log, pause, human_click, human_type, warm_up
+
+POSTS = ROOT / 'Брокер' / 'Посты'
+SHORT, LONG, PHOTO, DONE = POSTS / 'Коротыши', POSTS / 'Длинные', POSTS / 'Фото', POSTS / 'Опубликовано'
+PHOTOPOST = POSTS / 'Фото-посты'          # короткие посты с фото (2–4 строки), слот днём
+SOCIAL = POSTS / 'Соцсети'               # задания для Threads / X / Bluesky (их отправляет blotato.py)
+# УТРЕННЯЯ НОВОСТЬ (решение Евгения 10.11.2026 00:45, файл «FB — решения 10.11.2026»): с 11.11 слот коротыша
+# заменён постом-новостью с фото, 11:10–12:10, не ближе 45 мин к рилсу. Текст — «Посты\Новости утро\000 ….txt»
+# (кладёт задача «FB: утренняя новость»); пусто — берём из «Фото-посты»; и там пусто — ПРОПУСК.
+# Коротыши не удалены, просто больше не публикуются. Копия до правки — textposts.py.bak-1011.
+NEWS_AM = POSTS / 'Новости утро'
+NEWS_FROM = datetime.date(2026, 11, 11)
+NEWS_GAP = 45                             # минут минимум от рилса
+# 4 НОВОСТИ В ДЕНЬ (решение Евгения 11.11.2026 22:39, план «1000 $ с монетизации Facebook»): с 12.11 фото-пост
+# убран. Слот 1 (14:50–15:40) — «news_day» из «Новости день», новый слот 3 (17:50–19:40) — «news_evening» из
+# «Новости вечер». Публикация как у утренней новости. Пустая папка — ПРОПУСК, фото-пост НЕ подставляется
+# (и у утренней тоже). Между текстами ≥ 2 ч (окна так стоят), от рилса ≥ 45 мин. Копия до правки — *.bak-1111.
+NEWS_DAY = POSTS / 'Новости день'
+NEWS_EVE = POSTS / 'Новости вечер'
+NEWS4_FROM = datetime.date(2026, 11, 12)
+NEWS_KINDS = ('news', 'news_day', 'news_evening')
+FOLDERS = {'short': SHORT, 'long': LONG, 'photo': PHOTOPOST, 'news': NEWS_AM, 'news_day': NEWS_DAY, 'news_evening': NEWS_EVE}
+FOLDER_NAMES = {'short': 'Коротыши', 'long': 'Длинные', 'photo': 'Фото-посты', 'news': 'Новости утро',
+                'news_day': 'Новости день', 'news_evening': 'Новости вечер'}
+# куда копировать после выхода в Facebook (решение Евгения 25.10.2026)
+CROSS = {'short': ['threads', 'twitter', 'bluesky'], 'photo': ['threads'], 'news': ['threads'],
+         'news_day': ['threads'], 'news_evening': ['threads']}
+USED_PHOTO = PHOTO / 'использованные'
+SYS = POSTS / '_служебное'
+GROUPS = SYS / 'группы.json'
+DAYPLAN = SYS / 'план дней.json'
+
+# фото-пост 14:50–15:40 с 26.10.2026 — ролики теперь 8:15/10:45/13:30/16:30
+# окна времени: (вид, начало, конец) — время внутри окна каждый день случайное
+WINDOWS = [('short', '09:10', '10:00'), ('photo', '14:50', '15:40'), ('long', '22:30', '25:30')]
+NEWS_WINDOWS = [('news', '11:10', '12:10'), ('photo', '14:50', '15:40'), ('long', '22:30', '25:30')]
+# с 12.11: номера слотов 0/1/2 прежние (чтобы не задвоить уже созданные), вечерняя новость — слот 3
+NEWS4_WINDOWS = [('news', '11:10', '12:10'), ('news_day', '14:50', '15:40'), ('long', '22:30', '25:30'),
+                 ('news_evening', '17:50', '19:40')]
+TEXT_GAP = 120                            # минут минимум между двумя текстами
+
+def _windows(day):
+    if day >= NEWS4_FROM:
+        return NEWS4_WINDOWS
+    return NEWS_WINDOWS if day >= NEWS_FROM else WINDOWS
+
+def _text_minutes(days, ds, skip_slot):
+    """Минуты дня, на которые уже стоят другие тексты этого дня (ночной после полуночи — +24 ч)."""
+    out = []
+    for k, v in days.items():
+        if not k.startswith(ds + ' ') or k == f'{ds} {skip_slot}' or v.get('статус') not in ('задание', 'готово'):
+            continue
+        try:
+            h, m = map(int, v['время'].split(':')); x = h * 60 + m
+            if v.get('вид') == 'long' and h < 12: x += 24 * 60
+            out.append(x)
+        except Exception: pass
+    return out
+
+def _reel_minutes(ds):
+    """Минуты дня, на которые стоят рилсы FB (по «_задания/_план.json»)."""
+    out = []
+    for v in _jload(QUEUE / '_план.json', {}).values():
+        if v.get('platform', 'fb') == 'fb' and v.get('date') == ds and v.get('time') and v.get('status') != 'ошибка':
+            try:
+                h, m = map(int, v['time'].zfill(5).split(':')); out.append(h * 60 + m)
+            except Exception: pass
+    return out
+
+def _news_at(day, lo, hi, texts=()):
+    """Случайная минута в [lo, hi], не ближе NEWS_GAP минут к рилсам этого дня (и TEXT_GAP к другим текстам);
+    нельзя — самая далёкая от рилсов."""
+    reels = _reel_minutes(day.isoformat())
+    base = datetime.datetime.combine(day, datetime.time(0))
+    a = int((lo - base).total_seconds() // 60) + (1 if lo.second else 0)
+    b = int((hi - base).total_seconds() // 60)
+    cand = list(range(a, b + 1))
+    if not cand:
+        return lo
+    ok = [x for x in cand if all(abs(x - r) >= NEWS_GAP for r in reels) and all(abs(x - t) >= TEXT_GAP for t in texts)]
+    if not ok:
+        ok = [x for x in cand if all(abs(x - r) >= NEWS_GAP for r in reels)]
+    x = random.choice(ok) if ok else max(cand, key=lambda x: min([abs(x - r) for r in reels] or [999]))
+    return base + datetime.timedelta(minutes=x)
+
+def _replace_news_jobs(days, now):
+    """С 11.11 вместо уже созданного коротыша — новость; новость, которая оказалась ближе 45 мин к рилсу, — новое время."""
+    for add in (0, 1):
+        day = now.date() + datetime.timedelta(days=add)
+        if day < NEWS_FROM:
+            continue
+        ds = day.isoformat()
+        e = days.get(f'{ds} 0')
+        if not e or e.get('статус') != 'задание':
+            continue
+        f_old = None
+        for f in QUEUE.glob('*_fbtext_*.json'):
+            try: j = json.loads(f.read_text(encoding='utf-8-sig'))
+            except Exception: continue
+            if j.get('day') == ds and j.get('slot') == 0 and not j.get('retry'):
+                f_old, j_old = f, j
+        if f_old is None:
+            continue
+        at_old = datetime.datetime.strptime(j_old['at'], '%Y-%m-%d %H:%M')
+        if j_old.get('kind') == 'news':
+            if at_old < now + datetime.timedelta(minutes=30):
+                continue
+            m = at_old.hour * 60 + at_old.minute
+            if all(abs(m - r) >= NEWS_GAP for r in _reel_minutes(ds)):
+                continue
+        _, a, b = NEWS_WINDOWS[0]
+        start = datetime.datetime.combine(day, datetime.time(0)) + _td(a)
+        end = datetime.datetime.combine(day, datetime.time(0)) + _td(b)
+        if end < now + datetime.timedelta(minutes=10):
+            continue
+        at = _news_at(day, max(start, now + datetime.timedelta(minutes=5)), end)
+        job = {'platform': 'fbtext', 'kind': 'news', 'day': ds, 'slot': 0, 'at': f'{at:%Y-%m-%d %H:%M}'}
+        (QUEUE / f'{at:%Y-%m-%d_%H%M}_fbtext_news.json').write_text(json.dumps(job, ensure_ascii=False), encoding='utf-8')
+        f_old.unlink(missing_ok=True)
+        days[f'{ds} 0'] = {'вид': 'news', 'время': f'{at:%H:%M}', 'статус': 'задание'}
+        log(f"РАСКЛАДКА текст news {at:%Y-%m-%d %H:%M} (вместо {j_old.get('kind')} {at_old:%H:%M})")
+
+def _replace_photo_jobs(days, now):
+    """11.11.2026: уже созданный фото-пост (слот 1) на 12.11 и дальше — заменить дневной новостью «news_day»."""
+    for add in (0, 1, 2):
+        day = now.date() + datetime.timedelta(days=add)
+        if day < NEWS4_FROM:
+            continue
+        ds = day.isoformat()
+        e = days.get(f'{ds} 1')
+        if not e or e.get('вид') != 'photo' or e.get('статус') != 'задание':
+            continue
+        for f in QUEUE.glob('*_fbtext_*.json'):
+            try: j = json.loads(f.read_text(encoding='utf-8-sig'))
+            except Exception: continue
+            if j.get('day') == ds and j.get('slot') == 1 and j.get('kind') == 'photo':
+                f.unlink(missing_ok=True)
+        _, a, b = NEWS4_WINDOWS[1]
+        start = datetime.datetime.combine(day, datetime.time(0)) + _td(a)
+        end = datetime.datetime.combine(day, datetime.time(0)) + _td(b)
+        if end < now + datetime.timedelta(minutes=10):
+            days[f'{ds} 1'] = {'вид': 'news_day', 'время': e.get('время', ''), 'статус': 'отменён (фото-пост убран)'}
+            continue
+        at = _news_at(day, max(start, now + datetime.timedelta(minutes=5)), end, _text_minutes(days, ds, 1))
+        job = {'platform': 'fbtext', 'kind': 'news_day', 'day': ds, 'slot': 1, 'at': f'{at:%Y-%m-%d %H:%M}'}
+        (QUEUE / f'{at:%Y-%m-%d_%H%M}_fbtext_news_day.json').write_text(json.dumps(job, ensure_ascii=False), encoding='utf-8')
+        days[f'{ds} 1'] = {'вид': 'news_day', 'время': f'{at:%H:%M}', 'статус': 'задание'}
+        log(f"РАСКЛАДКА текст news_day {at:%Y-%m-%d %H:%M} (вместо фото-поста {e.get('время', '')})")
+
+LATE_MIN = 90                       # опоздали больше чем на 90 минут (компьютер был выключен) — пропускаем
+COOLDOWN = {'испания': 3, 'общая': 1}   # через сколько дней группу можно взять снова
+PROVEN, MEDIUM, TESTS = 5, 1, 3   # решение Евгения 25.10.2026: 5 сильных + 1 средняя + 3 на тест
+# фоны-картинки из «Настройки фона» (Евгению нравятся не однотонные, а «небо/море»-подобные):
+# по порядку в окне «Выбор фона»: 0–21 «Декоративные», 22–29 «Градиентные», дальше «Сплошные» — их не берём.
+# Без сердечек и конфетти (16–19).
+BG_PICK = list(range(0, 16)) + [20, 21] + list(range(22, 30))
+PHOTO_EXT = ('.jpg', '.jpeg', '.png', '.webp')
+
+def _jload(p, default):
+    try: return json.loads(p.read_text(encoding='utf-8'))
+    except Exception: return default
+
+def _jsave(p, data):
+    SYS.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix('.tmp')
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding='utf-8')
+    tmp.replace(p)
+
+# ---------- раскладка по дням ----------
+def plan():
+    """Создаёт задания на сегодня и завтра. Окно, которое уже прошло, не создаём."""
+    try: move_to_trash()                       # 09.11.2026: фото из «_на удаление.txt» — в «Брокер\\На удаление»
+    except Exception as e: log(f"на удаление: ошибка {str(e)[:150]}")
+    try: move_any_to_trash()                   # 09.11.2026: любые файлы из «Общее\\Робот\\_на удаление (любые).txt»
+    except Exception as e: log(f"на удаление (любые): ошибка {str(e)[:150]}")
+    for d in (SHORT, LONG, PHOTO, PHOTOPOST, NEWS_AM, NEWS_DAY, NEWS_EVE, DONE, SYS):
+        d.mkdir(parents=True, exist_ok=True)
+    days = _jload(DAYPLAN, {})
+    now = datetime.datetime.now()
+    try: _replace_news_jobs(days, now)          # 10.11.2026: с 11.11 коротыш → утренняя новость
+    except Exception as e: log(f"ОШИБКА утренняя новость: раскладка ({str(e)[:150]})")
+    try: _replace_photo_jobs(days, now)         # 11.11.2026: с 12.11 фото-пост → дневная новость
+    except Exception as e: log(f"ОШИБКА дневная новость: раскладка ({str(e)[:150]})")
+    for add in (0, 1):
+        day = now.date() + datetime.timedelta(days=add)
+        ds = day.isoformat()
+        for i, (kind, a, b) in enumerate(_windows(day)):
+            key = f'{ds} {i}'
+            if key in days:
+                continue
+            start = datetime.datetime.combine(day, datetime.time(0)) + _td(a)
+            end = datetime.datetime.combine(day, datetime.time(0)) + _td(b)
+            if end < now:
+                continue
+            lo = max(start, now + datetime.timedelta(minutes=5))
+            at = lo + datetime.timedelta(seconds=random.randint(0, max(0, int((end - lo).total_seconds()))))
+            if kind in NEWS_KINDS:
+                at = _news_at(day, lo, end, _text_minutes(days, ds, i))
+            job = {'platform': 'fbtext', 'kind': kind, 'day': ds, 'slot': i, 'at': f'{at:%Y-%m-%d %H:%M}'}
+            (QUEUE / f'{at:%Y-%m-%d_%H%M}_fbtext_{kind}.json').write_text(json.dumps(job, ensure_ascii=False), encoding='utf-8')
+            days[key] = {'вид': kind, 'время': f'{at:%H:%M}', 'статус': 'задание'}
+            log(f'РАСКЛАДКА текст {kind} {at:%Y-%m-%d %H:%M}')
+    cutoff = (now.date() - datetime.timedelta(days=30)).isoformat()
+    _jsave(DAYPLAN, {k: v for k, v in days.items() if k >= cutoff})
+
+def _td(hhmm):
+    h, m = map(int, hhmm.split(':'))
+    return datetime.timedelta(hours=h, minutes=m)
+
+def due(j):
+    """None — ещё рано; True — пора; False — сильно опоздали, пропускаем."""
+    at = datetime.datetime.strptime(j['at'], '%Y-%m-%d %H:%M')
+    now = datetime.datetime.now()
+    if now < at:
+        return None
+    return (now - at).total_seconds() <= LATE_MIN * 60
+
+def mark(j, status):
+    days = _jload(DAYPLAN, {})
+    e = days.setdefault(f"{j['day']} {j['slot']}", {'вид': j['kind']})
+    e['статус'] = status
+    _jsave(DAYPLAN, days)
+
+# ---------- тексты и фото ----------
+def _next_text(kind):
+    folder = FOLDERS.get(kind, LONG)
+    files = sorted(f for f in folder.glob('*.txt') if not f.name.startswith('_')) if folder.exists() else []
+    # 11.11.2026: запасной фото-пост для новости убран — пустая папка = ПРОПУСК
+    return files[0] if files else None
+
+def _threads_500(text):
+    """Threads — до 500 знаков: первые абзацы целиком, сколько влезет."""
+    paras = [p.strip() for p in re.split(r'\n\s*\n', text.strip()) if p.strip()]
+    out = ''
+    for p in paras:
+        cand = (out + '\n\n' + p) if out else p
+        if len(cand) > 500:
+            break
+        out = cand
+    if not out:
+        out = text.strip()[:497].rsplit(' ', 1)[0] + '…'
+    return out
+
+def _parse(path):
+    meta, lines = {}, path.read_text(encoding='utf-8-sig').splitlines()
+    while lines and lines[0].startswith('@') and not _TH_PLUS.match(lines[0]):
+        k, _, v = lines.pop(0)[1:].partition(':')
+        meta[k.strip().lower()] = v.strip()
+    # «@threads+:» (31.10.2026): всё после маркера — добавка ТОЛЬКО для Threads, в Facebook не уходит никогда
+    for i, ln in enumerate(lines):
+        m = _TH_PLUS.match(ln)
+        if m:
+            extra = '\n'.join([m.group(1)] + lines[i + 1:]).strip().replace('⠀', '')
+            meta['threads+'] = re.sub(r'\n{3,}', '\n\n', extra)
+            lines = lines[:i]
+            break
+    text = '\n'.join(lines).strip().replace('⠀', '')
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return meta, text
+
+_TH_PLUS = re.compile(r'^\s*@threads\+\s*:?(.*)$', re.I)
+
+def threads_text(text, meta):
+    """Текст для Threads: Facebook-текст + добавка «@threads+:» перед последним абзацем-концовкой."""
+    extra = (meta or {}).get('threads+', '').strip()
+    if not extra:
+        return text
+    paras = [p for p in re.split(r'\n\s*\n', text.strip()) if p.strip()]
+    if len(paras) < 2:
+        return text.strip() + '\n\n' + extra
+    return '\n\n'.join(paras[:-1] + [extra, paras[-1]])
+
+# ---------- фото под ленту Facebook 4:5 (31.10.2026) ----------
+# Очки Ray-Ban снимают вертикаль 3:4, а лента Facebook показывает вертикаль максимум 4:5 — режем по центру по высоте.
+# Оригинал не трогаем (после выхода он, как раньше, уезжает в «Фото\использованные»), грузим копию из «_tmp_фото».
+TMP_PHOTO = Path(__file__).resolve().parent / '_tmp_фото'
+
+def _pil():
+    try:
+        from PIL import Image, ImageOps
+        return Image, ImageOps
+    except ImportError:
+        import subprocess, sys
+        log('фото 4:5: нет Pillow — ставлю (pip install pillow)')
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', 'pillow'], timeout=300,
+                       capture_output=True)
+        from PIL import Image, ImageOps
+        return Image, ImageOps
+
+def photo_4x5(photo):
+    """Вертикальное фото выше 4:5 → копия JPEG 4:5 (центр по высоте). Иначе или при сбое — оригинал."""
+    if not photo:
+        return photo
+    try:
+        Image, ImageOps = _pil()
+        with Image.open(photo) as im:
+            im = ImageOps.exif_transpose(im)
+            w, h = im.size
+            if h / w <= 1.25:
+                return photo
+            nh = round(w * 5 / 4)
+            top = (h - nh) // 2
+            im = im.crop((0, top, w, top + nh))
+            if im.mode != 'RGB':
+                im = im.convert('RGB')
+            TMP_PHOTO.mkdir(exist_ok=True)
+            out = TMP_PHOTO / (photo.stem + '_4x5.jpg')
+            im.save(out, 'JPEG', quality=92)
+        log(f"фото 4:5: {photo.name} {w}×{h} → {w}×{nh}")
+        return out
+    except Exception as e:
+        log(f"фото 4:5: не обрезалось {photo.name} ({str(e)[:120]}) — гружу оригинал")
+        return photo
+
+# ---------- фото по смыслу поста (27.10.2026) ----------
+# Разметка: «Посты\Фото\_темы фото.json» {имя.jpg: [теги]} — ведёт Claude (новые фото размечает при пополнении).
+# Порядок: «@фото: имя.jpg» → «@фото-тема: пляж, еда» → темы по словам текста → нейтральный город/море.
+# Палатки/протест/полиция/каннабис — ТОЛЬКО если сам пост про это (слова в тексте или @фото-тема).
+PHOTO_TAGS = PHOTO / '_темы фото.json'
+SENSITIVE = {'палатки', 'протест', 'полиция', 'каннабис'}
+NEUTRAL = ('город', 'улица', 'море', 'закат', 'пальмы', 'архитектура')
+KEYWORDS = {
+    'пляж':  ['пляж', 'море', 'морск', 'отпуск', 'купа', 'загар', 'волн', 'побереж'],
+    'отдых': ['отдых', 'отпуск', 'выходн', 'каникул', 'путешеств', 'поездк'],
+    'закат': ['закат', 'рассвет', 'небо', 'звёзд', 'звезд', 'вечер'],
+    'еда':   ['кухн', 'блюд', 'приготов', 'готовит', 'обед', 'ужин', 'завтрак', 'вкус', 'гречк', 'варень', 'конфет',
+              'пельмен', 'хлеб', 'выпечк', 'паэль', 'тапас', 'продукт', 'борщ', 'еду ', 'еда', 'едим', 'заготовк'],
+    'кафе':  ['кафе', 'ресторан', 'бар ', 'кофе', 'официант', 'счёт', 'чаевы'],
+    'магазин': ['магазин', 'покупк', 'купить', 'купил', 'скидк', 'распродаж', 'касс', 'супермаркет', 'mercadona', 'мерсадон'],
+    'цены':  ['цен', 'дорож', 'дешев', 'дёшев', 'евро', 'деньг', 'зарплат', 'экономи', 'бережлив', 'жадн'],
+    'праздник': ['праздник', 'рожден', 'подар', 'фиест', 'фальяс', 'фаяс', 'традиц', 'концерт', 'песн',
+                 'музык', 'танц', 'свадьб', 'конверт', 'юбиле', 'отмеча'],
+    'рождество': ['рождеств', 'новый год', 'новогод', 'ёлк', 'елк'],
+    'транспорт': ['машин', 'автомоб', 'авто ', 'автобус', 'водит', 'парков', 'такси', 'автобус', 'метро', 'транспорт', 'пробк'],
+    'история': ['истори', 'старин', 'собор', 'церк', 'башн', 'музей', 'архитектур', 'век назад'],
+    'работа': ['работ', 'ремонт', 'стройк', 'строит', 'бригад', 'начальник', 'коллег', 'офис'],
+    'дети':  ['ребён', 'ребен', 'детей', 'дети', 'сын', 'дочь', 'дочк', 'школ', 'игрушк'],
+    'здоровье': ['аптек', 'лекарств', 'врач', 'болез', 'здоров', 'таблет', 'больниц'],
+    'дом':   [' дом ', ' дома ', ' дому ', 'домой', 'домашн', 'квартир', 'кухн', 'мама', 'мамин', 'родител', 'бабушк', 'семь'],
+    'документы': ['документ', 'бумаг', 'налог', 'договор', 'аренд', 'банк', 'внж', 'nie', 'гестор'],
+    'город': ['город', 'улиц', 'валенси', 'испани', 'испанц', 'прогул', 'сосед', 'район', 'эмиграц', 'переезд'],
+    'люди':  ['люд', 'друз', 'друг', 'знаком', 'человек', 'разговор'],
+    'цветы': ['цветы', 'цветов', 'цветок', 'букет'],
+    'протест': ['протест', 'митинг', 'забастов', 'палатк', 'манифестац', 'демонстрац', 'беспоряд', 'акампад'],
+    'полиция': ['полици', 'полицейск'],
+    'балиса': ['балис', 'baliza', 'v16', 'аварийн'],          # 09.11.2026
+    'хэллоуин': ['хэллоуин', 'хеллоуин', 'halloween', 'хэлоуин'],
+    'обменка': ['обменк', 'обмен валют', 'курс валют', 'валют'],
+    'порт': [' порт ', ' порту ', ' порта ', ' порте ', 'корабл', 'круиз', 'лайнер', 'яхт', 'лодк', 'паром', 'судн'],
+    'набережная': ['набережн', 'малварос', 'мальварос'],
+}
+
+def _photo_tags():
+    try:
+        return json.loads(PHOTO_TAGS.read_text(encoding='utf-8'))
+    except Exception:
+        return {}
+
+# ---------- перенос фото «на удаление» по списку (решение Евгения 09.11.2026) ----------
+# Задача Claude, у которой нет командной строки, пишет имена в «Фото\_на удаление.txt» (по строке на файл).
+# Робот в начале каждого цикла переносит эти файлы в «Брокер\На удаление\Из Фото ДД.ММ»,
+# убирает их записи из «_темы фото.json» и очищает список. ТОЛЬКО перенос, ничего не удаляем.
+DEL_LIST = PHOTO / '_на удаление.txt'
+TRASH = ROOT / 'Брокер' / 'На удаление'
+
+def move_to_trash():
+    if not DEL_LIST.exists():
+        return
+    try:
+        raw = DEL_LIST.read_text(encoding='utf-8-sig')
+    except Exception as e:
+        log(f"на удаление: не прочитал список: {str(e)[:120]}")
+        return
+    names = []
+    for line in raw.splitlines():
+        n = line.strip().strip('"«»').strip()
+        if n and not n.startswith('#'):
+            names.append(Path(n).name)          # только имя файла, без путей
+    if not names:
+        return
+    dest = TRASH / f"Из Фото {datetime.datetime.now():%d.%m}"
+    moved, missing = [], []
+    for n in dict.fromkeys(names):
+        src = PHOTO / n
+        if not src.is_file():
+            src = USED_PHOTO / n
+        if not src.is_file() or src.name.startswith('_'):
+            missing.append(n)
+            continue
+        try:
+            dest.mkdir(parents=True, exist_ok=True)
+            t = dest / src.name
+            k = 2
+            while t.exists():
+                t = dest / f"{src.stem} ({k}){src.suffix}"
+                k += 1
+            shutil.move(str(src), str(t))
+            moved.append(n)
+        except Exception as e:
+            missing.append(f"{n} ({str(e)[:60]})")
+    if moved:
+        tags = _photo_tags()
+        if tags and any(n in tags for n in moved):
+            for n in moved:
+                tags.pop(n, None)
+            try:
+                tmp = PHOTO_TAGS.with_suffix('.tmp')
+                tmp.write_text(json.dumps(tags, ensure_ascii=False, indent=1), encoding='utf-8')
+                tmp.replace(PHOTO_TAGS)
+            except Exception as e:
+                log(f"на удаление: не обновил «_темы фото.json»: {str(e)[:120]}")
+    try:
+        DEL_LIST.write_text('', encoding='utf-8')
+    except Exception as e:
+        log(f"на удаление: не очистил список: {str(e)[:120]}")
+    log(f"на удаление: перенёс {len(moved)} фото в «На удаление\\{dest.name}»"
+        + (f", не нашёл {len(missing)}: {', '.join(missing)[:300]}" if missing else ''))
+
+# ---------- перенос ЛЮБЫХ ненужных файлов «на удаление» (решение Евгения 09.11.2026 21:34) ----------
+# «Всё, что нужно удалить, перекидывай в папку на удаление, а я буду периодически её удалять».
+# Claude без командной строки пишет ПОЛНЫЕ пути в «Общее\Робот\_на удаление (любые).txt», по строке на файл.
+# Робот переносит их в «Брокер\На удаление\Разное ДД.ММ» и очищает список. ТОЛЬКО перенос, ничего не удаляем.
+# Разрешено брать только из папки Монтаж! и из «Загрузок» Евгения — чужие места не трогаем.
+ANY_DEL_LIST = ROOT / 'Общее' / 'Робот' / '_на удаление (любые).txt'
+ANY_DEL_ALLOWED = [ROOT, Path.home() / 'Downloads']
+
+def move_any_to_trash():
+    if not ANY_DEL_LIST.exists():
+        return
+    raw = ANY_DEL_LIST.read_text(encoding='utf-8-sig')
+    paths = []
+    for line in raw.splitlines():
+        p = line.strip().strip('"«»').strip()
+        if p and not p.startswith('#'):
+            paths.append(p)
+    if not paths:
+        return
+    dest = TRASH / f"Разное {datetime.datetime.now():%d.%m}"
+    moved, missing = [], []
+    for p in dict.fromkeys(paths):
+        src = Path(p)
+        try:
+            rs = src.resolve()
+            ok_place = any(str(rs).lower().startswith(str(a.resolve()).lower()) for a in ANY_DEL_ALLOWED)
+        except Exception:
+            ok_place = False
+        if not ok_place or str(rs).lower().startswith(str(TRASH.resolve()).lower()):
+            missing.append(f"{src.name} (не та папка)")
+            continue
+        if not src.exists():
+            missing.append(src.name)
+            continue
+        try:
+            dest.mkdir(parents=True, exist_ok=True)
+            t = dest / src.name
+            k = 2
+            while t.exists():
+                t = dest / f"{src.stem} ({k}){src.suffix}"
+                k += 1
+            shutil.move(str(src), str(t))
+            moved.append(src.name)
+        except Exception as e:
+            missing.append(f"{src.name} ({str(e)[:60]})")
+    try:
+        ANY_DEL_LIST.write_text('', encoding='utf-8')
+    except Exception as e:
+        log(f"на удаление (любые): не очистил список: {str(e)[:120]}")
+    log(f"на удаление (любые): перенёс {len(moved)} в «На удаление\\{dest.name}»"
+        + (f", не перенёс {len(missing)}: {', '.join(missing)[:300]}" if missing else ''))
+
+GENERIC = {'люди': 0.3, 'город': 0.5, 'дом': 0.6, 'работа': 0.5, 'документы': 0.6, 'закат': 0.6}
+
+def _wanted_tags(meta, text):
+    if meta.get('фото-тема'):
+        return {t.strip().lower(): 3.0 for t in re.split(r'[,;]', meta['фото-тема']) if t.strip()}, 'по @фото-тема'
+    low = ' ' + re.sub(r'[^\w\s]', ' ', text.lower().replace('ё', 'е')) + ' '
+    w = {}
+    for tag, stems in KEYWORDS.items():
+        n = sum(low.count(st.replace('ё', 'е')) for st in stems)
+        if n:
+            if tag in SENSITIVE and n < 2:   # палатки только если пост правда про протест (2+ слова)
+                continue
+            w[tag] = n * GENERIC.get(tag, 1.0) * (3 if tag in SENSITIVE else 1)
+    w = {k: v for k, v in w.items() if v >= 1.0}   # одно случайное слово — не тема
+    return w, 'по словам текста'
+
+# Фото с «особым» сюжетом (еда, дети, праздник…) берём ТОЛЬКО если пост про это.
+# 01.11.2026: к новости про телеканалы ушло фото теста в пакете (теги дом/еда/кухня),
+# потому что слово «дом» в тексте дало тему «дом».
+SPECIFIC = {'еда': 'еда', 'кухня': 'еда', 'кафе': 'кафе', 'кофе': 'кафе', 'дети': 'дети',
+            'праздник': 'праздник', 'фиесты': 'праздник', 'парад': 'праздник', 'концерт': 'праздник',
+            'традиции': 'праздник', 'рождество': 'рождество', 'украшения': 'рождество',
+            'здоровье': 'здоровье', 'аптека': 'здоровье', 'цветы': 'цветы', 'документы': 'документы',
+            'парикмахерская': 'парикмахерская', 'мусор': 'мусор', 'стройка': 'работа',
+            'хэллоуин': 'хэллоуин', 'балиса': 'балиса', 'обменка': 'обменка', 'я': 'я'}   # 09.11.2026
+# Фото с этим тегом робот не берёт никогда (дети, чеки, чужие лица крупно, дубли) — 09.11.2026
+SKIP_TAG = 'не публиковать'
+MIN_SCORE = 2.0   # слабое совпадение — не тема, берём нейтральный город/море
+
+def _score(wanted, tags):
+    hit = sorted((v for k, v in wanted.items() if k in tags), reverse=True)
+    sc = (hit[0] + 0.25 * sum(hit[1:])) if hit else 0.0
+    foreign = {SPECIFIC[t] for t in tags if t in SPECIFIC and SPECIFIC[t] not in wanted}
+    return sc - 3.0 * len(foreign)
+
+def _pick_photo(meta, text=''):
+    files = [f for f in PHOTO.iterdir() if f.is_file() and f.suffix.lower() in PHOTO_EXT]
+    if meta.get('фото'):
+        p = PHOTO / meta['фото']
+        if p.exists():
+            log(f"фото: {p.name} (указано в посте)")
+            return p
+        log(f"фото «{meta['фото']}» не найдено, подбираю по теме")
+    if not files:
+        return None
+    tags = _photo_tags()
+    untagged = [f.name for f in files if f.name not in tags]
+    if untagged:
+        log(f"фото без разметки ({len(untagged)} шт.) не беру — пусть Claude разметит в «_темы фото.json»")
+    wanted, how = _wanted_tags(meta, text)
+    allow_sens = bool(SENSITIVE & set(wanted))
+    pool = []
+    for f in files:
+        t = set(tags.get(f.name, []))
+        if SKIP_TAG in t:
+            continue
+        if not t or (t & SENSITIVE and not allow_sens):
+            continue
+        score = _score(wanted, t)
+        pool.append((score, f, t))
+    if not pool:
+        log('нет размеченных подходящих фото — беру самое старое неразмеченное')
+        rest = sorted((f for f in files if f.name in untagged), key=lambda f: (f.stat().st_mtime, f.name))
+        return rest[0] if rest else None
+    best = max(p[0] for p in pool)
+    if best >= MIN_SCORE:
+        cand = [p for p in pool if p[0] == best]
+    else:  # тема не угадана — спокойный город/море, без людей в палатках
+        cand = [p for p in pool if p[2] & set(NEUTRAL) and not (p[2] & set(SPECIFIC))] \
+            or [p for p in pool if p[2] & set(NEUTRAL)] or pool
+        how = 'тема не найдена, нейтральное'
+    cand.sort(key=lambda p: (p[1].stat().st_mtime, p[1].name))
+    f = cand[0][1]
+    top = ', '.join(k for k, _ in sorted(wanted.items(), key=lambda x: -x[1])[:4]) or '—'
+    log(f"фото: {f.name} [{', '.join(sorted(cand[0][2]))}] ← {how} ({top})")
+    return f
+
+# ---------- выбор групп ----------
+def _days_since(g, today):
+    if not g.get('посты'):
+        return 999
+    last = max(p['дата'] for p in g['посты'])
+    return (today - datetime.date.fromisoformat(last)).days
+
+# Какие жанры групп подходят теме поста (решение Евгения 27.10.2026: новости не в шутки).
+# main — сколько групп своего типа, other — сколько другого; жанры — из каких групп «общего» типа можно брать.
+TOPIC_RULES = {
+    'новости': {'main': 'испания', 'quota': {'испания': 9, 'общая': 0}, 'genres': {'испания', 'эмиграция', 'интересное'}},
+    'испания': {'main': 'испания', 'quota': {'испания': 5, 'общая': 4}, 'genres': {'испания', 'эмиграция', 'мудрость', 'интересное'}},
+    'общая':   {'main': 'общая',   'quota': {'общая': 5, 'испания': 4}, 'genres': {'испания', 'эмиграция', 'мудрость', 'интересное', 'юмор'}},
+    'юмор':    {'main': 'общая',   'quota': {'общая': 6, 'испания': 3}, 'genres': {'испания', 'юмор', 'интересное'}},
+}
+HUMOR_RE = (r'юмор|шут|смех|анекдот|сарказм|ирони|прикол|позитив|улыбн|улыбк|весел|забавн|21\+|18\+|\+18|\+21|24\+|'
+            r'пизд|пи✓д|ёп|курим|психуш|лечебниц|палата|абракадабр|пофиг|эгоист|fails|чума|бабки гонят|бабы рулят|'
+            r'пересмешник|гусъ|блатн|двіжух|несерь|одесс|ша!|кукушк|пропанд|бісить|абсурд|ржак|угар|мем')
+WISDOM_RE = (r'мудр|мысл|цитат|афоризм|слова|душ|жизн|счаст|философ|хайям|синдром успеха|в точку|калейдоскоп|истори|'
+             r'судьб|любов|чувств|предава|никогда|след в|крик|волк|тишин|кофе|огон|денёчк|женщин|детств|чердак|старост|'
+             r'нам ведь|написано|бандит|эмоци|психолог|статус')
+ABROAD_RE = r'герман|deutsch|литв|вільнюс|vilnius|бельги|австрали|мюнхен|ирланд|латинск|польш|чехи|израил|канад|сша|usa'
+
+def genre_of(name, typ):
+    """Жанр группы по названию; руками поставленный «жанр» в реестре не трогаем."""
+    if typ == 'испания':
+        return 'испания'
+    if re.search(HUMOR_RE, name, re.I):
+        return 'юмор'
+    if re.search(ABROAD_RE, name, re.I):
+        return 'эмиграция'
+    if re.search(WISDOM_RE, name, re.I):
+        return 'мудрость'
+    return 'интересное'
+
+def topic_of(meta, path):
+    t = meta.get('тема', '').lower()
+    if path is not None and path.name.startswith('000'):
+        return 'новости'
+    for k in ('новост', 'испан', 'юмор'):
+        if t.startswith(k):
+            return {'новост': 'новости', 'испан': 'испания', 'юмор': 'юмор'}[k]
+    return 'общая'
+
+def choose_groups(available, topic, day, region=None):
+    """9 групп: 5 проверенных (сильных) + 1 средняя + 3 тестовые (решение 25.10.2026).
+    Типы и квоты — по теме, см. TOPIC_RULES; жанр группы должен подходить теме (27.10.2026):
+    новости — только испанские (+ эмиграция/интересное, если не хватило), никогда не юмор.
+    Наборы за день не пересекаются; испанская группа — не чаще раза в 3 дня, общая — раз в день.
+    Статусы «слабая», «вышла», «мёртвая», «не для постов» робот не берёт.
+    12.11.2026: region — строка «@регион: тенериф, канар» из текста новости; группы, в названии которых
+    есть одно из слов, идут первыми внутри каждого уровня (проверенные, средняя, тест)."""
+    reg = _jload(GROUPS, {})
+    reg_words = [w.strip().lower() for w in re.split(r'[,;]', region or '') if w.strip()]
+    available = list(dict.fromkeys(available))   # одинаковые названия — один раз
+    for n in available:                      # новые группы, в которые вступил Евгений, — сразу в тест
+        if n not in reg:
+            typ = 'испания' if re.search(SPAIN_RE, n, re.I) else 'общая'
+            reg[n] = {'тип': typ, 'жанр': genre_of(n, typ),
+                      'статус': 'не для постов' if re.search(ADS_RE, n, re.I) else 'тест',
+                      'посты': [], 'добавлена': day}
+            log(f"новая группа в тест: {n} ({reg[n]['жанр']})")
+    for n, g in reg.items():
+        if 'жанр' not in g:
+            g['жанр'] = genre_of(n, g.get('тип', 'общая'))
+    _jsave(GROUPS, reg)
+    today = datetime.date.fromisoformat(day)
+    used_today = {n for n, g in reg.items() for p in g.get('посты', []) if p.get('день') == day}
+    rule = TOPIC_RULES.get(topic, TOPIC_RULES['общая'])
+    genres = rule['genres']
+    main = rule['main']
+    other = 'общая' if main == 'испания' else 'испания'
+    quota = dict(rule['quota'])
+
+    def pool(typ, status, relax, taken):
+        out = [n for n in available if n in reg and n not in used_today and n not in taken
+               and reg[n]['тип'] == typ and reg[n]['статус'] == status
+               and reg[n].get('жанр', 'интересное') in genres
+               and _days_since(reg[n], today) >= COOLDOWN.get(typ, 1) - relax]
+        def key(n):
+            g = reg[n]
+            top = g.get('топ', 99) if typ == 'испания' else 99
+            pref = 0 if (topic == 'юмор' and g.get('жанр') == 'юмор') else 1
+            if reg_words:                    # 12.11.2026: группы региона новости — первыми
+                pref = 0 if any(w in n.lower() for w in reg_words) else 1
+            if status == 'тест':             # 06.11.2026: сначала повтор (1–2 поста, прошлый 7+ дней назад), потом новые
+                np_ = len(g.get('посты', []))
+                due = 0 if 1 <= np_ <= 2 and _days_since(g, today) >= 7 else (1 if np_ == 0 else 2)
+                return (pref, due, np_, random.random())
+            return (pref, top if main == 'испания' else 99, -_days_since(g, today), random.random())
+        return sorted(out, key=key)
+
+    if reg_words:
+        log(f"регион новости: {', '.join(reg_words)}")
+
+    def room(typ):
+        return quota[typ] - sum(1 for n in picked if reg[n]['тип'] == typ)
+
+    picked = []
+    # 1) три тестовые: основной тип, другой, основной (если места нет — что найдётся)
+    for typ in (main, other, main):
+        if sum(1 for n in picked if reg[n]['статус'] == 'тест') >= TESTS:
+            break
+        for t2 in (typ, other if typ == main else main):
+            if room(t2) <= 0:
+                continue
+            t = []
+            for relax in (0, 1, 2):
+                t = pool(t2, 'тест', relax, picked)[:1]
+                if t:
+                    break
+            if t:
+                picked += t
+                break
+    # 2) одна средняя: сначала основной тип
+    for typ in (main, other):
+        if room(typ) <= 0:
+            continue
+        m = []
+        for relax in (0, 1, 2):
+            m = pool(typ, 'средняя', relax, picked)[:MEDIUM]
+            if m:
+                break
+        if m:
+            picked += m
+            break
+    # 3) остальное — проверенные, по квотам типов
+    for typ in (main, other):
+        for relax in (0, 1, 2):
+            need = room(typ)
+            if need <= 0:
+                break
+            picked += pool(typ, 'проверенная', relax, picked)[:need]
+            if relax == 1:
+                log(f'«{typ}»: групп с перерывом не хватает, ослабляю перерыв')
+    if len(picked) < 9:                      # одного типа не хватило — добираем чем есть (жанр всё равно по теме)
+        for status in ('проверенная', 'средняя', 'тест'):
+            for typ in (main, other):
+                picked += pool(typ, status, 2, picked)[:9 - len(picked)]
+    return picked[:9]
+
+ADS_RE = r'недвиж|нерухом|inmob|property|apartament|alquil|аренд|оренд|квартир|комнат|работ|робот|ваканс|trabajo|объявлен|обьявлен|оголош|anunci|реклам|из рук в руки|купи|куплю|барахол|площадка|грузопер|перевез|перевоз|transporte|ремонт|reforma|строит|construc|услуги|послуги|страхов|бизнес|бізнес|доска'
+SPAIN_RE = (r'испан|españ|spain|валенс|valenc|торрев|torrev|аликан|alican|барсел|barcel|мадрид|малаг|марбел|мурси|мурсі|тенериф|іспан|валенсі|sagunt|сагунт|кальпе|'
+            r'costa|коста|жирон|girona|салоу|salou|таррагон|tarragon|астури|asturi|бенидорм|benidorm|гвардамар|guardamar|кастейон|castell|канар|canar|камбрілс|cambrils|реус|андалус|севиль|гранад|кадис|бильбао|сарагос|ибиц|майорк|mallorc')
+
+def _record(groups, day, kind, title):
+    reg = _jload(GROUPS, {})
+    stamp = f'{datetime.datetime.now():%Y-%m-%d %H:%M}'
+    for n in groups:
+        reg.setdefault(n, {'тип': 'общая', 'жанр': 'интересное', 'статус': 'тест', 'посты': []})
+        reg[n].setdefault('посты', []).append({'дата': stamp[:10], 'день': day, 'время': stamp[11:], 'вид': kind, 'пост': title[:40]})
+    _jsave(GROUPS, reg)
+
+# ---------- публикация ----------
+JS_LOAD = """async () => {
+  const dlg = [...document.querySelectorAll('[role=dialog]')].find(d => d.innerText.includes('Публикация в группах'));
+  if (!dlg) return -1;
+  let hist = [];
+  for (let i = 0; i < 30; i++) {
+    const all = dlg.querySelectorAll('input[type=checkbox]');
+    if (all.length) all[all.length - 1].scrollIntoView({block: 'end'});
+    await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+    hist.push(dlg.querySelectorAll('input[type=checkbox]').length);
+    if (i > 3 && hist[i] === hist[i - 3]) break;
+  }
+  const first = dlg.querySelector('input[type=checkbox]');
+  if (first) first.scrollIntoView({block: 'center'});
+  return hist[hist.length - 1];
+}"""
+JS_SCROLLER = """() => {
+  const d = [...document.querySelectorAll('[role=dialog]')].find(d => d.innerText.includes('Публикация в группах'));
+  const first = d.querySelector('input[type=checkbox]');
+  let e = first, box = null;
+  while (e && e !== d) {
+    const st = getComputedStyle(e);
+    if (e.scrollHeight > e.clientHeight + 20 && /(auto|scroll)/.test(st.overflowY)) { box = e; break; }
+    e = e.parentElement;
+  }
+  const r = (box || d).getBoundingClientRect();
+  return {x: r.x + r.width / 2, y: r.y + r.height / 2, found: !!box};
+}"""
+JS_ROWS = """(want) => {
+  const dlg = [...document.querySelectorAll('[role=dialog]')].find(d => d.innerText.includes('Публикация в группах'));
+  const rows = [...dlg.querySelectorAll('input[type=checkbox]')].map(b => {
+    const row = b.closest('[role=button]') || b.parentElement.parentElement;
+    const name = (row.innerText || '').split('\\n')[0].replace(/\\ufeff/g, '').trim();
+    return {b, row, name};
+  });
+  if (want === null) return rows.map(r => r.name);
+  const r = rows.find(r => r.name === want);
+  if (!r) return null;
+  r.row.scrollIntoView({block: 'center'});
+  const box = r.row.getBoundingClientRect();
+  return {x: box.x, y: box.y, w: box.width, h: box.height,
+          checked: r.b.checked || r.b.getAttribute('aria-checked') === 'true'};
+}"""
+
+def _set_background(page, dlg):
+    """Фон из полоски под текстом. Решение Евгения 02.11.2026: тёмно-синюю «иллюстрацию» с конфетти
+    и тёмные/чёрные фоны не ставить. Сначала небо, море, пляж, природа; потом однотонные светлые
+    и спокойные цвета; потом светлые градиенты. Все варианты из полоски пишем в журнал."""
+    human_click(page, dlg.get_by_role('button', name='Показать параметры фона').first)
+    pause(1, 2)
+    labels = [x for x in dlg.locator('[role="button"][aria-label*="фон "]').evaluate_all(
+        "els => els.map(e => e.getAttribute('aria-label'))") if x]
+    log('фоны в полоске: ' + ' | '.join(labels))
+    low = lambda x: x.lower()
+    BAD = ('темно-син', 'тёмно-син', 'черн', 'чёрн', 'темно-сер', 'тёмно-сер', 'конфетти',
+           'сердц', 'сердеч', 'шар', 'праздн', 'фиолет')
+    NICE = ('неб', 'облак', 'мор', 'пляж', 'океан', 'закат', 'рассвет', 'горы', 'гор ', 'природ',
+            'лес', 'цвет', 'лист', 'пальм', 'солнц', 'песок', 'вода', 'волн')
+    ok = [x for x in labels if not any(b in low(x) for b in BAD)]
+    nice = [x for x in ok if any(n in low(x) for n in NICE)]
+    solid = [x for x in ok if low(x).startswith('сплошн') and x not in nice]
+    grads = [x for x in ok if low(x).startswith('градиент') and x not in nice]
+    pool = nice or solid or grads or ok
+    if not pool:
+        log('фон: подходящего нет, оставляю без фона')
+        return 'без фона'
+    label = random.choice(pool)
+    human_click(page, dlg.locator(f'[role="button"][aria-label="{label}"]').first)
+    pause(1, 2)
+    return label
+
+def _load_picker(page):
+    """Окно «Публикация в группах» догружает группы только при настоящей прокрутке колесом."""
+    pdlg = page.locator('[role="dialog"]').filter(has_text='Публикация в группах').last
+    pdlg.wait_for(timeout=20000)
+    count, same = 0, 0
+    for _ in range(120):
+        # колесо крутим, держа мышь над последней видимой строкой списка
+        # мышь — в середину прокручиваемой области списка (не на строку за краем)
+        r = page.evaluate(JS_SCROLLER)
+        page.mouse.move(r['x'] + random.uniform(-40, 40), r['y'] + random.uniform(-10, 10), steps=random.randint(4, 9))
+        page.mouse.wheel(0, random.randint(700, 1100))
+        time.sleep(random.uniform(0.9, 1.6))
+        n = page.evaluate("() => { const d=[...document.querySelectorAll('[role=dialog]')].find(d=>d.innerText.includes('Публикация в группах')); return d ? d.querySelectorAll('input[type=checkbox]').length : 0 }")
+        same = same + 1 if n == count else 0
+        count = n
+        if same >= 4:
+            break
+    names = page.evaluate(JS_ROWS, None)
+    log(f"в окне выбора групп: {len(names)} (область прокрутки найдена: {r.get('found')})")
+    if len(names) <= 25:
+        try:
+            from common import QUEUE
+            (QUEUE / 'шаги').mkdir(exist_ok=True)
+            page.screenshot(path=str(QUEUE / 'шаги' / f'{datetime.datetime.now():%m%d_%H%M} группы.png'))
+        except Exception:
+            pass
+    return names
+
+def _window(page, state):
+    """Окно робота запускается свёрнутым; свёрнутое окно Facebook не догружает список групп.
+    На время публикации разворачиваем, потом сворачиваем обратно."""
+    try:
+        cdp = page.context.new_cdp_session(page)
+        wid = cdp.send('Browser.getWindowForTarget')['windowId']
+        cdp.send('Browser.setWindowBounds', {'windowId': wid, 'bounds': {'windowState': state}})
+        if state == 'normal':
+            page.bring_to_front()
+        pause(1, 2)
+    except Exception as e:
+        log(f'окно: не смог сделать {state} ({str(e)[:80]})')
+
+class DryRun(Exception):
+    pass
+
+def _discard(page):
+    """Закрыть окно публикации и стереть черновик."""
+    page.keyboard.press('Escape'); pause(1, 2)
+    back = page.get_by_role('button', name='Назад')
+    if back.count():
+        human_click(page, back.last)
+    box = page.locator('[role="dialog"] [role="textbox"]').last
+    if box.count():
+        human_click(page, box)
+        page.keyboard.press('Control+A'); pause(0.3, 0.6)
+        page.keyboard.press('Delete'); pause(1, 2)
+    close = page.get_by_role('button', name='Закрыть диалог создания публикаций')
+    if close.count():
+        human_click(page, close.last)
+    for name in ('Удалить', 'Выйти', 'Не сохранять'):
+        b = page.get_by_role('button', name=name, exact=True)
+        if b.count():
+            human_click(page, b.last); break
+
+def publish(page, j):
+    kind = j['kind']
+    path = _next_text(kind)
+    if not path:
+        raise RuntimeError(f"нет текста в «Посты!\\{FOLDER_NAMES.get(kind, 'Длинные')}» — слот пропущен")
+    meta, text = _parse(path)
+    topic = topic_of(meta, path)
+    if kind == 'short' and len(text) > 130:
+        raise RuntimeError(f'коротыш «{path.name}» длиннее 130 знаков ({len(text)}) — фон не включится')
+    if kind in NEWS_KINDS:
+        topic = 'новости'                      # 11.11.2026: любая новость — группы с темой «новости»
+    photo = _pick_photo(meta, text) if kind in ('long', 'photo') + NEWS_KINDS else None
+    j['_meta'] = meta
+    bg = ''
+
+    _window(page, 'normal')
+    try:
+        # до 3 попыток: Facebook иногда не грузит окно «Создать публикацию» (16.10.2026 — серая заглушка).
+        # Повторяем, только пока текст ещё в очереди, т.е. «Опубликовать» точно не нажимали.
+        for attempt in range(1, 4):
+            try:
+                _publish(page, j, kind, path, text, topic, photo, bg)
+                return
+            except Exception as e:
+                if not path.exists() or attempt == 3 or j.get('dry') or isinstance(e, DryRun):
+                    raise
+                log(f"сбой {kind} (попытка {attempt}): {str(e).splitlines()[0][:120]} — закрываю окно, обновляю страницу, пробую ещё раз")
+                try: _discard(page)
+                except Exception: pass
+                try: page.reload(wait_until='domcontentloaded')
+                except Exception: pass
+                time.sleep(random.uniform(90, 180))
+    finally:
+        _window(page, 'minimized')
+
+# ---------- ШАПКА В ГРУППАХ (решение Евгения 12.11.2026 10:39–10:44, файл «FB — новости с шапкой-заголовком в группах») ----------
+# Только новости (news, news_day, news_evening). Сначала пост в группах из окна первой группы:
+# шапка (первая строка текста) — «Заголовок 1», «Добавить группы» — ещё до 8 групп, «Отправить».
+# Потом профиль — как раньше, но без «Поделиться в группах». Не вышло (до «Отправить») — профиль старым способом
+# с «Поделиться в группах», в журнале «ШАПКА: не вышло — …». Отметка «группы ушли» — _служебное\шапка_группы.json,
+# чтобы при повторе группы не получили пост второй раз. Копия до правки — textposts.py.bak-1211.
+HEAD_FROM = '2026-11-12'
+HEAD_MARK = SYS / 'шапка_группы.json'
+G_TITLE = 'Выберите группы'
+G_ROWS = JS_ROWS.replace("'Публикация в группах'", "'Выберите группы'")
+G_SCROLLER = JS_SCROLLER.replace("'Публикация в группах'", "'Выберите группы'")
+JS_JOINS = """() => {
+  const main = document.querySelector('[role=main]') || document.body;
+  const out = {};
+  for (const a of main.querySelectorAll('a[href*="/groups/"]')) {
+    const n = (a.innerText || '').replace(/\\ufeff/g, '').trim().split('\\n')[0].trim();
+    const h = a.href.split('?')[0];
+    if (!n || n === 'Посмотреть группу') continue;
+    if (!/\\/groups\\/[^\\/]+\\/$/.test(h) || /\\/groups\\/(joins|feed|discover|create)\\//.test(h)) continue;
+    out[n] = h;
+  }
+  return out;
+}"""
+
+def _group_links(page, need):
+    """Ссылки групп: из реестра (поле «ссылка»), а нет — со страницы «Ваши группы» (крутим колесом), найденное — в реестр."""
+    reg = _jload(GROUPS, {})
+    links = {n: g['ссылка'] for n, g in reg.items() if g.get('ссылка')}
+    if sum(1 for n in need if n in links) >= 3:
+        return links
+    page.goto('https://www.facebook.com/groups/joins/?nav_source=tab', wait_until='domcontentloaded')
+    pause(5, 8)
+    found, cnt, same = {}, 0, 0
+    for _ in range(70):
+        try:
+            found.update(page.evaluate(JS_JOINS))
+        except Exception:
+            pass
+        page.mouse.move(random.randint(500, 900), random.randint(350, 650), steps=random.randint(4, 9))
+        page.mouse.wheel(0, random.randint(800, 1300))
+        time.sleep(random.uniform(1.0, 1.8))
+        same = same + 1 if len(found) == cnt else 0
+        cnt = len(found)
+        if same >= 5:
+            break
+    reg = _jload(GROUPS, {})
+    new = 0
+    for n, u in found.items():
+        if n in reg and reg[n].get('ссылка') != u:
+            reg[n]['ссылка'] = u; new += 1
+    _jsave(GROUPS, reg)
+    links.update({n: u for n, u in found.items() if n in reg})
+    log(f"ШАПКА: страница «Ваши группы» — ссылок {len(found)}, новых в реестр {new}")
+    return links
+
+def _load_gpicker(page):
+    """Окно «Добавить группы» → «Выберите группы»: догружаем список колесом, как в профиле."""
+    page.locator('[role="dialog"]').filter(has_text=G_TITLE).last.wait_for(timeout=20000)
+    count, same = 0, 0
+    for _ in range(120):
+        r = page.evaluate(G_SCROLLER)
+        page.mouse.move(r['x'] + random.uniform(-40, 40), r['y'] + random.uniform(-10, 10), steps=random.randint(4, 9))
+        page.mouse.wheel(0, random.randint(700, 1100))
+        time.sleep(random.uniform(0.9, 1.6))
+        n = page.evaluate("() => { const d=[...document.querySelectorAll('[role=dialog]')].find(d=>d.innerText.includes('Выберите группы')); return d ? d.querySelectorAll('input[type=checkbox]').length : 0 }")
+        same = same + 1 if n == count else 0
+        count = n
+        if same >= 4:
+            break
+    names = page.evaluate(G_ROWS, None)
+    log(f"ШАПКА: в окне «Добавить группы»: {len(names)}")
+    return names
+
+def _tick(page, rows_js, names):
+    picked = []
+    for n in names:
+        r = page.evaluate(rows_js, n)
+        if not r:
+            log(f'группа не нашлась в окне: {n}'); continue
+        pause(0.5, 1.5)
+        r = page.evaluate(rows_js, n)
+        if not r['checked']:
+            x = r['x'] + r['w'] * random.uniform(0.3, 0.7)
+            y = r['y'] + r['h'] * random.uniform(0.35, 0.65)
+            page.mouse.move(x, y, steps=random.randint(10, 18))
+            pause(0.2, 0.6)
+            page.mouse.click(x, y, delay=random.randint(60, 150))
+            pause(0.8, 2.0)
+        if page.evaluate(rows_js, n)['checked']:
+            picked.append(n)
+        else:
+            log(f'не отметилась группа: {n}')
+    return picked
+
+def _headline_groups(page, j, kind, path, text, topic, photo):
+    """True — группы получили пост (сейчас или раньше), профиль публикуем без раскидки. False — старый способ."""
+    done = _jload(HEAD_MARK, {})
+    if path.name in done:
+        log(f"ШАПКА: группы для «{path.name[:40]}» уже получили пост — сейчас только профиль")
+        return True
+    lines = text.split('\n')
+    head = lines[0].strip()
+    body = '\n'.join(lines[1:]).strip('\n')
+    if not head or len(head) > 150 or not body:
+        log('ШАПКА: не вышло — нет шапки первой строкой, ушло старым способом')
+        return False
+    step, sent = 'выбор групп', False
+    try:
+        reg = _jload(GROUPS, {})
+        avail = [n for n, g in reg.items() if g.get('статус') in ('проверенная', 'средняя', 'тест')]
+        plan9 = choose_groups(avail, topic, j['day'], (j.get('_meta') or {}).get('регион'))
+        if len(plan9) < 2:
+            raise RuntimeError(f'групп для новости мало ({len(plan9)})')
+        step = 'ссылка первой группы'
+        links = _group_links(page, plan9)
+        reg = _jload(GROUPS, {})
+        order = {'проверенная': 0, 'средняя': 1, 'тест': 2}
+        cands = sorted([n for n in plan9 if n in links], key=lambda n: (order.get(reg.get(n, {}).get('статус'), 9), plan9.index(n)))
+        if not cands:
+            raise RuntimeError('ни у одной из 9 групп нет ссылки')
+        first = cands[0]
+        step = 'окно поста в группе'
+        page.goto(links[first], wait_until='domcontentloaded')
+        pause(6, 10)
+        human_click(page, page.get_by_text('Напишите что-нибудь', exact=False).first)
+        dlg = page.locator('[role="dialog"]').filter(has=page.locator('[role="textbox"]')).last
+        dlg.wait_for(timeout=60000)
+        pause(2, 4)
+        att = dlg.get_by_role('button', name='Удалить вложение из публикации')
+        if att.count():
+            human_click(page, att.first)
+        human_click(page, dlg.get_by_role('textbox').first)
+        page.keyboard.press('Control+A'); pause(0.3, 0.6)          # старый черновик группы — стереть
+        page.keyboard.press('Delete'); pause(1, 2)
+        step = 'шапка «Заголовок 1»'
+        human_type(page, head)
+        pause(1, 2)
+        page.keyboard.press('Control+A')                          # выделяем шапку — появляется меню
+        pause(1, 2)
+        h1 = page.locator('[aria-label="Заголовок 1"]').last
+        h1.wait_for(state='visible', timeout=10000)
+        human_click(page, h1)
+        if not dlg.locator('[role="textbox"] h1, [role="textbox"] h2').count():
+            raise RuntimeError('после «Заголовок 1» в редакторе нет заголовка')
+        page.keyboard.press('Control+End'); pause(0.3, 0.7)
+        page.keyboard.press('Enter'); pause(0.6, 1.2)            # новый обычный абзац под шапкой
+        human_type(page, body)
+        pause(2, 4)
+        step = 'фото'
+        if photo:
+            inp = dlg.locator('input[type=file]')
+            if not inp.count():
+                human_click(page, dlg.get_by_role('button', name='Фото/видео').first)
+                inp = dlg.locator('input[type=file]')
+            inp.first.set_input_files(str(photo_4x5(photo)))
+            pause(6, 10)
+        step = '«Добавить группы»'
+        add = dlg.locator('[aria-label="Добавить группы"]')
+        human_click(page, add.first if add.count() else dlg.get_by_text('Добавить группы', exact=True).first)
+        pause(3, 5)
+        names = _load_gpicker(page)
+        others = [n for n in plan9 if n != first and n in names]
+        if len(others) < 8:                                        # кого-то из 9 нет в окне — добираем по тем же правилам
+            more = [n for n in choose_groups(names, topic, j['day'], (j.get('_meta') or {}).get('регион')) if n != first and n not in others]
+            others += more[:8 - len(others)]
+        ticked = _tick(page, G_ROWS, others[:8])
+        human_click(page, page.locator('[role="dialog"]').filter(has_text=G_TITLE).last.get_by_role('button', name='Готово', exact=True).last)
+        pause(2, 4)
+        step = 'проверка перед «Отправить»'
+        dlg = page.locator('[role="dialog"]').filter(has=page.locator('[role="textbox"]')).last
+        if not dlg.locator('[role="textbox"] h1, [role="textbox"] h2').count():
+            raise RuntimeError('шапка-заголовок пропала из редактора')
+        if j.get('dry'):
+            log(f"ПРОВЕРКА ШАПКИ без публикации: первая группа {first}, отмечено {len(ticked)}: {'; '.join(ticked)}; заголовок h1 на месте")
+            _discard(page)
+            raise DryRun()
+        step = '«Отправить»'
+        human_click(page, dlg.get_by_role('button', name='Отправить', exact=True).last)
+        sent = True
+        done[path.name] = {'время': f'{datetime.datetime.now():%Y-%m-%d %H:%M}', 'первая': first, 'группы': ticked}
+        _jsave(HEAD_MARK, done)
+        pause(10, 16)
+        _record([first] + ticked, j['day'], kind, head)
+        log(f"ШАПКА: группа {first} + добавлено {len(ticked)} групп: {'; '.join(ticked)}")
+        return True
+    except DryRun:
+        raise
+    except Exception as e:
+        msg = str(e).splitlines()[0][:150] if str(e) else type(e).__name__
+        if sent:
+            log(f"ШАПКА: пост в группы отправлен, потом сбой ({msg}) — профиль без раскидки")
+            return True
+        log(f"ШАПКА: не вышло — {step}: {msg}, ушло старым способом")
+        try: _discard(page)
+        except Exception: pass
+        if j.get('dry'):
+            raise DryRun()
+        return False
+
+def _publish(page, j, kind, path, text, topic, photo, bg):
+    warm_up(page)
+    groups_done = False
+    head_on = kind in NEWS_KINDS and j.get('day', '') >= HEAD_FROM
+    if j.get('day') == '2026-11-12' and kind == 'news_day' and not j.get('dry'):
+        head_on = False                      # решение Евгения 12.11 14:10: дневная 12.11 — по-старому, шапка с вечерней
+    if head_on:                              # 12.11.2026: новости — в группы с шапкой «Заголовок 1»
+        groups_done = _headline_groups(page, j, kind, path, text, topic, photo)
+    page.goto('https://www.facebook.com/me', wait_until='domcontentloaded')
+    pause(5, 9)
+    human_click(page, page.get_by_text('Что у вас нового?').first)
+    # у Facebook два слоя с именем «Создание публикации», нужен тот, где есть поле текста
+    dlg = page.locator('[role="dialog"]').filter(has=page.locator('[role="textbox"]')).last
+    dlg.wait_for(timeout=60000)
+    pause(2, 4)
+    att = dlg.get_by_role('button', name='Удалить вложение из публикации')
+    if att.count():
+        human_click(page, att.first)
+    human_click(page, dlg.get_by_role('textbox').first)
+    human_type(page, text)
+    pause(2, 4)
+    up = photo
+    if kind == 'short':
+        bg = _set_background(page, dlg)
+    elif photo:
+        inp = dlg.locator('input[type=file]')
+        if not inp.count():
+            human_click(page, dlg.get_by_role('button', name='Фото/видео').first)
+            inp = dlg.locator('input[type=file]')
+        up = photo_4x5(photo)
+        inp.first.set_input_files(str(up))
+        pause(6, 10)
+    else:
+        log('длинный пост без фото: в «Посты!\\Фото» пусто')
+    pause(2, 4)
+    human_click(page, dlg.get_by_role('button', name='Далее', exact=True).first)
+    pause(3, 5)
+
+    if groups_done:                          # 12.11.2026: группы уже получили пост с шапкой — профиль без раскидки
+        human_click(page, page.get_by_role('button', name='Опубликовать', exact=True).last)
+        _after_post(j, kind, path, text, photo, up, [], bg, page, note='лента (группы — шапкой, см. строку ШАПКА)')
+        return
+    human_click(page, page.get_by_text('Поделиться в группах', exact=True).last)
+    pause(3, 5)
+    available = _load_picker(page)
+    if j.get('dry'):                         # проверка без публикации: только посмотреть, что видно
+        reg = _jload(GROUPS, {})
+        log(f"ПРОВЕРКА без публикации: групп в окне {len(available)}, из них в реестре {sum(1 for n in set(available) if n in reg)}, фон: {bg}")
+        _discard(page)
+        raise DryRun()
+    groups = choose_groups(available, topic, j['day'], (j.get('_meta') or {}).get('регион'))
+    if kind == 'photo':                      # 07.11.2026: дневной фото-пост — 5 групп вместо 9 (место под рилс в группах)
+        reg_ = _jload(GROUPS, {})
+        order = {'проверенная': 0, 'средняя': 1, 'тест': 2}
+        groups = sorted(groups, key=lambda n: order.get(reg_.get(n, {}).get('статус'), 9))[:5]
+    picked = []
+    for n in groups:
+        r = page.evaluate(JS_ROWS, n)
+        if not r:
+            log(f'группа не нашлась в окне: {n}'); continue
+        pause(0.5, 1.5)
+        r = page.evaluate(JS_ROWS, n)
+        if not r['checked']:
+            x = r['x'] + r['w'] * random.uniform(0.3, 0.7)
+            y = r['y'] + r['h'] * random.uniform(0.35, 0.65)
+            page.mouse.move(x, y, steps=random.randint(10, 18))
+            pause(0.2, 0.6)
+            page.mouse.click(x, y, delay=random.randint(60, 150))
+            pause(0.8, 2.0)
+        if page.evaluate(JS_ROWS, n)['checked']:
+            picked.append(n)
+        else:
+            log(f'не отметилась группа: {n}')
+    human_click(page, page.get_by_role('button', name='Готово', exact=True).last)
+    pause(2, 4)
+    human_click(page, page.get_by_role('button', name='Опубликовать', exact=True).last)
+    _after_post(j, kind, path, text, photo, up, picked, bg, page, topic=topic)
+
+def _after_post(j, kind, path, text, photo, up, picked, bg, page, note=None, topic='новости'):
+    # сразу убираем текст из очереди, чтобы при любом сбое дальше он не ушёл второй раз
+    title = text.split('\n')[0]
+    stamp = f'{datetime.datetime.now():%Y-%m-%d %H%M}'
+    shutil.move(str(path), str(DONE / f'{stamp} {path.name}'))
+    if photo:
+        USED_PHOTO.mkdir(exist_ok=True)
+        shutil.move(str(photo), str(USED_PHOTO / photo.name))
+        if up != photo:
+            try: up.unlink()                   # временная копия 4:5 больше не нужна
+            except Exception: pass
+    _record(picked, j['day'], kind, title)
+    _crosspost(kind, text, path, j.get('_meta', {}))
+    pause(15, 25)
+    extra = f' | фон: {bg}' if kind == 'short' else (f' | фото: {photo.name}' if photo else '')
+    if note:
+        log(f"ТЕКСТ {kind} новости «{title[:50]}»{extra} → {note}")
+    else:
+        log(f"ТЕКСТ {kind} {topic} «{title[:50]}»{extra} → лента + {len(picked)} групп: {'; '.join(picked)}")
+    _verify(page, title)
+
+def _crosspost(kind, text, path, meta):
+    """После выхода в Facebook — задание в «Соцсети» (Threads; коротыш ещё X и Bluesky). «@соцсети: нет» — не копировать."""
+    try:
+        nets = CROSS.get(kind)
+        if not nets or meta.get('соцсети', '').lower().startswith('нет'):
+            return
+        SOCIAL.mkdir(parents=True, exist_ok=True)
+        stamp = f'{datetime.datetime.now():%Y-%m-%d_%H%M}'
+        task = {'name': f'{kind} {path.stem}',
+                'texts': {n: (threads_text(text, meta) if n == 'threads' else text) for n in nets}}
+        if kind in NEWS_KINDS and 'threads' in task['texts']:     # 10.11.2026: Threads до 500 знаков — первые абзацы
+            task['texts']['threads'] = _threads_500(task['texts']['threads'])
+        if kind == 'photo' and False:          # 11.11.2026: вечерний выход фото-поста в Threads убран (фото-постов больше нет)
+            now = datetime.datetime.now()
+            a = datetime.datetime.combine(now.date(), datetime.time(18, 10))
+            lo = max(a, now + datetime.timedelta(minutes=5))
+            hi = datetime.datetime.combine(now.date(), datetime.time(19, 50))
+            at = lo + datetime.timedelta(seconds=random.randint(0, max(0, int((hi - lo).total_seconds()))))
+            task['at'] = f'{at:%Y-%m-%d %H:%M}'
+        (SOCIAL / f'{stamp} {kind} {path.stem[:40]}.json').write_text(
+            json.dumps(task, ensure_ascii=False, indent=1), encoding='utf-8')
+        log(f"СОЦСЕТИ: {kind} «{path.stem[:40]}» → {', '.join(nets)}")
+    except Exception as e:
+        log(f"соцсети: задание не создано ({str(e)[:120]})")
+
+def _verify(page, title):
+    # 12.11.2026: лента профиля грузит посты не сразу (ложные «не видно»).
+    # Сначала журнал действий «Ваши публикации, фото и видео» — там пост виден сразу,
+    # потом лента профиля с прокруткой. Текст сравниваем без лишних пробелов.
+    import re as _re
+    norm = lambda t: _re.sub(r'\s+', ' ', t or '').strip()
+    key = norm(title)[:25]
+    urls = ['https://www.facebook.com/me/allactivity?category_key=MANAGEPOSTSPHOTOSANDVIDEOS',
+            'https://www.facebook.com/me']
+    for _ in range(3):
+        for url in urls:
+            try:
+                page.goto(url, wait_until='domcontentloaded')
+                pause(8, 12)
+                for _s in range(4):
+                    if key in norm(page.inner_text('body')):
+                        return
+                    page.mouse.wheel(0, random.randint(900, 1400))
+                    pause(2, 4)
+            except Exception as e:
+                log(f'проверка поста: {url[:45]} — {str(e)[:80]}')
+        pause(20, 40)
+    raise RuntimeError('пост опубликован, но в ленте профиля его не видно — проверить вручную (повторно НЕ публикую)')
