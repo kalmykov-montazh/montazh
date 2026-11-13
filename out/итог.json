@@ -1,0 +1,176 @@
+[
+ {
+  "folder": "NIE и TIE",
+  "sborka": "готово: k/NIE и TIE/reel.mp4  23.3 с, слайдов 8, музыка — трек 1",
+  "zvuk": "mean_volume: -16.4 dB max_volume: -2.3 dB",
+  "dlit": 23.3,
+  "blotato": {
+   "instagram": {
+    "id": "166be041-cadf-48e3-9390-a566fdfbe1a0",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "16fedf92-534c-4bfc-84b0-24c6a90705f0",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "fb_zadanie": "2026-11-14_2000_fb_РИЛС NIE и TIE.json"
+ },
+ {
+  "folder": "Зима в Валенсии",
+  "sborka": "готово: k/Зима в Валенсии/reel.mp4  20.3 с, слайдов 7, музыка — трек 2",
+  "zvuk": "mean_volume: -16.7 dB max_volume: -2.6 dB",
+  "dlit": 20.3,
+  "blotato": {
+   "instagram": {
+    "id": "f1762c97-3153-495d-ad1f-591bd9eea567",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "6e7f5f92-da45-4211-bc38-30af32cbc2ac",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "fb_zadanie": "2026-11-16_2000_fb_РИЛС Зима в Валенсии.json"
+ },
+ {
+  "folder": "Старый центр Валенсии",
+  "sborka": "готово: k/Старый центр Валенсии/reel.mp4  20.3 с, слайдов 7, музыка — трек 3",
+  "zvuk": "mean_volume: -16.6 dB max_volume: -0.3 dB",
+  "dlit": 20.3,
+  "blotato": {
+   "instagram": {
+    "id": "e28c4787-991c-488c-8899-3c7e88045b27",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "b92a0b4b-5a3b-4ca6-8935-e5a8c9357cfa",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "youtube_zamena": [
+   "6717210"
+  ],
+  "fb_zadanie": "2026-11-21_2000_fb_РИЛС Старый центр Валенсии.json"
+ },
+ {
+  "folder": "Город искусств и наук",
+  "sborka": "готово: k/Город искусств и наук/reel.mp4  20.3 с, слайдов 7, музыка — трек 4",
+  "zvuk": "mean_volume: -16.7 dB max_volume: -1.7 dB",
+  "dlit": 20.3,
+  "blotato": {
+   "instagram": {
+    "id": "9160b872-36c0-42fb-9f01-86e14e2707f9",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "91bb787f-df93-4e56-8c3c-426cdef798e8",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "youtube_zamena": [
+   "6717217"
+  ],
+  "fb_zadanie": "2026-11-23_2000_fb_РИЛС Город искусств и наук.json"
+ },
+ {
+  "folder": "Валенсия ночью",
+  "sborka": "готово: k/Валенсия ночью/reel.mp4  20.3 с, слайдов 7, музыка — трек 5",
+  "zvuk": "mean_volume: -16.1 dB max_volume: -2.6 dB",
+  "dlit": 20.3,
+  "blotato": {
+   "instagram": {
+    "id": "cdf4d46f-d6f7-4a36-9d04-35035ca91974",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "036b451c-fc0e-447b-b16f-b4a9f4d8a376",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "youtube_zamena": [
+   "6717223"
+  ],
+  "fb_zadanie": "2026-11-25_2000_fb_РИЛС Валенсия ночью.json"
+ }
+]
