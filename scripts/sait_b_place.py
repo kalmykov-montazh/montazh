@@ -43,8 +43,13 @@ slide = cy > 1150                                             # лицо в ни
 two = multi > 0.3 * max(1, len(tops))
 
 if slide:
-    faceband_top = float(np.percentile(tops, 10)) if tops else 1100
-    h = 230; top = int(max(560, faceband_top - h - 40)); lay = "слайд"
+    # 14.11.2026 (проба «Карта SIP»): ниже слайда места нет, на слайде — текст. Над слайдом тёмная полоса (0–300 px) пустая —
+    # окошко туда. Если полоса занята (много контраста) — компактно над окном камеры
+    band = np.mean([np.abs(np.diff(f[:int(290 / K)], axis=1)).mean() for f in fr[::4]])
+    if band < 6: h = 250; top = 30; lay = "слайд, над слайдом"
+    else:
+        faceband_top = float(np.median(tops)) if tops else 1100
+        h = 230; top = int(max(560, faceband_top - h - 40)); lay = "слайд, над камерой"
 else:
     avail = headtop - 40 - 120
     if avail >= 170: h = int(min(320, avail)); top = 120; lay = "верх"
@@ -54,11 +59,12 @@ y0, y1 = int(top / K), int(min(SH - 1, (top + h) / K))
 act = np.zeros(n)
 for i in range(1, n):
     reg = fr[i][y0:y1]; prv = fr[i - 1][y0:y1]
-    act[i] = np.abs(reg - prv).mean() + 0.15 * np.abs(np.diff(reg, axis=1)).mean()
+    # движение + надписи (резкие края). Плашка стоит неподвижно, поэтому края важнее движения (проба 14.11, «Автостраховка»)
+    act[i] = 0.5 * np.abs(reg - prv).mean() + 1.0 * np.abs(np.diff(reg, axis=1)).mean()
 W = int(4.0 / ST)
 best = None
 for i in range(int(6 / ST), max(int(6 / ST) + 1, int((dur - 6) / ST) - W)):
-    s = act[i:i + W + 1].max() + act[i:i + W + 1].mean()
+    s = act[i:i + W + 1].max() + 2 * act[i:i + W + 1].mean()
     s += 0.6 * abs(i * ST / dur - 0.45)
     if best is None or s < best[0]: best = (s, i * ST)
 t = best[1] if best else max(1.0, dur * 0.4)
