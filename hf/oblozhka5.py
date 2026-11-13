@@ -119,6 +119,14 @@ if len(fs):
 else:
     fx, fw = 300, 480; HEAD_TOP, CHIN = 560, 1170
 HEAD_TOP = max(HEAD_TOP, 200)
+# 13.11.2026 (Евгений 20:23): ролик на две камеры — лицо маленьким окошком сверху (top_px в novyj), на весь кадр улица.
+# Окошко не закрываем: весь текст опускается ниже окошка, на середину кадра.
+WIN = int(spec.get("top_px") or 0)
+if WIN and (not len(fs) or fw < 330):
+    Y0 = WIN + 30; HEAD_TOP = Y0 + 520; CHIN = Y0 + 540
+    print(f"oblozhka5: окошко с лицом сверху до {WIN} — текст ниже окошка")
+else:
+    WIN = 0
 print(f"oblozhka5: стиль {S5}, рубрика {tag}, макушка {HEAD_TOP}, подбородок {CHIN}")
 
 ABOVE = (Y0, HEAD_TOP - 20)                 # над головой
@@ -155,7 +163,11 @@ if S5 == "shapka":
             need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 24 if fsm else 0) + 40
             if top - Y0 >= need: break
         top = max(top, Y0 + need)
-    d.rectangle([0, 0, W, top], fill=HEAD)
+    if WIN:                                  # полоса посередине, под окошком с лицом
+        top = Y0 + need + 30
+        d.rectangle([0, Y0, W, top], fill=HEAD)
+    else:
+        d.rectangle([0, 0, W, top], fill=HEAD)
     y = top - 40 - (hb * len(bl) + 18 * (len(bl) - 1)) - (hs + 24 if fsm else 0)
     if fsm: ctext(d, y, small, fsm, "#111"); y += hs + 24
     for ln in bl: ctext(d, y, ln, fb, "white"); y += hb + 18
