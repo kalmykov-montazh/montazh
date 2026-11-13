@@ -146,6 +146,7 @@ def update_sitemap(items):
 
 def main(src_dir, removed_list):
     now = datetime.datetime.now(TZ)
+    NEWS.mkdir(parents=True, exist_ok=True)
     data = json.loads(DATA.read_text(encoding='utf-8')) if DATA.exists() else {}
     removed = set()
     if removed_list and Path(removed_list).exists():

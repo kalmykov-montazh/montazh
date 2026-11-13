@@ -30,7 +30,7 @@ jobs:
       - name: Скачать новости
         run: |
           mkdir -p n
-          for d in "Новости утро" "Новости день" "Новости вечер" "Новости ночь" "Длинные"; do
+          for d in "Новости утро" "Новости день" "Новости вечер" "Длинные"; do
             rclone copy "montazh:Брокер/Посты/$d" n --include "000 *.txt" --max-depth 1 || true
           done
           rclone copy "montazh:Брокер/Посты/Опубликовано" n --include "* 000 *.txt" --max-depth 1 --max-age 10d || true
