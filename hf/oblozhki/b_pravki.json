@@ -111,17 +111,20 @@
  },
  "Телефон за рулём": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Autom%C3%B3vil_de_la_Guardia_Civil_de_Tr%C3%A1fico_02.jpg/1280px-Autom%C3%B3vil_de_la_Guardia_Civil_de_Tr%C3%A1fico_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "src": "C Automóvil de la Guardia Civil de Tráfico 02.jpg"
+  "src": "C Automóvil de la Guardia Civil de Tráfico 02.jpg",
+  "t": 12
  },
  "Гибридная аренда": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Edificio_Francisco_Sancho_Calle_Ruzafa_06.jpg/1280px-Edificio_Francisco_Sancho_Calle_Ruzafa_06.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Edificio Francisco Sancho Calle Ruzafa 06.jpg",
   "t": 26,
-  "fx": 0.75
+  "box": "798,790,85"
  },
  "Лёгких путей": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Valencia-Ciutat_Vella%2C_straatzicht_Carrer_de_les_Barques_IMG_2637_2026-08-22_17.55.jpg/1280px-Valencia-Ciutat_Vella%2C_straatzicht_Carrer_de_les_Barques_IMG_2637_2026-08-22_17.55.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "src": "C Valencia-Ciutat Vella, straatzicht Carrer de les Barque"
+  "src": "C Valencia-Ciutat Vella, straatzicht Carrer de les Barque",
+  "t": 10,
+  "box": "912,928,122"
  },
  "Въезд без фото": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Edificio_Francisco_Sancho_Calle_Ruzafa_04.jpg/1280px-Edificio_Francisco_Sancho_Calle_Ruzafa_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -202,7 +205,8 @@
  "Сколько платит Facebook": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Hands-coffee-smartphone-technology_%2823698591814%29.jpg/1280px-Hands-coffee-smartphone-technology_%2823698591814%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Hands-coffee-smartphone-technology (23698591814).jpg",
-  "t": 18
+  "t": 18,
+  "box": "380,560,320"
  },
  "Подарок на день": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Gift_box_II.jpg/1280px-Gift_box_II.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -252,11 +256,12 @@
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Llaves_casa.jpg/1280px-Llaves_casa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "src": "C Llaves casa.jpg",
   "t": 24,
-  "fx": 0.8
+  "box": "895,930,125"
  },
  "Сдать комнату": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Casa_Lorenzo_Tapia_-_Dormitorio.jpg/1280px-Casa_Lorenzo_Tapia_-_Dormitorio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "src": "C Casa Lorenzo Tapia - Dormitorio.jpg"
+  "src": "C Casa Lorenzo Tapia - Dormitorio.jpg",
+  "t": 12
  },
  "Больничный": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Granada_-_Oficina_Integral_de_la_Seguridad_Social_4.jpg/1280px-Granada_-_Oficina_Integral_de_la_Seguridad_Social_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -288,7 +293,8 @@
  },
  "Нашли кошелёк": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Lost_wallet_%2810623155873%29.jpg/1280px-Lost_wallet_%2810623155873%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "src": "C Lost wallet (10623155873).jpg"
+  "src": "C Lost wallet (10623155873).jpg",
+  "t": 42
  },
  "Наличными больше": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/001_2013_07_02_Numbers.jpg/1280px-001_2013_07_02_Numbers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -296,7 +302,8 @@
  },
  "Машина с украинскими": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Ukraine_license_plate_AT7548CT.jpg/1280px-Ukraine_license_plate_AT7548CT.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-  "src": "C Ukraine license plate AT7548CT.jpg"
+  "src": "C Ukraine license plate AT7548CT.jpg",
+  "t": 10
  },
  "Маячок V-16": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/V16_-_Help-Flash_3_modelos_sobre_techo_auto.jpg/1280px-V16_-_Help-Flash_3_modelos_sobre_techo_auto.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",

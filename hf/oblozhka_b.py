@@ -44,7 +44,9 @@ hx = os.environ.get("HAAR") or os.path.join(ROOT, "scripts", "haar.xml")
 sys.path.insert(0, os.path.join(ROOT, "scripts")); from litso import najti
 FXH = float(os.environ["FX"]) if os.environ.get("FX") else None
 fb_ = najti(cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR), hx, fx=FXH)
-if fb_:
+if os.environ.get("BOX"):                                   # лицо задано вручную: x,y,ширина (кадр 1080×1920)
+    bx = [int(v) for v in os.environ["BOX"].split(",")]; fx, fy, fw, fh = bx[0], bx[1], bx[2], bx[2]
+elif fb_:
     fx, fy, fw, fh = fb_
 else:
     fx, fy, fw, fh = 340, 600, 400, 400
