@@ -116,7 +116,7 @@ jobs:
           python3 - <<'PY'
           import json, os
           n = os.environ["NAME"]; out = {}
-          for f in ("vstavki_plan_0411.json", "vstavki_plan_0511.json", "vstavki_plan_1011.json"):
+          for f in ("vstavki_plan_0411.json", "vstavki_plan_0511.json", "vstavki_plan_1011.json", "vstavki_plan_1311.json"):
               if not os.path.exists(f): continue
               d = json.load(open(f))
               if n in d: out = d[n]

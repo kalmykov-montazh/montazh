@@ -306,7 +306,7 @@ KART = []
 PICB = []
 SAIT = spec.get("sait")
 if SAIT:
-    SD = 3.6
+    SD = float(SAIT.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
     ws = sorted({w["s"] for w in W if max(start_min, 6.0) <= w["s"] <= CTA_T - 0.3 - SD})
     ta = find(SAIT["at"]) if SAIT.get("at") else None
     if ta is None: ta = DUR * 0.4
@@ -314,26 +314,40 @@ if SAIT:
     my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
     lowtop = my + 78; lowh = min(1920 - 30 - lowtop, 270)
     pick = None
-    for t in order:
+    # 13.11.2026: ручное место после просмотра кадров — "t" (секунда), "top" и "h" (px). Нарезки из лонгов, ролики с Серёгой
+    if SAIT.get("t") is not None and SAIT.get("top") is not None:
+        pick = (float(SAIT["t"]), "ручное")
+    for t in ([] if pick else order):
         set_top(t)
-        if not any(a < t + SD and t < b for a, b in BUSY) and AVAIL >= 230: pick = (t, "верх"); break
+        # 13.11.2026: компактное окошко (от 170 px) лучше, чем никакого
+        if not any(a < t + SD and t < b for a, b in BUSY) and AVAIL >= 170: pick = (t, "верх"); break
     if pick is None and lowh >= 190:
         for t in order:
             if not any(a < t + SD and t < b for a, b in PICB): pick = (t, "низ"); break
-    if pick is None: log("окошко сайта пропущено: нет места")
+    if pick is None and order:
+        # 13.11.2026: нигде нет места — минимальная полоска «KG kalmykovgroup.com · ссылка в шапке», бренд всё равно мелькнёт
+        t = order[0]; t1 = t + SD; shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
+        H.append(f'<div id="sait" class="sait mini" style="top:{max(40, TOP - 110)}px"><u><img src="kg.svg">kalmykovgroup.com</u><i>Ссылка в шапке профиля</i></div>')
+        tl(f'tl.from("#sait",{{y:-200,opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).to("#sait",{{y:-100,opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
+        snd("whoosh", t - 0.12, 0.25); log(f"окошко сайта: МИНИ-полоска в {t:.1f} с (нет места)")
+    elif pick is None: log("окошко сайта пропущено: нет места")
     else:
         t, where = pick; t1 = t + SD
-        os.makedirs(f"{P}/sait", exist_ok=True); shutil.copy(f"{B}/sait_skriny/{SAIT['img']}", f"{P}/sait/{SAIT['img']}")
+        os.makedirs(f"{P}/sait", exist_ok=True); shutil.copy(f"{B}/sait_skriny/{SAIT['img']}", f"{P}/sait/{SAIT['img']}"); shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
         txt = sanitize(SAIT["text"]).strip().rstrip(".")
         main, pill = (txt.rsplit(". ", 1) + [""])[:2] if ". " in txt else (txt, "Ссылка в шапке профиля")
-        if where == "верх":
+        if where == "ручное":
+            hc = int(SAIT.get("h", 300)); top = int(SAIT["top"]); BUSY.append((t, t1))
+        elif where == "верх":
             set_top(t); hc = min(AVAIL + 6, 330); top = TOP - 20; BUSY.append((t, t1))
         else:
             hc = lowh; top = lowtop; PICB.append((t, t1))
         fs = 46 if len(main) <= 34 else (40 if len(main) <= 50 else 34)
-        H.append(f'<div id="sait" class="sait" style="top:{top}px;height:{hc}px"><img src="sait/{SAIT["img"]}" style="width:{int(hc*0.92)}px">'
-                 f'<div class="st"><u>kalmykov-realty · сайт</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
-        dy = -320 if where == "верх" else 320
+        if hc < 250: fs = min(fs, 34)   # компактное окошко
+        # 13.11.2026 (Евгений, вариант «Б»): чёрное окошко с золотой рамкой, бренд KG + kalmykovgroup.com золотом, скрин целиком
+        H.append(f'<div id="sait" class="sait" style="top:{top}px;height:{hc}px"><img class="sk" src="sait/{SAIT["img"]}" style="width:{int(hc*1.15)}px">'
+                 f'<div class="st"><u><img src="kg.svg">kalmykovgroup.com</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
+        dy = 320 if where == "низ" or (where == "ручное" and top > 900) else -320
         tl(f'tl.from("#sait",{{y:{dy},opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).from("#sait i",{{scale:0,duration:0.35,ease:"back.out(3)"}},{t+0.5:.3f}).to("#sait",{{y:{dy//2},opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
         snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2)
         log(f"окошко сайта: {SAIT['img']} в {t:.1f} с ({where}), «{main}»")
@@ -372,9 +386,15 @@ if CTA:
     lab, txt = sanitize(CTA.get("label") or ""), sanitize(CTA["text"])
     if lab[:1].islower():   # «Напишите «Монтаж»» + «в комментариях» — одна фраза, крупно, без кнопки
         lab, txt = (txt.rstrip(",") + (", " if txt.endswith(",") else " ") + lab), ""
-    H.append(f'<div id="ap" class="apple fit" style="top:{TOP}px"><b class="{"sm" if len(lab) > 16 else ""}">{esc(lab)}</b>{f"<em>{esc(txt)}</em>" if txt else ""}</div>')
+    H.append(f'<div id="ap" class="apple fit" style="top:{TOP}px"><b class="{"sm" if len(lab) > 16 else ""}">{esc(lab)}</b>{f"<em>{esc(txt)}</em>" if txt else ""}'
+             f'{"" if spec.get("no_site") else "<s class=adr>kalmykovgroup.com</s>"}</div>')
     tl(f'tl.from("#ap",{{y:120,scale:0.85,opacity:0,duration:0.55,ease:"back.out(1.6)"}},{CTA_T:.3f}){'.from("#ap em",{scale:0,duration:0.35,ease:"back.out(3)"},' + f'{CTA_T+0.45:.3f})' if txt else ''};')
     snd("ding", CTA_T + 0.4, 0.25)
+
+# ---------- значок KG весь ролик (13.11.2026, Евгений: «логотипчик в уголку… даст марку свою») ----------
+if not spec.get("no_kg"):
+    shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
+    H.append('<img id="kgw" class="kgw" src="kg.svg">')
 
 # ---------- субтитры «микс» (overlay.py поверх рендера) ----------
 mix = spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))] * 4
