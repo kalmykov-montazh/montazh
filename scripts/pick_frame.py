@@ -15,7 +15,7 @@ p = subprocess.Popen(['ffmpeg','-v','error','-i',raw,'-vf',f'fps={1/STEP},{TM}{G
 fc = cv2.CascadeClassifier(f'{D}/haar.xml')
 fm = cv2.face.createFacemarkLBF(); fm.loadModel(f'{D}/lbf.yaml')
 def dist(p, q): return float(np.hypot(*(p - q)))
-best = None; cands = []; n = 0; rmax = max(1, np.percentile(np.abs(a), 99))
+best = None; cands = []; allc = []; n = 0; rmax = max(1, np.percentile(np.abs(a), 99))
 while True:
     b = p.stdout.read(SW*SH*3)
     if len(b) < SW*SH*3: break
@@ -30,6 +30,7 @@ while True:
     P = np.array(lm[0]).reshape(-1, 2)
     ear = np.mean([(dist(P[i+1], P[i+5]) + dist(P[i+2], P[i+4])) / (2 * dist(P[i], P[i+3])) for i in (36, 42)])
     mar = (dist(P[61], P[67]) + dist(P[62], P[66]) + dist(P[63], P[65])) / (3 * dist(P[60], P[64]))
+    allc.append((t, ear, mar))
     if ear < 0.22 or mar > 0.06: continue        # глаза прикрыты или рот открыт
     sharp = cv2.Laplacian(g[y:y+fh, x:x+fw], cv2.CV_64F).var()
     loud = rms(t) / rmax
@@ -52,6 +53,11 @@ if cands:
         sheet[(i // 4) * 320:(i // 4 + 1) * 320, (i % 4) * 180:(i % 4 + 1) * 180] = im
     cv2.imwrite(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.jpg'), sheet)
 t = best[1] if best else 1.0
+# 13.11.2026 (Евгений: «глаза полностью закрыты… сколько тебя учить»): если строгих кадров нет — не брать секунду наугад,
+# а самый открытый глаз при самом закрытом рте среди всех кадров с лицом
+if not best and allc:
+    t = max(allc, key=lambda c: c[1] - c[2] * 1.5)[0]
+    print('cover frame: строгих кадров нет — взял самые открытые глаза', round(t, 2))
 if os.environ.get('PICK_T'): t = float(os.environ['PICK_T'])   # кадр выбран вручную
 print('cover frame', round(t,2), 'score', [round(v,3) for v in best] if best else None)
 # кадр для обложки (с 03.10.2026): мягче перевод HDR (npl=200), чуть контраста и резкости — иначе обложка бледная и мутная
