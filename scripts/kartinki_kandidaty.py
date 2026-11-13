@@ -70,9 +70,12 @@ def openverse(q, n=5):
     return r
 try: F = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
 except Exception: F = ImageFont.load_default()
-import concurrent.futures as cf, time
-res = {}
+import concurrent.futures as cf, time, threading
+res = {}; LK = threading.Lock()
 def one(k):
+  try: one_(k)
+  except Exception as e: print("СБОЙ", k, e, flush=True)
+def one_(k):
     l1, l2, pl, q = T[k]; t0 = time.time()
     cand, seen = [], set()
     for qq in [q] + X.get(k, []):
@@ -91,5 +94,5 @@ def one(k):
         d.text((x + 4, y + 226), c["t"][:30], fill="black", font=F); ok.append(c)
     res[k] = ok; idx = list(T).index(k)
     sheet.save(f"{OUT}/{idx:02d}.jpg", quality=80); print(idx, k, len(ok), int(time.time() - t0), "с", flush=True)
-    json.dump(res, open(f"{OUT}/kand.json", "w"), ensure_ascii=False, indent=1)
+    with LK: json.dump(res, open(f"{OUT}/kand.json", "w"), ensure_ascii=False, indent=1)
 with cf.ThreadPoolExecutor(10) as ex: list(ex.map(one, list(T)))
