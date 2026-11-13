@@ -46,9 +46,9 @@ if cands:
     pick = []
     for c in cands:
         if all(abs(c[0] - q[0]) >= 1.5 for q in pick): pick.append(c)
-        if len(pick) == 8: break
+        if len(pick) == 16: break
     sheet = np.zeros((320 * 2, 180 * 4, 3), np.uint8)
-    for i, c in enumerate(pick):
+    for i, c in enumerate(pick[:8]):
         im = c[5].copy(); cv2.putText(im, f'{c[0]:.1f}', (6, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
         sheet[(i // 4) * 320:(i // 4 + 1) * 320, (i % 4) * 180:(i % 4 + 1) * 180] = im
     cv2.imwrite(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.jpg'), sheet)

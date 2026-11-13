@@ -17,8 +17,14 @@ for t in ts:
     r = cv2.cvtColor(im[y0:y1, x0:x1], cv2.COLOR_BGR2HSV)
     hue, sat, val = r[..., 0], r[..., 1], r[..., 2]
     loud = ((sat > 170) & (val > 170) & ((hue < 8) | ((hue > 18) & (hue < 35)) | ((hue > 45) & (hue < 80)))).mean()
-    print(f"кадр {t}: надписей {loud:.4f}, лицо {w}")
-    sc = loud - w / 1e5
+    # белые субтитры с чёрной обводкой у подбородка: белое рядом с чёрным
+    yb0 = min(im.shape[0], y + int(h * 0.75)); yb1 = min(im.shape[0], y + int(h * 1.9))
+    band = cv2.cvtColor(im[yb0:yb1, x0:x1], cv2.COLOR_BGR2HSV)
+    wh = ((band[..., 2] > 225) & (band[..., 1] < 45)).astype(np.uint8)
+    dk = (band[..., 2] < 45).astype(np.uint8)
+    sub = (cv2.dilate(wh, np.ones((5, 5), np.uint8)) & cv2.dilate(dk, np.ones((5, 5), np.uint8))).mean() if band.size else 0
+    print(f"кадр {t}: цветных надписей {loud:.4f}, субтитров {sub:.4f}, лицо {w}")
+    sc = loud + sub * 2 - w / 1e5
     if best is None or sc < best[0]: best = (sc, t)
 t = best[1] if best else (ts[0] if ts else "2")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", t, "-i", v, "-frames:v", "1", out], check=True)

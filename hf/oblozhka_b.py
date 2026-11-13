@@ -61,8 +61,8 @@ face = face.crop((0, 0, FW, fh_))
 hh = face.height
 xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
 ys = np.minimum(np.arange(hh) / 70.0, 1.0)[:, None]                                   # и верх
-chin = int(((fy + fh * 1.45) - top) * FW / cw)                                        # грудь со старыми субтитрами
-yc = np.clip(1.0 - (np.arange(hh) - chin) / 170.0, 0, 1)[:, None]
+chin = int(((fy + fh * 1.05) - top) * FW / cw)                                        # грудь со старыми субтитрами
+yc = np.clip(1.0 - (np.arange(hh) - chin) / 110.0, 0, 1)[:, None]
 m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8), "L")
 bg.paste(face, (W - FW, FY0), m)
 
