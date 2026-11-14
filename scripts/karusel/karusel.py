@@ -47,6 +47,7 @@ cfg = json.loads((D / 'karusel.json').read_text(encoding='utf-8-sig'))
 res_p = D / '_отправлено.json'
 res = json.loads(res_p.read_text(encoding='utf-8')) if res_p.exists() else {}
 mode = sys.argv[2] if len(sys.argv) > 2 else 'post'
+only = set(sys.argv[3].split(',')) if len(sys.argv) > 3 and sys.argv[3] else None   # 14.11.2026: retry только этих сетей
 if mode == 'retry':                               # 07.11.2026: перевыложить сразу то, что упало (status failed / ошибка)
     for p, x in list(res.items()):
         st = x.get('status')
@@ -54,7 +55,10 @@ if mode == 'retry':                               # 07.11.2026: перевыло
             try: st = req('GET', f"/posts/{x['id']}").get('status')
             except Exception: pass
         if st in ('failed', 'ошибка'):
-            print(p, 'упал — перевыкладываю сразу'); res.pop(p)
+            if only is None or p in only:
+                print(p, 'упал — перевыкладываю сразу'); res.pop(p)
+        elif only is not None and p in only:
+            print(p, 'сторож решил перевыложить (было:', st, ')'); res.pop(p)
         else:
             print(p, 'не трогаю:', st)
 
@@ -74,6 +78,8 @@ else:
     vid = D / 'shorts.mp4'
     vurl = upload(vid) if vid.exists() and 'youtube' in cfg.get('seti', []) else None
     for p in cfg.get('seti', []):
+        if only is not None and p not in only:
+            print(p, 'не в списке повтора — не трогаю'); continue
         if res.get(p, {}).get('id'):
             print(p, 'уже отправлен', res[p]['id']); continue
         media = [vurl] if p == 'youtube' else urls
@@ -95,7 +101,10 @@ else:
             r = req('POST', '/posts', body)
             res[p] = {'id': r.get('postSubmissionId'), 'status': 'запланирован', 'at': cfg['at']}
             print(p, 'запланирован', res[p]['id'])
-        except Exception as ex:
+        except RuntimeError as ex:                # Blotato ответил отказом — поста точно нет
             res[p] = {'status': 'ошибка', 'error': str(ex)[:400]}
             print(p, 'ОШИБКА', str(ex)[:400])
+        except Exception as ex:                   # 14.11.2026: завис/оборвался — пост мог создаться, повтор только после проверки
+            res[p] = {'status': 'неясно', 'error': str(ex)[:400], 'at': cfg['at']}
+            print(p, 'НЕЯСНО (запрос завис)', str(ex)[:400])
 res_p.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')

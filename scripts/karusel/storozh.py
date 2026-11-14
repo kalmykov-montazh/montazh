@@ -2,7 +2,7 @@
 # Рилсы из той же папки — по _рилс.json (с 07.11.2026), та же логика.
 # Если какая-то сеть в Blotato упала (failed) — сам перевыкладывает её сразу (karusel.py retry), до 2 раз.
 # Пишет Евгению в Telegram (@kalmykov_assistant_bot): что упало, что перевыложил, что так и не вышло.
-import json, subprocess, sys, pathlib, datetime, urllib.request, urllib.error
+import json, subprocess, sys, pathlib, datetime, urllib.request, urllib.error, urllib.parse
 
 ROOT = 'montazh:Брокер/Посты/Карусели'
 API = 'https://backend.blotato.com/v2'
@@ -36,6 +36,40 @@ def post(body):
     with urllib.request.urlopen(r, timeout=120) as resp:
         return json.loads(resp.read() or b'{}')
 
+def _head(t):
+    t = (t or '').replace('⠀', ' ').strip()
+    return t.splitlines()[0].strip()[:40].lower() if t else ''
+
+def alive(p, text, at, dead=()):
+    """14.11.2026 (защита от дублей): есть ли в Blotato пост этой сети с тем же началом текста, который НЕ упал
+    (вышел, в работе, запланирован). Бывает, когда прошлый запрос завис уже после того, как Blotato пост принял.
+    Возвращает пост, None — нет живого, 'неясно' — список не получен (тогда не перевыкладываем в этот заход)."""
+    head = _head(text)
+    if len(head) < 12:
+        return None
+    since = (at - datetime.timedelta(days=1)).isoformat(timespec='seconds')
+    until = (max(at, now) + datetime.timedelta(days=1)).isoformat(timespec='seconds')
+    q = urllib.parse.urlencode({'since': since, 'until': until, 'limit': 250})
+    items, cur = [], None
+    try:
+        for _ in range(10):
+            r = urllib.request.Request(f'{API}/posts?{q}' + (f'&cursor={urllib.parse.quote(str(cur))}' if cur else ''),
+                                       headers={'blotato-api-key': KEY})
+            with urllib.request.urlopen(r, timeout=60) as resp:
+                d = json.loads(resp.read() or b'{}')
+            items += d.get('items', []); cur = d.get('cursor')
+            if not cur:
+                break
+    except Exception as e:
+        print('список постов не получен:', str(e)[:150]); return 'неясно'
+    for it in items:
+        pl = str(it.get('platform') or (it.get('account') or {}).get('platform') or '').lower()
+        if pl != p or it.get('id') in dead:
+            continue
+        if _head(it.get('text')) == head and (it.get('state') or {}).get('type') != 'failed':
+            return it
+    return None
+
 def reels(name, F):
     # _рилс.json: {"at": "...", "text": "...", "video": "shorts.mp4",
     #  "posts": {"instagram": {"id": "...", "account": "80093", "target": {...}}, ...}}
@@ -53,8 +87,14 @@ def reels(name, F):
         if x.get('id'):
             r = status(x['id']); x['status'] = r.get('status'); x['url'] = r.get('publicUrl'); x['error'] = r.get('errorMessage'); changed = True
         print(name, 'рилс', p, x.get('status'), (x.get('error') or '')[:150])
-        if x.get('status') not in ('failed', 'ошибка'):
+        if x.get('status') not in ('failed', 'ошибка', 'неясно'):
             continue
+        live = alive(p, cfg['text'], at, {x.get('id')})      # 14.11.2026: не задвоить
+        if live == 'неясно':
+            continue
+        if live:
+            x['id'] = live.get('id'); x['status'] = (live.get('state') or {}).get('type') or 'есть'; changed = True
+            print(name, 'рилс', p, 'уже есть живой пост', x['id'], '— не перевыкладываю'); continue
         if x.get('повторов', 0) >= 2:
             tg(f'Рилс «{name}»: {NAMES.get(p, p)} так и не вышел после 2 повторов. Ошибка: {(x.get("error") or "")[:300]}')
             x['status'] = 'сдался'; continue
@@ -71,8 +111,10 @@ def reels(name, F):
                                'target': x['target']}})
             x['id'] = r.get('postSubmissionId'); x['status'] = 'отправлен заново'
             tg(f'Рилс «{name}»: упал {NAMES.get(p, p)} — перевыложил сам, проверю через 20 минут')
-        except Exception as e:
+        except urllib.error.HTTPError as e:                 # отказ Blotato — поста нет
             x['status'] = 'ошибка'; x['error'] = str(e)[:300]
+        except Exception as e:                              # 14.11.2026: завис — пост мог создаться, проверим в следующий заход
+            x['id'] = None; x['status'] = 'неясно'; x['error'] = str(e)[:300]
         x['повторов'] = x.get('повторов', 0) + 1
     if changed:
         pathlib.Path('rl.json').write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -102,7 +144,13 @@ for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).
             r = status(x['id'])
             x['status'] = r.get('status'); x['url'] = r.get('publicUrl'); x['error'] = r.get('errorMessage')
         print(name, p, x.get('status'), (x.get('error') or '')[:150])
-        if x.get('status') in ('failed', 'ошибка'):
+        if x.get('status') in ('failed', 'ошибка', 'неясно'):
+            live = alive(p, (cfg.get('texts') or {}).get(p), at, {x.get('id')})   # 14.11.2026: не задвоить
+            if live == 'неясно':
+                continue
+            if live:
+                x['id'] = live.get('id'); x['status'] = (live.get('state') or {}).get('type') or 'есть'
+                print(name, p, 'уже есть живой пост', x['id'], '— не перевыкладываю'); continue
             failed.append(p)
     if not failed:
         pathlib.Path('r.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -117,7 +165,7 @@ for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).
     if todo:
         rc('copy', F, 'k', '--exclude', '_превью*')
         pathlib.Path('k/_отправлено.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
-        out = subprocess.run([sys.executable, 'scripts/karusel/karusel.py', 'k', 'retry'], capture_output=True, text=True)
+        out = subprocess.run([sys.executable, 'scripts/karusel/karusel.py', 'k', 'retry', ','.join(todo)], capture_output=True, text=True)
         print(out.stdout, out.stderr[-500:])
         rc('copyto', 'k/_отправлено.json', f'{F}/_отправлено.json', check=False)
         for p in todo:
