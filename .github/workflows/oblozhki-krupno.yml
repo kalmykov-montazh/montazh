@@ -22,6 +22,10 @@ on:
         description: "Номера из описи через запятую (пусто — все)"
         required: false
         default: ""
+      var:
+        description: "Вариант читаемости (15.11.2026): пусто / a / b; в пробе «ab» — рисует все три рядом"
+        required: false
+        default: ""
       key:
         description: "Ключ шифрования для описи и картинок"
         required: true
@@ -87,6 +91,7 @@ jobs:
           N: ${{ matrix.v.n }}
           MODE: ${{ inputs.mode }}
           KEY: ${{ inputs.key }}
+          VARS: ${{ inputs.var }}
         run: |
           echo "::add-mask::$KEY"
           mkdir -p in out
@@ -100,7 +105,12 @@ jobs:
           echo "кадр обложки: $T с"
           ffmpeg -v error -y -ss "$T" -i in/osnova.mp4 -frames:v 1 \
             -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
-          python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
+          if [ "$VARS" = "ab" ]; then
+            for V in a b; do OBL_VAR=$V python3 hf/oblozhka5.py in/cover_bg.png out/v_$V.png "novyj/$K.json" "$K" > /dev/null
+              ffmpeg -v error -y -i out/v_$V.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/${N}_$V.jpg"; done
+          fi
+          [ "$VARS" = "ab" ] && VV="" || VV="$VARS"
+          OBL_VAR="$VV" python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
           ffmpeg -v error -y -i out/cover_full.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")

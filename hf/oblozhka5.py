@@ -158,6 +158,42 @@ def chest_block(lines, sizes_fn):
 
 im = src.copy().convert("RGBA")
 d = ImageDraw.Draw(im)
+# 15.11.2026 (Евгений 00:40): читаемость «за спиной», «Хормози», «Ч/Б» — варианты a/b (OBL_VAR), пусто — как было
+VAR = (os.environ.get("OBL_VAR") or cov.get("var") or "").lower()
+
+
+def soft_shadow(y, t, f, stroke=0, off=8, blur=10, alpha=180, x=None):
+    global im, d
+    sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
+    if x is None: ctext(sd, y + off, t, f, (0, 0, 0, alpha), stroke, (0, 0, 0, alpha))
+    else:
+        b = sd.textbbox((0, 0), t, font=f); sd.text((x - b[0], y + off - b[1]), t, font=f, fill=(0, 0, 0, alpha), stroke_width=stroke, stroke_fill=(0, 0, 0, alpha))
+    im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(blur))); d = ImageDraw.Draw(im)
+
+
+def stext(y, t, f, fill, stroke=8, sf="#0b0d12"):
+    """Текст с обводкой и мягкой тенью — читается на любом фоне."""
+    soft_shadow(y, t, f, stroke)
+    ctext(d, y, t, f, fill, stroke, sf)
+    return tsize(d, t, f)[1]
+
+
+def plate(y, t, f, bg, fg, px=30, py=18, r=14, alpha=255):
+    """Текст на плашке по центру. Возвращает полную высоту плашки."""
+    global im, d
+    w, h, b = tsize(d, t, f); x = (W - w) // 2
+    if alpha < 255 or bg.startswith("#0b"):
+        ov = Image.new("RGBA", im.size, (0, 0, 0, 0)); od = ImageDraw.Draw(ov)
+        c = tuple(int(bg.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)) + (alpha,)
+        od.rounded_rectangle([x - px, y - py, x + w + px, y + h + py], radius=r, fill=c)
+        im.alpha_composite(ov); d = ImageDraw.Draw(im)
+    else:
+        sh = Image.new("RGBA", im.size, (0, 0, 0, 0))
+        ImageDraw.Draw(sh).rounded_rectangle([x - px, y - py + 8, x + w + px, y + h + py + 8], radius=r, fill=(0, 0, 0, 120))
+        im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10))); d = ImageDraw.Draw(im)
+        d.rounded_rectangle([x - px, y - py, x + w + px, y + h + py], radius=r, fill=bg)
+    d.text((x - b[0], y - b[1]), t, font=f, fill=fg)
+    return h + 2 * py
 
 if S5 == "shapka":
     small = TOP if BOT else ""
@@ -216,18 +252,30 @@ elif S5 == "spina":
     sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
     ctext(sd, y + 8, WORD, f, (0, 0, 0, 140))
     im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12)))
-    d = ImageDraw.Draw(im); ctext(d, y, WORD, f, "white")
+    d = ImageDraw.Draw(im)
+    if VAR == "a": ctext(d, y, WORD, f, "#ffd400", 12, "#0b0d12")
+    elif VAR == "b": ctext(d, y, WORD, f, "white", 14, "#0b0d12")
+    else: ctext(d, y, WORD, f, "white")
     person = src.convert("RGBA"); person.putalpha(mask); im.alpha_composite(person)
     d = ImageDraw.Draw(im)
     y = CHEST[0]
-    if TOP:
+    if VAR in ("a", "b"):
+        y += 20
+        if TOP:
+            fp = fit(d, TOP, MONT, 112, W - 120, 60)
+            y += plate(y, TOP, fp, "#ffd400" if VAR == "a" else "#e3191c", "#0b0d12" if VAR == "a" else "white", 34, 22) + 26
+        if BOT and y < Y1 - 60:
+            fb_ = fit(d, BOT, MONT, 88, W - 100, 46)
+            if VAR == "a": plate(y + 18, BOT, fb_, "#0b0d12", "white", 30, 18, 14, 225)
+            else: stext(y + 10, BOT, fb_, "#ffd400", 9)
+    elif TOP:
         fp = fit(d, TOP, lambda s: RUB(s), 96, W - 140, 48)
         tw, th, tb = tsize(d, TOP, fp)
         bx = (W - tw - 68) // 2
         d.rounded_rectangle([bx, y, bx + tw + 68, y + th + 44], radius=12, fill="#ffd400")
         d.text((bx + 34 - tb[0], y + 22 - tb[1]), TOP, font=fp, fill="black")
         y += th + 44 + 22
-    if BOT and y < Y1 - 60:
+    if VAR not in ("a", "b") and BOT and y < Y1 - 60:
         ctext(d, y, BOT.lower(), fit(d, BOT.lower(), CAV, 140, W - 80, 64), "white", 5, "#111")
 
 elif S5 == "hormozi":
@@ -248,10 +296,25 @@ elif S5 == "hormozi":
         t0 = lines[0]; f0 = fit(d, t0, MONT, 124, W - 90, 52)
         h0 = tsize(d, t0, f0)[1]
         if h0 + 40 <= ABOVE[1] - ABOVE[0]:
-            ctext(d, ABOVE[1] - h0 - 30, t0, f0, "white", 10)
+            if VAR == "a": plate(ABOVE[1] - h0 - 44, t0, f0, "#0b0d12", "white", 30, 18, 14, 225)
+            elif VAR == "b": stext(ABOVE[1] - h0 - 30, t0, f0, "#ffd400", 10)
+            else: ctext(d, ABOVE[1] - h0 - 30, t0, f0, "white", 10)
             lines = lines[1:]; l1 = ""
             y, fonts, hs = chest_block(lines, lambda k: [fit(d, t, MONT, int((124 if t != l3 or not l3 else 84) * k), W - 90, 44) for t in lines])
-    for t, f, h in zip(lines, fonts, hs):
+    if VAR in ("a", "b"):
+        y += 14
+        for t, f, h in zip(lines, fonts, hs):
+            if t == l2:
+                plate(y, t, f, "#2ee66b" if VAR == "a" else "#ffd400", "#0b0d12", 26, 18, 12); y += h + 36 + 26
+            elif t == l3 and l3:
+                f3 = fit(d, t, MONT, max(f.size, 92), W - 110, 50); h3 = tsize(d, t, f3)[1]
+                if VAR == "a": plate(y, t, f3, "#0b0d12", "#ffd400", 26, 16, 12, 225)
+                else: plate(y, t, f3, "#0b0d12", "white", 26, 16, 12, 225)
+                y += h3 + 32 + 26
+            else:
+                if VAR == "a": plate(y, t, f, "#0b0d12", "white", 26, 16, 12, 225); y += h + 32 + 26
+                else: stext(y, t, f, "#ffd400", 10); y += h + 30
+    for t, f, h in (zip(lines, fonts, hs) if VAR not in ("a", "b") else []):
         if t == l2:
             w, _, b = tsize(d, t, f); x = (W - w) // 2
             d.rounded_rectangle([x - 22, y - 14, x + w + 22, y + h + 16], radius=10, fill="#2ee66b")
@@ -309,7 +372,14 @@ elif S5 == "chb":
             _y = ABOVE[1] - tsize(d, small, fs_)[1] - 30
             sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); ctext(ImageDraw.Draw(sh), _y + 5, small, fs_, (0, 0, 0, 190), 4, (0, 0, 0, 190))
             im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(8))); d = ImageDraw.Draw(im)
-            ctext(d, _y, small, fs_, "white", 2, "#111")
+            if VAR == "a":
+                fs_ = fit(d, small, MONT, 96, W - 120, 52); _y = ABOVE[1] - tsize(d, small, fs_)[1] - 50
+                plate(_y, small, fs_, "#ffd400", "#0b0d12", 30, 18)
+            elif VAR == "b":
+                fs_ = fit(d, small, MONT, 104, W - 80, 52); _y = ABOVE[1] - tsize(d, small, fs_)[1] - 34
+                ctext(d, _y, small, fs_, "white", 9, "#0b0d12")
+            else:
+                ctext(d, _y, small, fs_, "white", 2, "#111")
     rl = split2(red, d, RUSSO, 190, W - 50)
     f = fit(d, max(rl, key=len), RUSSO, 190, W - 50, 70)
     hh = tsize(d, "ЁЙ", f)[1]
@@ -323,7 +393,13 @@ elif S5 == "chb":
     yy = y
     for ln in rl: ctext(sd, yy + 10, ln, f, (0, 0, 0, 200)); yy += hh + 16
     im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14))); d = ImageDraw.Draw(im)
-    for ln in rl: ctext(d, y, ln, f, "#ff1f1f"); y += hh + 16
+    if VAR == "a":
+        y += 14
+        for ln in rl: plate(y, ln, f, "#e3191c", "white", 28, 16, 12); y += hh + 32 + 14
+    elif VAR == "b":
+        for ln in rl: ctext(d, y, ln, f, "#ff2323", 11, "white"); y += hh + 22
+    else:
+        for ln in rl: ctext(d, y, ln, f, "#ff1f1f"); y += hh + 16
 
 im.convert("RGB").save(OUT)
 print("oblozhka5: готово", OUT)
