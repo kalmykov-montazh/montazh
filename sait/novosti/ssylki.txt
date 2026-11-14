@@ -1,0 +1,10 @@
+формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+14.11 Железная дорога бастует 17 ноября | https://kalmykovgroup.com/novosti/2026-11-14-vo-vtornik-bastuet-vsya-zheleznaya-doroga-vot-chto-poedet | полная
+14.11 Сбой Microsoft и зарплата | https://kalmykovgroup.com/novosti/2026-11-14-microsoft-leg-a-vychest-iz-zarplaty-za-prostoy-vam-ne-mogut | полная
+13.11 Единый учёт собак и кошек | https://kalmykovgroup.com/novosti/2026-11-13-u-sobak-i-koshek-v-ispanii-budet-edinyy-uchet-pravila-so-2-y | полная
+13.11 Бензин скидка в декабре | https://kalmykovgroup.com/novosti/2026-11-13-reshaetsya-skolko-budet-stoit-polnyy-bak-v-dekabre | полная
+13.11 Договор аренды разбор | https://kalmykovgroup.com/novosti/2026-11-13-novye-pravila-arendy-chto-iz-nih-realno-rabotaet-na-vas-resh | коротко
+12.11 Аренда итог голосования | https://kalmykovgroup.com/novosti/2026-11-12-potolok-arendy-2-ostaetsya-bessrochnyh-dogovorov-ne-budet | коротко
+12.11 Аренда плюс 7 процентов | https://kalmykovgroup.com/novosti/2026-11-12-arenda-v-ispanii-za-god-podorozhala-pochti-na-7 | коротко
+12.11 Ипотека плюс 85 евро | https://kalmykovgroup.com/novosti/2026-11-12-esli-u-vas-ipoteka-s-plavayuschey-stavkoy-i-peresmotr-vypada | коротко
+11.11 Аренда решится в четверг | https://kalmykovgroup.com/novosti/2026-11-11-v-chetverg-12-noyabrya-reshitsya-naskolko-vam-smogut-podnyat | коротко
