@@ -42,6 +42,7 @@ def target(p, cfg):
         return {'targetType': 'youtube', 'title': cfg.get('youtube_title', '')[:100], 'privacyStatus': 'public',
                 'shouldNotifySubscribers': True, 'isMadeForKids': False, 'containsSyntheticMedia': False}
 
+from bez_tg import bez_ssylok
 cfg = json.loads((D / 'karusel.json').read_text(encoding='utf-8-sig'))
 res_p = D / '_отправлено.json'
 res = json.loads(res_p.read_text(encoding='utf-8')) if res_p.exists() else {}
@@ -80,7 +81,7 @@ else:
             print('youtube: нет shorts.mp4'); continue
         if p == 'threads':
             media = urls[:1]                      # Blotato: в Threads только одна картинка или видео (ошибка 30.10.2026)
-        text = cfg['texts'][p]
+        text = bez_ssylok(cfg['texts'][p])        # 14.11.2026: без ссылки на Telegram (только комментарием)
         if p == 'instagram':                      # Instagram через Blotato: не больше 5 хэштегов
             import re
             tags = re.findall(r'#\S+', text)

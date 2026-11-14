@@ -9,6 +9,8 @@
 #     (kind arenda = рилс из папки карусели + группы в окне Reels, mode live).
 # Итог — out/итог.json и кадры out/*.jpg (для проверки Claude).
 import json, sys, os, subprocess, pathlib, datetime, urllib.request, urllib.error, shutil
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from bez_tg import bez_ssylok
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 API = 'https://backend.blotato.com/v2'
@@ -90,7 +92,7 @@ for it in cfg['items']:
         url = upload(v)
         posts = {}
         for net, tgt in (('instagram', {'targetType': 'instagram', 'mediaType': 'reel'}), ('tiktok', TT)):
-            body = {'post': {'accountId': ACC[net], 'content': {'text': it['text'], 'mediaUrls': [url], 'platform': net},
+            body = {'post': {'accountId': ACC[net], 'content': {'text': bez_ssylok(it['text']), 'mediaUrls': [url], 'platform': net},
                              'target': tgt}, 'scheduledTime': it['at']}
             try:
                 x = req('POST', '/posts', body)
@@ -118,7 +120,7 @@ for it in cfg['items']:
         at = datetime.datetime.fromisoformat(it['at'])
         job = {'platform': 'fb', 'kind': 'arenda', 'mode': 'live', 'folder': f'../Посты/Карусели/{name}',
                'video': 'reel.mp4', 'cover_file': '01.jpg', 'date': f'{at:%Y-%m-%d}', 'time': f'{at:%H:%M}',
-               'text': it['text'], 'groups': it.get('groups', [])}
+               'text': bez_ssylok(it['text']), 'groups': it.get('groups', [])}
         jn = f'{at:%Y-%m-%d_%H%M}_fb_РИЛС {name}.json'
         (OUT / jn).write_text(json.dumps(job, ensure_ascii=False, indent=1), encoding='utf-8')
         cp = sh('rclone', 'copyto', str(OUT / jn), f'montazh:Брокер/К публикации/_задания/{jn}')
