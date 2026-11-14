@@ -1,4 +1,5 @@
 формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+14.11 США закрыли небо рейсы | https://kalmykovgroup.com/novosti/2026-11-14-ssha-na-4-chasa-zakryli-nebo-v-ispanii-otmenili-7-reysov | полная
 14.11 Железная дорога бастует 17 ноября | https://kalmykovgroup.com/novosti/2026-11-14-vo-vtornik-bastuet-vsya-zheleznaya-doroga-vot-chto-poedet | полная
 14.11 Сбой Microsoft и зарплата | https://kalmykovgroup.com/novosti/2026-11-14-microsoft-leg-a-vychest-iz-zarplaty-za-prostoy-vam-ne-mogut | полная
 13.11 Единый учёт собак и кошек | https://kalmykovgroup.com/novosti/2026-11-13-u-sobak-i-koshek-v-ispanii-budet-edinyy-uchet-pravila-so-2-y | полная
