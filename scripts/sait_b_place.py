@@ -54,21 +54,25 @@ else:
     avail = headtop - 40 - 120
     if avail >= 170: h = int(min(320, avail)); top = 120; lay = "верх"
     else: h = 200; top = 1690; lay = "низ"
-# движение и надписи в полосе окошка
-# зона проверки — окошко и 130 px вокруг (плашка сразу под окошком тоже мешает, проба «Автостраховка»)
-y0, y1 = int(max(0, top - 40) / K), int(min(SH - 1, (top + h + 130) / K))
-act = np.zeros(n)
-for i in range(1, n):
-    reg = fr[i][y0:y1]; prv = fr[i - 1][y0:y1]
-    # движение + надписи (резкие края). Плашка стоит неподвижно, поэтому края важнее движения (проба 14.11, «Автостраховка»)
-    act[i] = 0.5 * np.abs(reg - prv).mean() + 1.0 * np.abs(np.diff(reg, axis=1)).mean()
-W = int(4.0 / ST)
-best = None
-for i in range(int(6 / ST), max(int(6 / ST) + 1, int((dur - 6) / ST) - W)):
-    s = act[i:i + W + 1].max() + 2 * act[i:i + W + 1].mean()
-    s += 0.6 * abs(i * ST / dur - 0.45)
-    if best is None or s < best[0]: best = (s, i * ST)
-t = best[1] if best else max(1.0, dur * 0.4)
+# движение и надписи в полосе окошка — считаем для своей полосы и для низа (под субтитрами), берём ту, где чище
+def score_band(top, h):
+    y0, y1 = int(max(0, top - 40) / K), int(min(SH - 1, (top + h + 130) / K))
+    act = np.zeros(n)
+    for i in range(1, n):
+        reg = fr[i][y0:y1]; prv = fr[i - 1][y0:y1]
+        # движение + надписи (резкие края). Плашка стоит неподвижно, поэтому края важнее движения (проба 14.11)
+        act[i] = 0.5 * np.abs(reg - prv).mean() + 1.0 * np.abs(np.diff(reg, axis=1)).mean()
+    W = int(4.0 / ST); best = None
+    for i in range(int(6 / ST), max(int(6 / ST) + 1, int((dur - 6) / ST) - W)):
+        # окошко целиком 4 с + по 1 с до и после (плашка, которая только уезжает или приезжает)
+        a, b = max(0, i - 2), min(n, i + W + 3)
+        sc = act[a:b].max() + 2 * act[a:b].mean() + 0.6 * abs(i * ST / dur - 0.45)
+        if best is None or sc < best[0]: best = (sc, i * ST)
+    return best or (1e9, max(1.0, dur * 0.4))
+cands = [(top, h, lay)]
+if not slide and lay != "низ": cands.append((1690, 200, "низ"))
+res = [(score_band(tp, hh), tp, hh, ly) for tp, hh, ly in cands]
+(bs, t), top, h, lay = min(res, key=lambda r: r[0][0] * (1.0 if r[3] != "низ" else 1.15))
 # значок: правый угол занят головой/текстом — левый
 rt = np.mean([np.abs(np.diff(fr[i][int(150 / K):int(234 / K), -int(110 / K):], axis=1)).mean() for i in range(min(n, 20))])
 lt = np.mean([np.abs(np.diff(fr[i][int(150 / K):int(234 / K), :int(110 / K)], axis=1)).mean() for i in range(min(n, 20))])
