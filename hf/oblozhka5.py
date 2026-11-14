@@ -165,13 +165,18 @@ if S5 == "shapka":
     top = HEAD_TOP - 25
     bl = split2(big, d, lambda s: UNB(s), 148, W - 80)
     fb = fit(d, max(bl, key=len), UNB, 148, W - 80, 64)
-    fsm = fit(d, small, UNB, 112, W - 420, 76) if small else None   # 14.11.2026: мелкая строка крупнее, не меньше 76, место под чёрточки
+    # 14.11.2026: мелкая строка крупнее; чёрточки по бокам, если влезает не меньше 76, иначе без чёрточек по ширине кадра
+    def fit_small(start):
+        f = fit(d, small, UNB, start, W - 420, 76)
+        if tsize(d, small, f)[0] <= W - 420: return f, True
+        return fit(d, small, UNB, start, W - 80, 48), False
+    fsm, DASH = fit_small(112) if small else (None, False)
     hb = tsize(d, "ЁЙ", fb)[1]; hs = tsize(d, "ЁЙ", fsm)[1] if fsm else 0
     need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 30 if fsm else 0) + 40
     if top - Y0 < need:                      # голова высоко — шапка ниже не опускается, уменьшаем
         for k in (0.9, 0.8, 0.7, 0.6):
             fb = fit(d, max(bl, key=len), UNB, int(148 * k), W - 80, 52); hb = tsize(d, "ЁЙ", fb)[1]
-            if fsm: fsm = fit(d, small, UNB, max(76, int(112 * k)), W - 420, 76); hs = tsize(d, "ЁЙ", fsm)[1]
+            if fsm: fsm, DASH = fit_small(max(76, int(112 * k))); hs = tsize(d, "ЁЙ", fsm)[1]
             need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 30 if fsm else 0) + 40
             if top - Y0 >= need: break
         top = max(top, Y0 + need)
@@ -189,8 +194,9 @@ if S5 == "shapka":
         ctext(d, y, t, f, fill)
     if fsm:
         w_, h_, _ = tsize(d, small, fsm); cx0 = (W - w_) // 2; my = y + h_ // 2
-        d.rounded_rectangle([cx0 - 150, my - 4, cx0 - 40, my + 4], radius=4, fill="#ffd400")
-        d.rounded_rectangle([cx0 + w_ + 40, my - 4, cx0 + w_ + 150, my + 4], radius=4, fill="#ffd400")
+        if DASH:
+            d.rounded_rectangle([cx0 - 150, my - 4, cx0 - 40, my + 4], radius=4, fill="#ffd400")
+            d.rounded_rectangle([cx0 + w_ + 40, my - 4, cx0 + w_ + 150, my + 4], radius=4, fill="#ffd400")
         shadow_text(y, small, fsm, "#ffd400", 6, 4, 140); y += hs + 30
     for ln in bl: shadow_text(y, ln, fb, "#ffd400"); y += hb + 18
 
