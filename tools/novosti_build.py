@@ -3,7 +3,7 @@
 # Источник — файлы новостных задач «000 ДД.ММ тема.txt» (папки «Новости утро/день/вечер», «Длинные», «Опубликовано»).
 # Запуск: novosti_build.py <папка со скачанными .txt> <файл со списком имён из «На удаление»>
 # Делает: sait/novosti/<slug>.html, sait/novosti/index.html, блок «Свежие новости» на главной, sitemap.xml,
-# и _ссылки_новостей.txt (имя файла → адрес статьи) — его читают задачи Claude через Google Диск.
+# и _ссылки_новостей.txt (имя файла → адрес статьи) на Диск + копия sait/novosti/ssylki.txt на сайте (её читает задача комментариев).
 import json, re, sys, html, datetime, zoneinfo, urllib.parse
 from pathlib import Path
 
@@ -237,6 +237,10 @@ def main(src_dir, removed_list, extra_dir=None):
     links[1] = 'формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко'
     links += [f"{k} | {BASE}/novosti/{data[k]['slug']} | {'полная' if data[k].get('extra') else 'коротко'}" for k in sorted(data, key=lambda k: data[k]['published'], reverse=True)[:40]]
     Path('_ссылки_новостей.txt').write_text('\n'.join(links) + '\n', encoding='utf-8')
+    # 14.11.2026: тот же список на сайте — https://kalmykovgroup.com/novosti/ssylki.txt (поиск Google Диска
+    # не видит файлы, записанные rclone, поэтому задача комментариев читает ссылки отсюда). Без строки «обновлено»,
+    # чтобы файл менялся только с новой статьёй и не запускал лишнюю сборку Cloudflare.
+    (NEWS / 'ssylki.txt').write_text('\n'.join(links[1:]) + '\n', encoding='utf-8')
     print('изменения' if changed else 'без изменений')
 
 if __name__ == '__main__':
