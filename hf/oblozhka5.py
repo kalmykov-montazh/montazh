@@ -53,7 +53,7 @@ HEAD = cov.get("color") or RUBR.get(tag, "#ff5a1f")
 # 14.11.2026 (Евгений 22:55): шапка только красная или синяя, чередуем по ролику (стабильно по ключу), свой цвет — cover.color
 import zlib
 def _shapka_col():
-    if cov.get("color"): return cov["color"]
+    if (cov.get("color") or "").lower() in ("#e3191c", "#1d5fd1"): return cov["color"]   # старые цвета рубрик в novyj игнорируем
     k = os.path.splitext(os.path.basename(KEY))[0]
     try:   # по порядку роликов в novyj (имя = время записи): красный, синий, красный…
         keys = sorted(os.path.splitext(x)[0] for x in os.listdir(os.path.join(ROOT, "novyj")) if x.endswith(".json"))
