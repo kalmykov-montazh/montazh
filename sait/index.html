@@ -877,7 +877,7 @@ document.body.classList.add('fest2-on');var t=T[k],h='<div class="fcard"><i>'+t[
 <script>
 /* 13.11.2026: откуда пришёл человек (короткие ссылки /ig /fb /tt…) — дописывается в сообщение WhatsApp */
 (function(){
-var N={ig:'Instagram',fb:'Facebook',tt:'TikTok',yt:'YouTube',tg:'Telegram',th:'Threads',ob:'Telegram «Объекты»',kr:'Telegram «Кружочки»',x:'X',bs:'Bluesky',wa:'WhatsApp',gm:'Google Карты'};
+var N={ig:'Instagram',fb:'Facebook',tt:'TikTok',yt:'YouTube',tg:'Telegram',th:'Threads',ob:'Telegram «Объекты»',kr:'Telegram «Кружочки»',x:'X',bs:'Bluesky',wa:'WhatsApp',gm:'Google Карты',li:'LinkedIn',cx:'Cylex',hf:'Hotfrog'};
 var k=(location.pathname.match(/^\/(ig|fb|tt|yt|tg|th|ob|kr|x|bs|wa|gm)(-ua)?\/?$/)||[])[1]||(location.search.match(/[?&]src=(\w+)/)||[])[1];
 try{if(k&&N[k])sessionStorage.setItem('src',k);else k=sessionStorage.getItem('src')}catch(e){}
 if(!k||!N[k])return;
