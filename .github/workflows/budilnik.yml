@@ -1,0 +1,41 @@
+name: Будильник — запуск задач каждые 20 минут
+
+# 14.11.2026: GitHub по расписанию (cron) запускал задачи этого репозитория раз в 4–7 часов вместо 20 минут
+# (новости на сайт, Blotato, время шортсов, сторож каруселей, распознавание). Этот будильник крутится ~5 ч 50 мин,
+# каждые 20 минут запускает их вручную (workflow_dispatch встроенным GITHUB_TOKEN — ключ не нужен),
+# в конце перезапускает сам себя. Расписание ниже — только запасной пуск, если цепочка оборвалась.
+# Остановить: Actions → «Будильник…» → «…» → Disable workflow (Отключить).
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency: {group: budilnik, cancel-in-progress: false}
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 358
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Будить задачи каждые 20 минут
+        run: |
+          konec=$(( $(date +%s) + 350*60 ))
+          while [ $(date +%s) -lt $konec ]; do
+            for w in novosti-sait.yml blotato-oblako.yml vremya-shortsov.yml karusel-storozh.yml raspoznat.yml; do
+              gh workflow run "$w" --ref main && echo "$(date -u +%H:%M) запущена $w" || echo "::warning::не запустилась $w"
+            done
+            ost=$(( konec - $(date +%s) ))
+            [ $ost -le 1200 ] && break
+            sleep 1200
+          done
+      - name: Перезапустить себя
+        if: always()
+        run: gh workflow run budilnik.yml --ref main
