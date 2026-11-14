@@ -50,6 +50,18 @@ if not TOP and not BOT:
 RUBR = {"ЖИЗНЬ": "#ff5a1f", "НЕДВ": "#1d5fd1", "ВНЖ": "#e3191c", "БИЗ": "#13a865", "ПУТЕШ": "#13a865",
         "АВТО": "#7b3fe4", "СК": "#0fa3a3", "МОНТАЖ": "#7b3fe4", "НОВ": "#e3191c", "ПУТЬ": "#ff5a1f"}
 HEAD = cov.get("color") or RUBR.get(tag, "#ff5a1f")
+# 14.11.2026 (Евгений 22:55): шапка только красная или синяя, чередуем по ролику (стабильно по ключу), свой цвет — cover.color
+import zlib
+def _shapka_col():
+    if cov.get("color"): return cov["color"]
+    k = os.path.splitext(os.path.basename(KEY))[0]
+    try:   # по порядку роликов в novyj (имя = время записи): красный, синий, красный…
+        keys = sorted(os.path.splitext(x)[0] for x in os.listdir(os.path.join(ROOT, "novyj")) if x.endswith(".json"))
+        i = keys.index(k)
+    except Exception:
+        i = zlib.crc32(k.encode())
+    return "#e3191c" if i % 2 == 0 else "#1d5fd1"
+SHAPKA_COL = _shapka_col()
 
 
 def font(name, size, wght=None):
@@ -153,24 +165,34 @@ if S5 == "shapka":
     top = HEAD_TOP - 25
     bl = split2(big, d, lambda s: UNB(s), 148, W - 80)
     fb = fit(d, max(bl, key=len), UNB, 148, W - 80, 64)
-    fsm = fit(d, small, UNB, 70, W - 120, 44) if small else None
+    fsm = fit(d, small, UNB, 112, W - 420, 76) if small else None   # 14.11.2026: мелкая строка крупнее, не меньше 76, место под чёрточки
     hb = tsize(d, "ЁЙ", fb)[1]; hs = tsize(d, "ЁЙ", fsm)[1] if fsm else 0
-    need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 24 if fsm else 0) + 40
+    need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 30 if fsm else 0) + 40
     if top - Y0 < need:                      # голова высоко — шапка ниже не опускается, уменьшаем
         for k in (0.9, 0.8, 0.7, 0.6):
             fb = fit(d, max(bl, key=len), UNB, int(148 * k), W - 80, 52); hb = tsize(d, "ЁЙ", fb)[1]
-            if fsm: fsm = UNB(max(40, int(70 * k))); hs = tsize(d, "ЁЙ", fsm)[1]
-            need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 24 if fsm else 0) + 40
+            if fsm: fsm = fit(d, small, UNB, max(76, int(112 * k)), W - 420, 76); hs = tsize(d, "ЁЙ", fsm)[1]
+            need = hb * len(bl) + 18 * (len(bl) - 1) + (hs + 30 if fsm else 0) + 40
             if top - Y0 >= need: break
         top = max(top, Y0 + need)
     if WIN:                                  # полоса посередине, под окошком с лицом
         top = Y0 + need + 30
-        d.rectangle([0, Y0, W, top], fill=HEAD)
+        d.rectangle([0, Y0, W, top], fill=SHAPKA_COL)
     else:
-        d.rectangle([0, 0, W, top], fill=HEAD)
-    y = top - 40 - (hb * len(bl) + 18 * (len(bl) - 1)) - (hs + 24 if fsm else 0)
-    if fsm: ctext(d, y, small, fsm, "#111"); y += hs + 24
-    for ln in bl: ctext(d, y, ln, fb, "white"); y += hb + 18
+        d.rectangle([0, 0, W, top], fill=SHAPKA_COL)
+    y = top - 40 - (hb * len(bl) + 18 * (len(bl) - 1)) - (hs + 30 if fsm else 0)
+    # 14.11.2026 (Евгений 22:55, вариант 3): мелкая строка жёлтая с чёрточками по бокам, главная жёлтая с мягкой тенью
+    def shadow_text(y, t, f, fill, blur=10, off=8, alpha=170):
+        global im, d
+        sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); ctext(ImageDraw.Draw(sh), y + off, t, f, (0, 0, 0, alpha))
+        im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(blur))); d = ImageDraw.Draw(im)
+        ctext(d, y, t, f, fill)
+    if fsm:
+        w_, h_, _ = tsize(d, small, fsm); cx0 = (W - w_) // 2; my = y + h_ // 2
+        d.rounded_rectangle([cx0 - 150, my - 4, cx0 - 40, my + 4], radius=4, fill="#ffd400")
+        d.rounded_rectangle([cx0 + w_ + 40, my - 4, cx0 + w_ + 150, my + 4], radius=4, fill="#ffd400")
+        shadow_text(y, small, fsm, "#ffd400", 6, 4, 140); y += hs + 30
+    for ln in bl: shadow_text(y, ln, fb, "#ffd400"); y += hb + 18
 
 elif S5 == "spina":
     try:
@@ -277,7 +299,11 @@ elif S5 == "chb":
     small = TOP if BOT else ""
     if small:
         fs_ = fit(d, small, lambda s: RUB(s, 800), 96, W - 80, 48)
-        if above_ok: ctext(d, ABOVE[1] - tsize(d, small, fs_)[1] - 30, small, fs_, "white")
+        if above_ok:   # 14.11.2026: белая строка с тёмной тенью — на светлой стене не бледнеет
+            _y = ABOVE[1] - tsize(d, small, fs_)[1] - 30
+            sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); ctext(ImageDraw.Draw(sh), _y + 5, small, fs_, (0, 0, 0, 190), 4, (0, 0, 0, 190))
+            im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(8))); d = ImageDraw.Draw(im)
+            ctext(d, _y, small, fs_, "white", 2, "#111")
     rl = split2(red, d, RUSSO, 190, W - 50)
     f = fit(d, max(rl, key=len), RUSSO, 190, W - 50, 70)
     hh = tsize(d, "ЁЙ", f)[1]
