@@ -105,11 +105,12 @@ jobs:
           echo "кадр обложки: $T с"
           ffmpeg -v error -y -ss "$T" -i in/osnova.mp4 -frames:v 1 \
             -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
+          if [ "$VARS" = "fon" ]; then cp in/cover_bg.png "out/${N}_fon.png"; ffmpeg -v error -y -i in/cover_bg.png -q:v 1 "out/${N}_fon.jpg"; fi
           if [ "$VARS" = "ab" ]; then
             for V in a b; do OBL_VAR=$V python3 hf/oblozhka5.py in/cover_bg.png out/v_$V.png "novyj/$K.json" "$K" > /dev/null
               ffmpeg -v error -y -i out/v_$V.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/${N}_$V.jpg"; done
           fi
-          [ "$VARS" = "ab" ] && VV="" || VV="$VARS"
+          [ "$VARS" = "ab" -o "$VARS" = "fon" ] && VV="" || VV="$VARS"
           OBL_VAR="$VV" python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
           ffmpeg -v error -y -i out/cover_full.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
