@@ -297,48 +297,60 @@ elif S5 == "spina":
 
 elif S5 == "hormozi":
     # 15.11.2026 (Евгений 01:00, «синяя плашка»): верх белый с обводкой, главное — белым на синей плашке,
-    # хвост — оранжевый с обводкой. Грудь тесная — верх крупно над головой, низ одной строкой на синей плашке.
+    # хвост — светло-оранжевый с обводкой. Программа прикидывает расклады и берёт тот, где главное крупнее:
+    # А — верх над головой, остальное на груди (хвост отдельно или одной строкой с главным);
+    # Б — все строки над головой по порядку (когда грудь совсем тесная, а над головой место есть).
     l1 = TOP or (BOTL[0] if len(BOTL) > 1 else "")
     rest = BOTL if TOP else BOTL[1:]
     l2 = rest[0] if rest else BOT
     l3 = " ".join(rest[1:]) if len(rest) > 1 else ""
     yc = max(CHEST[0] + 5, 980)
     tight = Y1 - yc < 330
-    # 15.11.2026: грудь совсем тесная (лицо крупное и низко) — все три строки над головой, по порядку сверху вниз
-    if Y1 + 30 - yc < 250 and l1 and l2 and above_ok:
+
+    def plan_chest(parts, main):
+        for k in (1, .92, .84, .76, .68, .6, .52, .46, .4, .35):
+            fs_ = [fit(d, t, MONT, int((160 if t == main else 132) * k), W - (150 if t == main else 90), 40) for t in parts]
+            hs_ = [int(tsize(d, t, f)[1] * (1.44 if t == main else 1)) + (20 if t == main else 0) for t, f in zip(parts, fs_)]
+            if yc + sum(hs_) + 34 * (len(parts) - 1) <= Y1 + 30: break
+        return fs_, hs_, fs_[parts.index(main)].size
+
+    up_l1 = bool(l1 and above_ok)
+    base_parts = [x for x in ((None if up_l1 else l1), l2, l3) if x]
+    A = (base_parts, l2) + plan_chest(base_parts, l2)
+    if l3:   # вариант: главное и хвост одной строкой на плашке
+        one = f"{l2} {l3}"; mp = [x for x in ((None if up_l1 else l1), one) if x]
+        A2 = (mp, one) + plan_chest(mp, one)
+        if A2[4] > A[4] * 1.1 and A2[4] >= 72: A = A2
+
+    B = None
+    if l1 and l2 and above_ok:
         zone = ABOVE[1] - 30 - ABOVE[0]
         for k in (1, .9, .8, .7, .6, .5, .42, .36):
-            f1 = fit(d, l1, MONT, int(112 * k), W - 100, 36); f2 = fit(d, l2, MONT, int(140 * k), W - 150, 36)
-            f3 = fit(d, l3, MONT, int(120 * k), W - 90, 36) if l3 else None
-            h1 = tsize(d, l1, f1)[1]; h2 = tsize(d, l2, f2)[1]; h3 = tsize(d, l3, f3)[1] if l3 else 0
-            tot = h1 + 28 + int(h2 * 1.44) + 20 + (28 + h3 if l3 else 0)
+            g1 = fit(d, l1, MONT, int(112 * k), W - 100, 36); g2 = fit(d, l2, MONT, int(140 * k), W - 150, 36)
+            g3 = fit(d, l3, MONT, int(120 * k), W - 90, 36) if l3 else None
+            q1 = tsize(d, l1, g1)[1]; q2 = tsize(d, l2, g2)[1]; q3 = tsize(d, l3, g3)[1] if l3 else 0
+            tot = q1 + 28 + int(q2 * 1.44) + 20 + (28 + q3 if l3 else 0)
             if tot <= zone: break
+        if tot <= zone: B = (g1, g2, g3, q1, q2, tot)
+
+    if B and B[1].size > A[4] * 1.15 and B[1].size >= 70:
+        g1, g2, g3, q1, q2, tot = B
         y = ABOVE[1] - 30 - tot
-        tline(y, l1, f1, "white", KK, 9); y += h1 + 28
-        tline(y + int(h2 * .22) + 10, l2, f2, "white", plate=BLUE); y += int(h2 * 1.44) + 20 + 28
-        if l3: tline(y, l3, f3, ORANGE2, KK, 9)
-        l1 = l2 = l3 = ""
-    if l1 and above_ok:
-        f1 = fit(d, l1, MONT, 130 if tight else 112, W - 100, 56); h1 = tsize(d, l1, f1)[1]
-        while h1 + 40 > ABOVE[1] - ABOVE[0] and f1.size > 56: f1 = MONT(f1.size - 6); h1 = tsize(d, l1, f1)[1]
-        tline(ABOVE[1] - h1 - 40, l1, f1, "white", KK, 9); l1 = ""
-    if tight and l3:   # склеиваем в одну строку, только если одной строкой выходит крупно
-        one = f"{l2} {l3}"
-        if fit(d, one, MONT, 160, W - 150, 44).size >= 72: l2, l3 = one, ""
-    parts = [x for x in (l1, l2, l3) if x]
-    for k in (1, .92, .84, .76, .68, .6, .52, .46, .4, .35):
-        fs_ = []
-        for t in parts:
-            base = 160 if t == l2 else 132   # 15.11.2026: хвост почти как главное, не мелкий
-            fs_.append(fit(d, t, MONT, int(base * k), W - (150 if t == l2 else 90), 40))
-        hs_ = [int(tsize(d, t, f)[1] * (1.44 if t == l2 else 1)) + (20 if t == l2 else 0) for t, f in zip(parts, fs_)]
-        if yc + sum(hs_) + 34 * (len(parts) - 1) <= Y1 + 30: break
-    y = yc
-    for t, f, hh in zip(parts, fs_, hs_):
-        if t == l2: tline(y + int(tsize(d, t, f)[1] * .22) + 10, t, f, "white", plate=BLUE)
-        elif t == l1: tline(y, t, f, "white", KK, 9)
-        else: tline(y, t, f, ORANGE2, KK, 9)
-        y += hh + 34
+        tline(y, l1, g1, "white", KK, 9); y += q1 + 28
+        tline(y + int(q2 * .22) + 10, l2, g2, "white", plate=BLUE); y += int(q2 * 1.44) + 20 + 28
+        if l3: tline(y, l3, g3, ORANGE2, KK, 9)
+    else:
+        parts, main, fs_, hs_, _ = A
+        if up_l1:
+            f1 = fit(d, l1, MONT, 130 if tight else 112, W - 100, 56); h1 = tsize(d, l1, f1)[1]
+            while h1 + 40 > ABOVE[1] - ABOVE[0] and f1.size > 56: f1 = MONT(f1.size - 6); h1 = tsize(d, l1, f1)[1]
+            tline(ABOVE[1] - h1 - 40, l1, f1, "white", KK, 9)
+        y = yc
+        for t, f, hh in zip(parts, fs_, hs_):
+            if t == main: tline(y + int(tsize(d, t, f)[1] * .22) + 10, t, f, "white", plate=BLUE)
+            elif t == l1: tline(y, t, f, "white", KK, 9)
+            else: tline(y, t, f, ORANGE2, KK, 9)
+            y += hh + 34
 
 elif S5 == "novost":
     # 13.11.2026: крупно. Метка «НОВОСТЬ · <top>», bot — жёлтым во всю ширину, полоса сразу под подбородком
