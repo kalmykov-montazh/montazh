@@ -34,13 +34,16 @@ while True:
     if ear < 0.22 or mar > 0.06: continue        # глаза прикрыты или рот открыт
     sharp = cv2.Laplacian(g[y:y+fh, x:x+fw], cv2.CV_64F).var()
     loud = rms(t) / rmax
-    cands.append((t, ear, mar, loud, sharp, cv2.resize(fr, (180, 320))))
+    cands.append((t, ear, mar, loud, sharp, cv2.resize(fr, (180, 320)), fh / SH))
 p.wait()
 # 04.10.2026: раньше «ear * 8» награждало широко раскрытые глаза — лицо выходило удивлённым и испуганным.
 # Теперь глаза ближе к обычным для этого ролика (медиана), рот закрыт, тихо, резко.
 if cands:
     med = float(np.median([c[1] for c in cands]))
     sc = lambda c: min(c[4], 600) / 150 - abs(c[1] - med) * 30 - c[2] * 40 - c[3] * 2
+    # 15.11.2026 (Евгений: «выбери кадр, где я чуть подальше, чтобы поставить буквы больше»): PICK_FAR=1 — меньше лицо в кадре
+    if os.environ.get('PICK_FAR'):
+        _sc0 = sc; sc = lambda c: _sc0(c) - c[6] * float(os.environ.get('PICK_FAR_W', '30'))
     cands.sort(key=sc, reverse=True)
     b = cands[0]; best = (sc(b), b[0], b[2], b[3], b[4], round(b[1], 3), round(med, 3))
     pick = []
