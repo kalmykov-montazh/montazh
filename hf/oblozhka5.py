@@ -312,19 +312,19 @@ elif S5 == "hormozi":
         one = f"{l2} {l3}"
         if fit(d, one, MONT, 160, W - 150, 44).size >= 72: l2, l3 = one, ""
     parts = [x for x in (l1, l2, l3) if x]
-    for k in (1, .92, .84, .76, .68, .6, .52):
+    for k in (1, .92, .84, .76, .68, .6, .52, .46, .4, .35):
         fs_ = []
         for t in parts:
-            base = 160 if t == l2 else 112
-            fs_.append(fit(d, t, MONT, int(base * k), W - (150 if t == l2 else 110), 44))
+            base = 160 if t == l2 else 132   # 15.11.2026: хвост почти как главное, не мелкий
+            fs_.append(fit(d, t, MONT, int(base * k), W - (150 if t == l2 else 90), 40))
         hs_ = [int(tsize(d, t, f)[1] * (1.44 if t == l2 else 1)) + (20 if t == l2 else 0) for t, f in zip(parts, fs_)]
-        if yc + sum(hs_) + 40 * (len(parts) - 1) <= Y1 + 30: break
+        if yc + sum(hs_) + 34 * (len(parts) - 1) <= Y1 + 30: break
     y = yc
     for t, f, hh in zip(parts, fs_, hs_):
         if t == l2: tline(y + int(tsize(d, t, f)[1] * .22) + 10, t, f, "white", plate=BLUE)
         elif t == l1: tline(y, t, f, "white", KK, 9)
         else: tline(y, t, f, ORANGE2, KK, 9)
-        y += hh + 40
+        y += hh + 34
 
 elif S5 == "novost":
     # 13.11.2026: крупно. Метка «НОВОСТЬ · <top>», bot — жёлтым во всю ширину, полоса сразу под подбородком
