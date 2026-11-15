@@ -304,6 +304,20 @@ elif S5 == "hormozi":
     l3 = " ".join(rest[1:]) if len(rest) > 1 else ""
     yc = max(CHEST[0] + 5, 980)
     tight = Y1 - yc < 330
+    # 15.11.2026: грудь совсем тесная (лицо крупное и низко) — все три строки над головой, по порядку сверху вниз
+    if Y1 + 30 - yc < 250 and l1 and l2 and above_ok:
+        zone = ABOVE[1] - 30 - ABOVE[0]
+        for k in (1, .9, .8, .7, .6, .5, .42, .36):
+            f1 = fit(d, l1, MONT, int(112 * k), W - 100, 36); f2 = fit(d, l2, MONT, int(140 * k), W - 150, 36)
+            f3 = fit(d, l3, MONT, int(120 * k), W - 90, 36) if l3 else None
+            h1 = tsize(d, l1, f1)[1]; h2 = tsize(d, l2, f2)[1]; h3 = tsize(d, l3, f3)[1] if l3 else 0
+            tot = h1 + 28 + int(h2 * 1.44) + 20 + (28 + h3 if l3 else 0)
+            if tot <= zone: break
+        y = ABOVE[1] - 30 - tot
+        tline(y, l1, f1, "white", KK, 9); y += h1 + 28
+        tline(y + int(h2 * .22) + 10, l2, f2, "white", plate=BLUE); y += int(h2 * 1.44) + 20 + 28
+        if l3: tline(y, l3, f3, ORANGE2, KK, 9)
+        l1 = l2 = l3 = ""
     if l1 and above_ok:
         f1 = fit(d, l1, MONT, 130 if tight else 112, W - 100, 56); h1 = tsize(d, l1, f1)[1]
         while h1 + 40 > ABOVE[1] - ABOVE[0] and f1.size > 56: f1 = MONT(f1.size - 6); h1 = tsize(d, l1, f1)[1]
