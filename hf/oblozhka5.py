@@ -195,6 +195,29 @@ def plate(y, t, f, bg, fg, px=30, py=18, r=14, alpha=255):
     d.text((x - b[0], y - b[1]), t, font=f, fill=fg)
     return h + 2 * py
 
+
+# 15.11.2026 (Евгений 01:00): утверждённые цвета — Ч/Б оранжевый, «за спиной» оранжевый, Хормози синяя плашка
+KK = "#0b0d12"
+ORANGE, ORANGE2, BLUE, NAVY = "#ff7a00", "#ff9a2e", "#1f4fff", "#123a8c"
+
+
+def tline(y, t, f, fill="white", stroke=None, sw=0, plate=None):
+    """Строка по центру: обводка + мягкая тень, либо цветная плашка с тенью. Возвращает высоту блока."""
+    global im, d
+    w, h, b = tsize(d, t, f); x = (W - w) // 2
+    px, py = int(h * 0.32) + 14, int(h * 0.22) + 10
+    sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
+    if plate:
+        sd.rounded_rectangle([x - px, y - py + 10, x + w + px, y + h + py + 10], radius=16, fill=(0, 0, 0, 130))
+        im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12))); d = ImageDraw.Draw(im)
+        d.rounded_rectangle([x - px, y - py, x + w + px, y + h + py], radius=16, fill=plate)
+        d.text((x - b[0], y - b[1]), t, font=f, fill=fill)
+        return h + 2 * py
+    sd.text((x - b[0], y + 10 - b[1]), t, font=f, fill=(0, 0, 0, 170), stroke_width=sw, stroke_fill=(0, 0, 0, 170))
+    im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12))); d = ImageDraw.Draw(im)
+    d.text((x - b[0], y - b[1]), t, font=f, fill=fill, stroke_width=sw, stroke_fill=stroke or KK)
+    return h
+
 if S5 == "shapka":
     small = TOP if BOT else ""
     big = BOT or TOP
@@ -253,75 +276,54 @@ elif S5 == "spina":
     ctext(sd, y + 8, WORD, f, (0, 0, 0, 140))
     im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12)))
     d = ImageDraw.Draw(im)
-    if VAR == "a": ctext(d, y, WORD, f, "#ffd400", 12, "#0b0d12")
-    elif VAR == "b": ctext(d, y, WORD, f, "white", 14, "#0b0d12")
-    else: ctext(d, y, WORD, f, "white")
+    if VAR in ("old",):
+        ctext(d, y, WORD, f, "white")
+    else:   # 15.11.2026: слово оранжевое с чёрной обводкой и тенью
+        tline(y, WORD, f, ORANGE, KK, 12)
     person = src.convert("RGBA"); person.putalpha(mask); im.alpha_composite(person)
     d = ImageDraw.Draw(im)
-    y = CHEST[0]
-    if VAR in ("a", "b"):
-        y += 20
-        if TOP:
-            fp = fit(d, TOP, MONT, 112, W - 120, 60)
-            y += plate(y, TOP, fp, "#ffd400" if VAR == "a" else "#e3191c", "#0b0d12" if VAR == "a" else "white", 34, 22) + 26
-        if BOT and y < Y1 - 60:
-            fb_ = fit(d, BOT, MONT, 88, W - 100, 46)
-            if VAR == "a": plate(y + 18, BOT, fb_, "#0b0d12", "white", 30, 18, 14, 225)
-            else: stext(y + 10, BOT, fb_, "#ffd400", 9)
-    elif TOP:
-        fp = fit(d, TOP, lambda s: RUB(s), 96, W - 140, 48)
-        tw, th, tb = tsize(d, TOP, fp)
-        bx = (W - tw - 68) // 2
-        d.rounded_rectangle([bx, y, bx + tw + 68, y + th + 44], radius=12, fill="#ffd400")
-        d.text((bx + 34 - tb[0], y + 22 - tb[1]), TOP, font=fp, fill="black")
-        y += th + 44 + 22
-    if VAR not in ("a", "b") and BOT and y < Y1 - 60:
-        ctext(d, y, BOT.lower(), fit(d, BOT.lower(), CAV, 140, W - 80, 64), "white", 5, "#111")
+    y0 = max(CHEST[0] + 15, 960)
+    for k in (1, .92, .84, .76, .68, .6):   # всё на груди влезает выше Y1, ни одна строка не пропадает
+        f1 = fit(d, TOP, MONT, int(110 * k), W - 110, 48) if TOP else None
+        f2 = fit(d, BOT, MONT, int(100 * k), W - 70, 44) if BOT else None
+        h1 = int(tsize(d, TOP, f1)[1] * 1.44) + 20 if TOP else 0
+        h2 = tsize(d, BOT, f2)[1] if BOT else 0
+        if y0 + h1 + 34 + h2 <= Y1: break
+    y = y0
+    if TOP:
+        y += tline(y + int(tsize(d, TOP, f1)[1] * .22) + 10, TOP, f1, "white", plate=NAVY) + 34
+    if BOT:
+        tline(y, BOT, f2, ORANGE2, KK, 9)
 
 elif S5 == "hormozi":
+    # 15.11.2026 (Евгений 01:00, «синяя плашка»): верх белый с обводкой, главное — белым на синей плашке,
+    # хвост — оранжевый с обводкой. Грудь тесная — верх крупно над головой, низ одной строкой на синей плашке.
     l1 = TOP or (BOTL[0] if len(BOTL) > 1 else "")
     rest = BOTL if TOP else BOTL[1:]
     l2 = rest[0] if rest else BOT
     l3 = " ".join(rest[1:]) if len(rest) > 1 else ""
-    lines = [x for x in (l1, l2, l3) if x]
-    def sz(k):
-        out = []
-        for i, t in enumerate(lines):
-            base = 124 if t != l3 or not l3 else 80
-            out.append(fit(d, t, MONT, int(base * k), W - 90, 44))
-        return out
-    y, fonts, hs = chest_block(lines, sz)
-    # 13.11.2026: на груди тесно (шрифт сжался) — первая белая строка уходит над голову крупно, на груди остальное
-    if len(lines) > 1 and above_ok and fonts[0].size < 112:
-        t0 = lines[0]; f0 = fit(d, t0, MONT, 124, W - 90, 52)
-        h0 = tsize(d, t0, f0)[1]
-        if h0 + 40 <= ABOVE[1] - ABOVE[0]:
-            if VAR == "a": plate(ABOVE[1] - h0 - 44, t0, f0, "#0b0d12", "white", 30, 18, 14, 225)
-            elif VAR == "b": stext(ABOVE[1] - h0 - 30, t0, f0, "#ffd400", 10)
-            else: ctext(d, ABOVE[1] - h0 - 30, t0, f0, "white", 10)
-            lines = lines[1:]; l1 = ""
-            y, fonts, hs = chest_block(lines, lambda k: [fit(d, t, MONT, int((124 if t != l3 or not l3 else 84) * k), W - 90, 44) for t in lines])
-    if VAR in ("a", "b"):
-        y += 14
-        for t, f, h in zip(lines, fonts, hs):
-            if t == l2:
-                plate(y, t, f, "#2ee66b" if VAR == "a" else "#ffd400", "#0b0d12", 26, 18, 12); y += h + 36 + 26
-            elif t == l3 and l3:
-                f3 = fit(d, t, MONT, max(f.size, 92), W - 110, 50); h3 = tsize(d, t, f3)[1]
-                if VAR == "a": plate(y, t, f3, "#0b0d12", "#ffd400", 26, 16, 12, 225)
-                else: plate(y, t, f3, "#0b0d12", "white", 26, 16, 12, 225)
-                y += h3 + 32 + 26
-            else:
-                if VAR == "a": plate(y, t, f, "#0b0d12", "white", 26, 16, 12, 225); y += h + 32 + 26
-                else: stext(y, t, f, "#ffd400", 10); y += h + 30
-    for t, f, h in (zip(lines, fonts, hs) if VAR not in ("a", "b") else []):
-        if t == l2:
-            w, _, b = tsize(d, t, f); x = (W - w) // 2
-            d.rounded_rectangle([x - 22, y - 14, x + w + 22, y + h + 16], radius=10, fill="#2ee66b")
-            d.text((x - b[0], y - b[1]), t, font=f, fill="black")
-        else:
-            ctext(d, y, t, f, "white", 10)
-        y += h + 30
+    yc = max(CHEST[0] + 5, 980)
+    tight = Y1 - yc < 330
+    if l1 and above_ok:
+        f1 = fit(d, l1, MONT, 130 if tight else 112, W - 100, 56); h1 = tsize(d, l1, f1)[1]
+        while h1 + 40 > ABOVE[1] - ABOVE[0] and f1.size > 56: f1 = MONT(f1.size - 6); h1 = tsize(d, l1, f1)[1]
+        tline(ABOVE[1] - h1 - 40, l1, f1, "white", KK, 9); l1 = ""
+    if tight and l3:
+        l2, l3 = f"{l2} {l3}", ""
+    parts = [x for x in (l1, l2, l3) if x]
+    for k in (1, .92, .84, .76, .68, .6, .52):
+        fs_ = []
+        for t in parts:
+            base = 160 if t == l2 else 112
+            fs_.append(fit(d, t, MONT, int(base * k), W - (150 if t == l2 else 110), 44))
+        hs_ = [int(tsize(d, t, f)[1] * (1.44 if t == l2 else 1)) + (20 if t == l2 else 0) for t, f in zip(parts, fs_)]
+        if yc + sum(hs_) + 40 * (len(parts) - 1) <= Y1 + 30: break
+    y = yc
+    for t, f, hh in zip(parts, fs_, hs_):
+        if t == l2: tline(y + int(tsize(d, t, f)[1] * .22) + 10, t, f, "white", plate=BLUE)
+        elif t == l1: tline(y, t, f, "white", KK, 9)
+        else: tline(y, t, f, ORANGE2, KK, 9)
+        y += hh + 40
 
 elif S5 == "novost":
     # 13.11.2026: крупно. Метка «НОВОСТЬ · <top>», bot — жёлтым во всю ширину, полоса сразу под подбородком
@@ -366,40 +368,24 @@ elif S5 == "chb":
     im = gimg; d = ImageDraw.Draw(im)
     red = BOT or TOP
     small = TOP if BOT else ""
+    # 15.11.2026 (Евгений 01:00, «оранжевый»): верх белый с чёрной обводкой, главное — оранжевое с чёрной обводкой
+    fs_ = None
     if small:
-        fs_ = fit(d, small, lambda s: RUB(s, 800), 96, W - 80, 48)
-        if above_ok:   # 14.11.2026: белая строка с тёмной тенью — на светлой стене не бледнеет
-            _y = ABOVE[1] - tsize(d, small, fs_)[1] - 30
-            sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); ctext(ImageDraw.Draw(sh), _y + 5, small, fs_, (0, 0, 0, 190), 4, (0, 0, 0, 190))
-            im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(8))); d = ImageDraw.Draw(im)
-            if VAR == "a":
-                fs_ = fit(d, small, MONT, 96, W - 120, 52); _y = ABOVE[1] - tsize(d, small, fs_)[1] - 50
-                plate(_y, small, fs_, "#ffd400", "#0b0d12", 30, 18)
-            elif VAR == "b":
-                fs_ = fit(d, small, MONT, 104, W - 80, 52); _y = ABOVE[1] - tsize(d, small, fs_)[1] - 34
-                ctext(d, _y, small, fs_, "white", 9, "#0b0d12")
-            else:
-                ctext(d, _y, small, fs_, "white", 2, "#111")
-    rl = split2(red, d, RUSSO, 190, W - 50)
-    f = fit(d, max(rl, key=len), RUSSO, 190, W - 50, 70)
+        fs_ = fit(d, small, MONT, 110, W - 140, 56)
+        hs0 = tsize(d, small, fs_)[1]
+        if above_ok:
+            while hs0 + 60 > ABOVE[1] - ABOVE[0] and fs_.size > 56: fs_ = MONT(fs_.size - 6); hs0 = tsize(d, small, fs_)[1]
+            tline(ABOVE[1] - hs0 - 50, small, fs_, "white", KK, 9)
+    rl = split2(red, d, RUSSO, 190, W - 90)
+    f = fit(d, max(rl, key=len), RUSSO, 190, W - 90, 70)
     hh = tsize(d, "ЁЙ", f)[1]
-    y = CHEST[0] + (0 if above_ok or not small else tsize(d, small, fs_)[1] + 30)
-    while y + hh * len(rl) + 16 * (len(rl) - 1) > Y1 and f.size > 70:   # 13.11.2026: не вылезать ниже полосы
+    y = max(CHEST[0] + 15, 1000) + (0 if above_ok or not small else tsize(d, small, fs_)[1] + 36)
+    while y + hh * len(rl) + 18 * (len(rl) - 1) > Y1 and f.size > 70:
         f = RUSSO(f.size - 6); hh = tsize(d, "ЁЙ", f)[1]
-    f1 = fit(d, red, RUSSO, 190, W - 50, 60)                              # одной строкой крупнее? — берём одну
+    f1 = fit(d, red, RUSSO, 190, W - 90, 60)
     if len(rl) > 1 and f1.size > f.size: rl, f = [red], f1; hh = tsize(d, "ЁЙ", f)[1]
-    if not above_ok and small: ctext(d, CHEST[0], small, fs_, "white")
-    sh = Image.new("RGBA", im.size, (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
-    yy = y
-    for ln in rl: ctext(sd, yy + 10, ln, f, (0, 0, 0, 200)); yy += hh + 16
-    im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14))); d = ImageDraw.Draw(im)
-    if VAR == "a":
-        y += 14
-        for ln in rl: plate(y, ln, f, "#e3191c", "white", 28, 16, 12); y += hh + 32 + 14
-    elif VAR == "b":
-        for ln in rl: ctext(d, y, ln, f, "#ff2323", 11, "white"); y += hh + 22
-    else:
-        for ln in rl: ctext(d, y, ln, f, "#ff1f1f"); y += hh + 16
+    if not above_ok and small: tline(max(CHEST[0] + 15, 1000), small, fs_, "white", KK, 9)
+    for ln in rl: tline(y, ln, f, ORANGE, KK, 11); y += hh + 18
 
 im.convert("RGB").save(OUT)
 print("oblozhka5: готово", OUT)
