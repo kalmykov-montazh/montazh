@@ -1,0 +1,155 @@
+name: 6П. Подборка 60–90 мин из готовых лонгов
+
+# 15.11.2026: «Всё про <тему> в одном видео» (пункт 8 «YouTube — продвижение…»). asr — распознавание каждого
+# источника; prep — стыки по тишине, звук −14 LUFS, главы, вжух, .srt, QR; part — по 120 с параллельно; final — на Диск.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dir: {description: "Папка в dolg/", default: "Подборка Переезд"}
+      name: {description: "Имя готового ролика", default: "Переезд в Испанию — всё в одном видео"}
+      mode: {description: "asr / prep / build (prep+part+final) / reuse", default: "asr"}
+      keys: {description: "Источники для asr через пробел", default: "V M A I P"}
+      reuse: {description: "Начала частей через пробел (mode=reuse)", default: ""}
+
+env:
+  WD: "Брокер/работа/Подборка ${{ inputs.name }}"
+
+jobs:
+  keys:
+    runs-on: ubuntu-24.04
+    outputs:
+      k: ${{ steps.k.outputs.k }}
+    steps:
+      - id: k
+        run: echo "k=$(echo '${{ inputs.keys }}' | jq -Rc 'split(" ")|map(select(length>0))')" >> "$GITHUB_OUTPUT"
+
+  asr:
+    needs: keys
+    if: inputs.mode == 'asr'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        k: ${{ fromJson(needs.keys.outputs.k) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Распознать ${{ matrix.k }}
+        run: |
+          D="dolg/${{ inputs.dir }}"; K=${{ matrix.k }}
+          rclone copyto "montazh:$(jq -r .$K "$D/src.json")" s.mp4
+          ffmpeg -v error -y -i s.mp4 -vn -ac 1 -ar 16000 a.wav
+          python "$D/asr.py" $K
+          rclone copyto $K.words.json "montazh:$WD/asr/$K.words.json"
+          rclone copyto $K.txt "montazh:$WD/asr/$K.txt"
+
+  prep:
+    if: inputs.mode == 'prep' || inputs.mode == 'build' || inputs.mode == 'reuse'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      parts: ${{ steps.p.outputs.parts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Взять подготовку с Диска
+        if: inputs.mode == 'reuse'
+        run: rclone copy "montazh:$WD/prep" out
+      - name: Исходники
+        if: inputs.mode != 'reuse'
+        run: |
+          D="dolg/${{ inputs.dir }}"
+          for K in $(jq -r 'keys[]' "$D/src.json"); do
+            rclone copyto "montazh:$(jq -r .$K "$D/src.json")" $K.src.mp4
+            ffmpeg -v error -y -i $K.src.mp4 -vf "scale=1920:1080:flags=lanczos,fps=30" -c:v libx264 -preset veryfast -crf 17 -g 30 -c:a pcm_s16le -ar 48000 -ac 2 $K.mov && rm $K.src.mp4 &
+          done; wait
+          rclone copy "montazh:$WD/asr" . --include "*.words.json"
+          ls -la
+      - name: Подготовка
+        if: inputs.mode != 'reuse'
+        run: python "dolg/${{ inputs.dir }}/prep.py" 2>&1 | tee prep.log | sed 's/^/::notice::/'
+      - name: Проверка стыков на слух
+        if: inputs.mode != 'reuse'
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, os
+          from pywhispercpp.model import Model
+          D = json.load(open('out/edl.json')); m = Model(os.environ['WMODEL'], n_threads=4, print_progress=False, print_realtime=False, redirect_whispercpp_logs_to=None)
+          res = []
+          for i, of in enumerate(D['off'][1:], 1):
+              subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{max(0, of - 3)}', '-t', '6', '-i', 'out/mix.wav', '-ac', '1', '-ar', '16000', 'j.wav'], check=True)
+              res.append(f'стык {i} ({of:.1f} с): ' + ' '.join(s.text for s in m.transcribe('j.wav', language='ru')).strip())
+          open('out/joins_asr.txt', 'w').write('\n'.join(res)); print('\n'.join('::notice::' + r for r in res))
+          PY
+      - name: На Диск
+        if: inputs.mode != 'reuse'
+        run: |
+          rclone copy out "montazh:$WD/prep"
+          for K in $(jq -r 'keys[]' "dolg/${{ inputs.dir }}/src.json"); do rclone copyto $K.mov "montazh:$WD/src/$K.mov"; done
+      - id: p
+        run: |
+          echo "parts=$(R="${{ inputs.reuse }}" python3 -c "import json,math,os;t=json.load(open('out/edl.json'))['total'];r=os.environ['R'].split();print(json.dumps([int(x) for x in r] if r else [i*120 for i in range(math.ceil(t/120))]))")" >> "$GITHUB_OUTPUT"
+          echo "::notice::Длительность $(jq .total out/edl.json) с"
+
+  part:
+    needs: prep
+    if: inputs.mode == 'build' || inputs.mode == 'reuse'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        t: ${{ fromJson(needs.prep.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: План и нужные исходники
+        run: |
+          rclone copy "montazh:$WD/prep" out --exclude mix.wav
+          for K in $(python3 -c "import json;D=json.load(open('out/edl.json'));T=${{ matrix.t }};print(' '.join(sorted({s for (s,a,b),o in zip(D['edl'],D['off']) if o<T+121 and o+b-a>T-1})))"); do
+            rclone copyto "montazh:$WD/src/$K.mov" $K.mov; done
+      - name: Часть ${{ matrix.t }}
+        run: |
+          T=${{ matrix.t }}; N=$(printf %04d $T)
+          python "dolg/${{ inputs.dir }}/render.py" out/edl.json out/ov p_$N.mp4 $T $((T+120)) | tail -2
+          rclone copyto p_$N.mp4 "montazh:$WD/parts/p_$N.mp4"
+
+  final:
+    needs: [prep, part]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Склеить
+        run: |
+          command -v ffmpeg || timeout 300 sudo apt-get install -y -qq ffmpeg > /dev/null || { curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ && sudo cp ffmpeg-*-static/ff* /usr/local/bin/; }
+          rclone copy "montazh:$WD/parts" parts; rclone copy "montazh:$WD/prep" prep
+          ls parts | sort | sed "s:^:file 'parts/:;s:$:':" > list.txt
+          ffmpeg -v error -y -f concat -safe 0 -i list.txt -i prep/mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest -movflags +faststart "!!! ${{ inputs.name }}.mp4"
+          V=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "!!! ${{ inputs.name }}.mp4"); echo "::notice::Готово: $V с, $(du -h "!!! ${{ inputs.name }}.mp4" | cut -f1); план $(jq .total prep/edl.json) с"
+          ffmpeg -v error -i "!!! ${{ inputs.name }}.mp4" -af ebur128 -f null - 2>&1 | grep -E '^\s+I:' | tail -1 | sed 's/^/::notice::Громкость /'
+          G="Брокер/На проверке/Подборка ${{ inputs.name }}"
+          rclone copyto "!!! ${{ inputs.name }}.mp4" "montazh:$G/!!! ${{ inputs.name }}.mp4"
+          rclone copyto prep/subs.srt "montazh:$G/субтитры.srt"
+          mkdir k; for t in $(jq -r '.check[]' prep/edl.json); do ffmpeg -v error -ss $t -i "!!! ${{ inputs.name }}.mp4" -frames:v 1 -vf scale=640:-1 k/k_$(printf %05d ${t%.*}).jpg; done
+          rclone copy k "montazh:$WD/kadry"
