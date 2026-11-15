@@ -70,6 +70,7 @@ jobs:
         run: |
           D="dolg/${{ inputs.dir }}"
           for K in $(jq -r 'keys[]' "$D/src.json"); do
+            if rclone lsf "montazh:$WD/src/$K.mov" | grep -q .; then rclone copyto "montazh:$WD/src/$K.mov" $K.mov & continue; fi
             rclone copyto "montazh:$(jq -r .$K "$D/src.json")" $K.src.mp4
             ffmpeg -v error -y -i $K.src.mp4 -vf "scale=1920:1080:flags=lanczos,fps=30" -c:v libx264 -preset veryfast -crf 17 -g 30 -c:a pcm_s16le -ar 48000 -ac 2 $K.mov && rm $K.src.mp4 &
           done; wait
@@ -95,7 +96,7 @@ jobs:
         if: inputs.mode != 'reuse'
         run: |
           rclone copy out "montazh:$WD/prep"
-          for K in $(jq -r 'keys[]' "dolg/${{ inputs.dir }}/src.json"); do rclone copyto $K.mov "montazh:$WD/src/$K.mov"; done
+          for K in $(jq -r 'keys[]' "dolg/${{ inputs.dir }}/src.json"); do rclone lsf "montazh:$WD/src/$K.mov" | grep -q . || rclone copyto $K.mov "montazh:$WD/src/$K.mov"; done
       - id: p
         run: |
           echo "parts=$(R="${{ inputs.reuse }}" python3 -c "import json,math,os;t=json.load(open('out/edl.json'))['total'];r=os.environ['R'].split();print(json.dumps([int(x) for x in r] if r else [i*120 for i in range(math.ceil(t/120))]))")" >> "$GITHUB_OUTPUT"
