@@ -90,5 +90,7 @@
   "s5": "hormozi",
   "color": "#7b3fe4"
  },
- "pic_low": true
+ "pic_low": true,
+ "cover_t": 26.2,
+ "cover_t_note": "15.11.2026: кадр дальше от камеры (PICK_FAR), проверен глазами"
 }

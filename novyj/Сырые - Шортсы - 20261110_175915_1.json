@@ -71,5 +71,7 @@
   "s5": "chb",
   "color": "#ff5a1f"
  },
- "pic_low": true
+ "pic_low": true,
+ "cover_t": 34.2,
+ "cover_t_note": "15.11.2026: кадр дальше от камеры (PICK_FAR), проверен глазами"
 }
