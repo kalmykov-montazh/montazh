@@ -308,8 +308,9 @@ elif S5 == "hormozi":
         f1 = fit(d, l1, MONT, 130 if tight else 112, W - 100, 56); h1 = tsize(d, l1, f1)[1]
         while h1 + 40 > ABOVE[1] - ABOVE[0] and f1.size > 56: f1 = MONT(f1.size - 6); h1 = tsize(d, l1, f1)[1]
         tline(ABOVE[1] - h1 - 40, l1, f1, "white", KK, 9); l1 = ""
-    if tight and l3:
-        l2, l3 = f"{l2} {l3}", ""
+    if tight and l3:   # склеиваем в одну строку, только если одной строкой выходит крупно
+        one = f"{l2} {l3}"
+        if fit(d, one, MONT, 160, W - 150, 44).size >= 72: l2, l3 = one, ""
     parts = [x for x in (l1, l2, l3) if x]
     for k in (1, .92, .84, .76, .68, .6, .52):
         fs_ = []
