@@ -56,7 +56,7 @@ def whisper(a):
     global _wm
     from faster_whisper import WhisperModel
     if _wm is None:
-        _wm = WhisperModel(os.environ.get('WMODEL', 'deepdml/faster-whisper-large-v3-turbo-ct2'), device='cpu', compute_type='int8',
+        _wm = WhisperModel(os.environ.get('FW_MODEL', 'deepdml/faster-whisper-large-v3-turbo-ct2'), device='cpu', compute_type='int8',
                            cpu_threads=os.cpu_count())
     segs, _ = _wm.transcribe(a, language='ru', word_timestamps=True, beam_size=5, vad_filter=False,
                              condition_on_previous_text=False, temperature=0)
