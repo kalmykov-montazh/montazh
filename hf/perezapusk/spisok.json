@@ -1049,7 +1049,7 @@
   ],
   "img": "road_3.jpg",
   "imgs": [
-   "police_2.jpg",
+   "n11_police_station_1.jpg",
    "n11_letter_envelope_4.jpg"
   ],
   "l1": "ОБЫЧНАЯ МАШИНА",
@@ -1070,9 +1070,9 @@
     63.25
    ]
   ],
-  "img": "keys2_2.jpg",
+  "img": "keys2_1.jpg",
   "imgs": [
-   "n11_house_calculator_1.jpg",
+   "n11_apartment_building_spain_1.jpg",
    "n11_euro_bills_2.jpg"
   ],
   "l1": "ХОЗЯИН",
@@ -1115,7 +1115,7 @@
   "img": "caraccident_1.jpg",
   "imgs": [
    "n11_pen_signing_paper_2.jpg",
-   "insurance_3.jpg"
+   "contractsign_1.jpg"
   ],
   "l1": "МЕЛКАЯ АВАРИЯ?",
   "l2": "ПОЛИЦИЯ НЕ НУЖНА",
@@ -1138,7 +1138,7 @@
   "exact": true,
   "img": "n11_steering_wheel_car_2.jpg",
   "imgs": [
-   "insurance_4.jpg",
+   "carkeys_2.jpg",
    "n11_letter_envelope_3.jpg"
   ],
   "l1": "МАШИНА НА ГАЗУ?",
@@ -1163,7 +1163,7 @@
   "img": "n11_espresso_bar_counter_3.jpg",
   "imgs": [
    "n11_coins_3.jpg",
-   "tapas_2.jpg"
+   "eurobills_1.jpg"
   ],
   "l1": "10% ЧАЕВЫХ",
   "l2": "КАК ДОМА?",
