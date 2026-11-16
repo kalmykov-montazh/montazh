@@ -18,6 +18,7 @@ def load(v):
     raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', v, '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'], capture_output=True).stdout
     return np.frombuffer(raw, np.int16).astype(np.float32) / 32768
 
+NUMW = re.compile(r'^(ноль|один|одна|одно|одну|два|две|двух|три|трех|четыр|пят|шест|сем|восем|девят|десят|одиннадцат|двенадцат|тринадцат|четырнадцат|пятнадцат|шестнадцат|семнадцат|восемнадцат|девятнадцат|двадцат|тридцат|сорок|пятьдесят|шестьдесят|семьдесят|восемьдесят|девяност|сто|двест|трист|четырест|пятьсот|шестьсот|семьсот|восемьсот|девятьсот|тысяч|миллион|евро|процент|первого|второго|третьего|половин)')
 def norm(w): return re.sub(r'[^\w]', '', w.lower().replace('ё', 'е'))
 
 # ---------- распознавание ----------
@@ -134,8 +135,8 @@ def main():
     for j in J:
         if j['type'] == 'fade':
             loud = max(j['before_db'], j['after_db'])
-            if loud > -14:
-                add('СТЫК-В-РЕЧИ', j['t'], f"стык (подрезка) там, где голос громкий: до {j['before_db']} дБ, после {j['after_db']} дБ от пика", True)
+            if j['before_db'] > -14:
+                add('СТЫК-В-РЕЧИ', j['t'], f"перед подрезкой голос громкий: {j['before_db']} дБ от пика (после {j['after_db']})", False)
         else:
             add('ОБРЫВ', j['t'], f"голос оборвался за 10 мс ({j['before_db']} → {j['after_db']} дБ)", False)
 
@@ -156,6 +157,7 @@ def main():
         if op == 'equal': continue
         ga = ' '.join(w['w'] for w in gw[i1:i2]); wb = ' '.join(w['w'] for w in ww[j1:j2])
         if sim(ga.replace(' ', ''), wb.replace(' ', '')) > 0.8: continue   # «из-за» / «изза», слитно/раздельно
+        if re.search(r'\d', wb) and all(NUMW.match(norm(x)) for x in ga.split()): continue   # «десять» / «10»
         tt = [w for w in gw[i1:i2]] + [w for w in ww[j1:j2]]
         if not tt: continue
         t = sum((w['s'] + w['e']) / 2 for w in tt) / len(tt)
@@ -163,6 +165,48 @@ def main():
         lowp = [w for w in ww[j1:j2] if w.get('p', 1) < 0.5]
         add('РАЗНОЧТЕНИЕ', t, f"GigaAM: «{ga}» / Whisper: «{wb}»" + (f"; стык в {near:.2f} с" if near < 0.6 else '') +
             (f"; Whisper не уверен в «{' '.join(w['w'] for w in lowp)}»" if lowp else ''), near < 0.6 and bool(lowp))
+
+    # сверка с задуманным текстом (osnova_words.json — слова, которые монтаж оставил, на шкале основы)
+    WJ = os.environ.get('WORDS')
+    if WJ and os.path.exists(WJ):
+        I = [w for w in json.load(open(WJ, encoding='utf-8')) if norm(w['w'])]
+        IN = [norm(w['w']) for w in I]
+        def heard(model):
+            M = [norm(w['w']) for w in model]; ok = [False] * len(I); mp = [None] * len(I)
+            for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, IN, M, autojunk=False).get_opcodes():
+                if op == 'equal':
+                    for k in range(i2 - i1): ok[i1 + k] = True; mp[i1 + k] = j1 + k
+                elif op == 'replace':
+                    a_ = ''.join(IN[i1:i2]); b_ = ''.join(M[j1:j2])
+                    if sim(a_, b_) >= 0.8 or (re.search(r'\d', a_ + b_) and len(b_) > 0):
+                        for k in range(i1, i2): ok[k] = True
+                    for k in range(i1, i2):
+                        for q in range(j1, j2):
+                            if sim(IN[k], M[q]) >= 0.75: ok[k] = True; mp[k] = q
+            return ok, mp
+        okg, mg = heard(gw); okw, mw = heard(ww)
+        # сдвиг шкалы основы → готовый ролик (по совпавшим словам Whisper)
+        dd = [ww[mw[k]]['s'] - I[k]['s'] for k in range(len(I)) if mw[k] is not None]
+        off = float(np.median(dd)) if dd else 0.0
+        k = 0
+        while k < len(I):
+            if okg[k] or okw[k]: k += 1; continue
+            k2 = k
+            while k2 < len(I) and not (okg[k2] or okw[k2]): k2 += 1
+            txt = ' '.join(w['w'] for w in I[k:k2]); t = I[k]['s'] + off
+            if not all(NUMW.match(x) or x.isdigit() for x in IN[k:k2]):
+                add('НЕ СЛЫШНО', t, f"по плану «{txt}», а обе программы слышат другое", True)
+            k = k2
+        # лишнее: обе программы слышат слово, которого нет в плане
+        def extra(model, mp):
+            used = set(x for x in mp if x is not None); return [q for q in range(len(model)) if q not in used]
+        ex_w = extra(ww, mw)
+        for q in ex_w:
+            w = ww[q]; tm = (w['s'] + w['e']) / 2
+            g = [x for x in at(gw, tm, 0.15)]
+            if g and not any(sim(x['w'], y['w']) >= 0.75 for x in g for y in I if abs(y['s'] + off - tm) < 1.0):
+                if any(sim(x['w'], w['w']) >= 0.6 for x in g) and not NUMW.match(norm(w['w'])) and not norm(w['w']).isdigit():
+                    add('ЛИШНЕЕ', tm, f"обе программы слышат «{w['w']}», в плане его нет", True)
 
     # сверка с исходником
     if RAW and os.path.exists(RAW):
