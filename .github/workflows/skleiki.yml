@@ -24,6 +24,10 @@ on:
         description: "Ключ шифрования кадров для проверки"
         required: false
         default: ""
+      lead:
+        description: "Запас перед первым словом куска основы, с (обычно 0.05; 0.15 — если съедается первая буква)"
+        required: false
+        default: "0.05"
       osnova_only:
         description: "1 — только построить основы исходников (без склейки и рендера)"
         required: false
@@ -99,7 +103,7 @@ jobs:
               fi
               [ -f "$W/fixes.json" ] || echo '{}' > "$W/fixes.json"
               python scripts/align.py raw/src.mp4 "$W" "$W/fixes.json" > "$W/align.log" 2> "$W/align.err" < /dev/null || { tail -5 "$W/align.err"; exit 1; }
-              ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py raw/src.mp4 "$W" > "$W/montage.log" < /dev/null || { tail -20 "$W/montage.log"; exit 1; }
+              LEAD=${{ inputs.lead }} ALIGNED=1 NOSUBS=1 CRF264=15 python scripts/montage.py raw/src.mp4 "$W" > "$W/montage.log" < /dev/null || { tail -20 "$W/montage.log"; exit 1; }
               rclone copyto "$W/ролик_B.mp4" "montazh:Брокер/работа/$K/osnova.mp4"
               rclone copyto "$W/words_out.json" "montazh:Брокер/работа/$K/osnova_words.json"
               [ -f "$W/face.json" ] && rclone copyto "$W/face.json" "montazh:Брокер/работа/$K/face.json"
