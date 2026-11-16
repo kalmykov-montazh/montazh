@@ -16,6 +16,9 @@ on:
         required: false
         default: "16"
 
+permissions:
+  contents: write
+
 jobs:
   plan:
     runs-on: ubuntu-24.04
@@ -83,8 +86,10 @@ jobs:
             fi
             i=$((i+1))
           done < "$SP"
-      - uses: actions/upload-artifact@v4
+      - name: Отчёты в ветку ot-<шард>
         if: always()
-        with:
-          name: otchety-${{ matrix.shard }}
-          path: out/
+        run: |
+          mkdir o && cp -r out/. o/ && cd o && git init -q && git checkout -q -b "ot-${{ matrix.shard }}"
+          git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "otchety ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "ot-${{ matrix.shard }}"
