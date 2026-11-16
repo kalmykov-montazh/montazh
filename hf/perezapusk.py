@@ -173,7 +173,8 @@ for it in L:
     sh("rclone", "copyto", f"montazh:{it['old']}", f"{w}/old.mp4")
     sh("rclone", "copyto", f"montazh:Брокер/Вставки/Предметы_ov/{it['img']}", f"{w}/img.jpg")
     # голос хука: ×1.2, тишина по краям срезана, громкость −14
-    sh("ffmpeg", "-v", "error", "-y", "-i", f"{w}/hook.mp4", "-vn", "-af",
+    # hook_ss — с какой секунды сырого хука брать (17.11.2026: в 64 остался неудачный дубль «заново со слов»)
+    sh("ffmpeg", "-v", "error", "-y", "-ss", str(it.get("hook_ss", 0)), "-i", f"{w}/hook.mp4", "-vn", "-af",
        "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.15,areverse,atempo=1.2,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000",
        "-ac", "2", f"{w}/hook.wav")
     D = dur(f"{w}/hook.wav") + 0.3
