@@ -31,11 +31,13 @@ def giga(a):
               joiner=f'{G}/joiner.onnx', tokens=f'{G}/tokens.txt', model_type='nemo_transducer')
     out = []; pos = 0; n = len(a)
     while pos < n:
-        end = min(n, pos + 6 * SR)
+        # 16.11.2026: куски по ~18 с, рез — в самой тихой точке последних 4 с (окно 25 мс). Короткие куски по 6 с
+        # резали слова пополам («дейс|твует») — GigaAM слышал обрубки, которых в ролике нет
+        end = min(n, pos + 18 * SR)
         if end < n:
-            lo = end - int(1.5 * SR); fr = 400
-            en = [np.abs(a[i:i + fr]).mean() for i in range(lo, end - fr, fr)]
-            end = lo + int(np.argmin(en)) * fr + fr // 2
+            lo = end - int(4 * SR); fr = 400
+            en = [np.abs(a[i:i + fr]).mean() for i in range(lo, end - fr, fr // 2)]
+            end = lo + int(np.argmin(en)) * (fr // 2) + fr // 2
         s = _gr.create_stream(); s.accept_waveform(SR, a[pos:end]); _gr.decode_stream(s)
         cur = None
         for ch, t in zip(s.result.tokens, s.result.timestamps):
