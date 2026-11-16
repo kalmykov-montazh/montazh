@@ -92,6 +92,7 @@ for it in cfg['items']:
         url = upload(v)
         posts = {}
         for net, tgt in (('instagram', {'targetType': 'instagram', 'mediaType': 'reel'}), ('tiktok', TT)):
+            if net not in it.get('seti', ['instagram', 'tiktok']): continue  # 16.11.2026: UA-рилсы только в FB
             body = {'post': {'accountId': ACC[net], 'content': {'text': bez_ssylok(it['text']), 'mediaUrls': [url], 'platform': net},
                              'target': tgt}, 'scheduledTime': it['at']}
             try:
