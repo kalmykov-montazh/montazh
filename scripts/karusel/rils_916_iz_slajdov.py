@@ -74,7 +74,7 @@ def main(folder):
     if not flat:
         a = np.asarray(ims[0])[30:125, 0:330].astype(int)
         ny = ((a[..., 0] > 170) & (a[..., 1] > 140) & (a[..., 2] < 120)).sum()
-        stare = 150 < ny < 1500                          # мелкое жёлтое «Листайте»; сплошная плашка «… · ВАЛЕНСИЯ» — больше
+        stare = 150 < ny < 5000                          # мелкое жёлтое «Листайте»; сплошная плашка «… · ВАЛЕНСИЯ» — больше
     for i, im in enumerate(ims, 1):
         if flat: o = flat_916(im)
         else: o = photo_916(stare_metki(im) if stare else im)
