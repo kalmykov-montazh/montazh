@@ -22,6 +22,7 @@ def zoom(f, z, cx, cy):
 eo = lambda x: 1 - (1 - max(0, min(1, x))) ** 3
 CH = [rgba(f'{OV}/ch{i}.png') for i in range(len(D['ch']))]
 QR = rgba(f'{H_}/qr.png'); END = cv2.imread(f'{OV}/end.png')
+CORNER = {k: rgba(f'{OV}/corner_{k}.png') for k in D.get('corner', [])}
 class Reader:
     def __init__(s, src, t, dur):
         s.p = subprocess.Popen(['ffmpeg', '-v', 'error', '-ss', f'{t:.4f}', '-i', f'{src}.mov', '-t', f'{dur + 0.5:.3f}', '-vf', 'fps=30',
@@ -58,6 +59,7 @@ for k in range(k0, k1):
         if 0 <= dt < 9:
             a = min(1, dt / 0.35, (9 - dt) / 0.35); a = a * a * (3 - 2 * a)
             over(o, QR, int(1920 - (1920 - 1390) * a), 150)
+    if src in CORNER: over(o, CORNER[src], W - CORNER[src][1].shape[1] - 30, 30)
     z = 1.0
     for p in D['punch']:
         dd = T - p

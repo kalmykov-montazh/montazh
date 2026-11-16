@@ -84,6 +84,13 @@ for i, (_, k, txt, *_r) in enumerate(CH):
     d.text((34 + w1, 16), txt, font=F44, fill=(255, 255, 255, 255))
     im.save(f'out/ov/ch{i}.png')
 
+# угловая подпись с датой записи — на всю длину старых частей
+for k_, t_ in P.get('corner', {}).items():
+    F30 = font(30); w_ = int(ImageDraw.Draw(Image.new('RGBA', (10, 10))).textlength(t_, font=F30)) + 36
+    im = Image.new('RGBA', (w_, 50), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, w_ - 1, 49], 12, fill=(10, 12, 18, 150)); d.text((18, 8), t_, font=F30, fill=(255, 255, 255, 215))
+    im.save(f'out/ov/corner_{k_}.png')
+
 # конечная заставка: размытый последний кадр + «СМОТРИТЕ ДАЛЬШЕ»
 lst = edl[-1]; f = frame(lst[0], lst[2] - 0.2, small=False)
 bg = Image.fromarray(f.astype(np.uint8)).filter(ImageFilter.GaussianBlur(24)).point(lambda v: int(v * 0.35))
@@ -165,7 +172,7 @@ for c in P['toc']:
     toc.append(f'{mmss(T) if T is not None else "??"} {txt}')
 open('out/toc.txt', 'w').write('\n'.join(toc))
 check = sorted({round(x, 1) for x in [3, 10, 20] + [of + d for of in off[1:] for d in (-1.5, 0.5, 2)] + [c[0] + 1.5 for c in CH] + [q + 4 for q in QR] + PUNCH[:6] + [BODY + 5]})
-json.dump({'edl': edl, 'off': off, 'body': BODY, 'total': TOTAL, 'qr': QR, 'ch': CH, 'punch': PUNCH, 'intro': P.get('intro'), 'check': check},
+json.dump({'edl': edl, 'off': off, 'body': BODY, 'total': TOTAL, 'qr': QR, 'ch': CH, 'punch': PUNCH, 'intro': P.get('intro'), 'corner': list(P.get('corner', {}).keys()), 'check': check},
           open('out/edl.json', 'w'), ensure_ascii=False)
 with open('out/joins.txt', 'w') as o_:
     for i, (s, es, e, ee) in enumerate(joins): o_.write(f'{i} {edl[i][0]} {s:.3f} (тишина {es:.0f}) → {e:.3f} (тишина {ee:.0f}) вых {off[i]:.2f}\n')
