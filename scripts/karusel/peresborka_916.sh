@@ -6,7 +6,7 @@ set -u
 cd "$GITHUB_WORKSPACE"
 pip install -q --break-system-packages opencv-python-headless pillow numpy 2>/dev/null || pip install -q opencv-python-headless pillow numpy
 mkdir -p pics
-while IFS= read -r P; do
+while IFS= read -r P <&3; do
   [ -z "$P" ] && continue
   N=$(basename "$P"); D="w/$N"; rm -rf "$D"; mkdir -p "$D"
   rclone copy "montazh:$P" "$D" --include "[0-9][0-9].jpg" --include "spec.json" --include "spec_reel.json" \
@@ -49,4 +49,4 @@ PY
   else
     echo "ОШИБКА $N | $(tail -3 "$D/_log.txt" | tr '\n' ' ' | cut -c1-200)"
   fi
-done < karuseli/peresborka_916.txt
+done 3< karuseli/peresborka_916.txt
