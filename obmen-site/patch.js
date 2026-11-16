@@ -92,6 +92,10 @@ window.obmenPatch = function (src) {
   rep('<div class="rate-label">купівля</div></td>\n      <td><div class="rate-num sell">${sell}</div><div class="rate-label">продаж</div></td>',
     '<div class="rate-label">купівля${cb0}</div></td>\n      <td><div class="rate-num sell">${sell}</div><div class="rate-label">продаж${cs0}</div></td>', 'labels');
 
+  // ── Статус «відкрито» по киевскому времени ──
+  rep("const now = new Date(), h = now.getHours(), m = now.getMinutes(), mins = h*60+m;",
+    "const kv = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()).split(':'), mins = (+kv[0])*60 + (+kv[1]);", 'kyiv time');
+
   // ── Скрипт графика и подписчиков ──
   rep('<script src="/fest.js?v=20261111b" defer></script>', CHART_JS + '\n<script src="/fest.js?v=20261111b" defer></script>', 'chart js');
 
@@ -257,5 +261,12 @@ const CSS = `
   .ch-tabs button{padding:7px 10px;font-size:.8rem}
   .ch-stats div{font-size:.9rem;padding:10px}
   #news-list{grid-template-columns:1fr}
+  .cr{grid-template-columns:repeat(3,1fr);gap:8px}
+  .ccard{padding:10px 8px}
+  .ccard .ca{font-size:1.35rem}
+  .ccard .cs{display:none}
+  .card .section-label{font-size:1.3rem}
+  .al-det .al-more{font-size:.72rem}
+  .calc-row .fi{flex:1;min-width:0;width:auto!important}
 }
 `;
