@@ -1,0 +1,90 @@
+name: Проверка стыков готовых роликов (две программы на слух)
+
+# 16.11.2026, Евгений: «всё, что лежит в готовых и не опубликовано, пройди, чтобы было идеально».
+# Каждый ролик из списка слушают GigaAM и Whisper large-v3-turbo (scripts/proverka_stykov.py):
+# стыки по живой речи, обрывы, несуществующие слова, разночтения, сверка с сырым рядом в папке.
+# Ничего на Диске не меняет. Результат — артефакт «otchety-<шард>» (json на каждый ролик).
+
+on:
+  workflow_dispatch:
+    inputs:
+      spisok:
+        description: "Файл в репозитории со списком путей внутри «Монтаж!» (по строке)"
+        required: true
+      shards:
+        description: "На сколько машин делить (до 20)"
+        required: false
+        default: "16"
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      m: ${{ steps.m.outputs.m }}
+    steps:
+      - id: m
+        run: echo "m=$(python3 -c "print(list(range(int('${{ inputs.shards }}'))))")" >> "$GITHUB_OUTPUT"
+
+  check:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.plan.outputs.m) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Подготовить
+        run: |
+          getent hosts azure.archive.ubuntu.com >/dev/null || sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          command -v ffmpeg >/dev/null || timeout 300 sudo apt-get -o Acquire::http::Timeout=20 install -y -qq ffmpeg > /dev/null 2>&1 || true
+          command -v ffmpeg >/dev/null || { curl -sSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ -C /tmp && sudo cp /tmp/ffmpeg-*-static/ff* /usr/local/bin/; }
+          pip install -q sherpa-onnx faster-whisper pymorphy3 pymorphy3-dicts-ru numpy
+          mkdir -p models
+          curl -sSL https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19.tar.bz2 | tar xj -C models
+          mv models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19 models/gigaam
+          python3 -c "from faster_whisper import WhisperModel; WhisperModel('deepdml/faster-whisper-large-v3-turbo-ct2', device='cpu', compute_type='int8')"
+      - name: Проверить ролики
+        env:
+          SP: ${{ inputs.spisok }}
+          SH: ${{ matrix.shard }}
+          N: ${{ inputs.shards }}
+          GIGAAM: models/gigaam
+        run: |
+          mkdir -p out v
+          i=0
+          while IFS= read -r p || [ -n "$p" ]; do
+            [ -z "$p" ] && continue
+            if [ $((i % N)) -eq "$SH" ]; then
+              key=$(printf '%s' "$p" | md5sum | cut -c1-12)
+              rm -f v/*
+              rclone copyto "montazh:$p" "v/final.mp4" || { echo "{\"file\":\"$p\",\"error\":\"не скачался\"}" > "out/$key.json"; i=$((i+1)); continue; }
+              d=$(dirname "$p")
+              raw=$(rclone lsf "montazh:$d" --files-only --include '*.mp4' --exclude '!!! *' | grep -E '^[0-9]{8}_' | head -1)
+              R=""
+              if [ -n "$raw" ]; then rclone copyto "montazh:$d/$raw" "v/raw.mp4" && R=v/raw.mp4; fi
+              if python3 scripts/proverka_stykov.py v/final.mp4 "$R" > "out/$key.json" 2> "out/$key.err"; then
+                python3 - "$p" "out/$key.json" <<'PY'
+          import json, sys
+          p, f = sys.argv[1], sys.argv[2]
+          d = json.load(open(f)); d['file'] = p; json.dump(d, open(f, 'w'), ensure_ascii=False)
+          s = sum(x['strong'] for x in d['flags'])
+          print(f"::notice::{p}: стыков {len(d['joints'])}, сильных {s}, всего замечаний {len(d['flags'])}")
+          PY
+              else
+                echo "::warning::$p: ошибка проверки"; tail -3 "out/$key.err"
+              fi
+            fi
+            i=$((i+1))
+          done < "$SP"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: otchety-${{ matrix.shard }}
+          path: out/
