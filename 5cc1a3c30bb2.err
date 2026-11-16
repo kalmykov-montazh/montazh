@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/runner/work/montazh/montazh/scripts/proverka_stykov.py", line 310, in <module>
+    main()
+  File "/home/runner/work/montazh/montazh/scripts/proverka_stykov.py", line 174, in main
+    fr_ = any(frag(x, y) for x in ga.split() for y in wb.split())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/montazh/montazh/scripts/proverka_stykov.py", line 174, in <genexpr>
+    fr_ = any(frag(x, y) for x in ga.split() for y in wb.split())
+              ^^^^
+NameError: cannot access free variable 'frag' where it is not associated with a value in enclosing scope
