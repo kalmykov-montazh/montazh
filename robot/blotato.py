@@ -14,9 +14,14 @@
 # обложку первым кадром. ВРЕМЕННО, для роликов, смонтированных до этого: если первый кадр не похож на обложка.jpg,
 # скрипт через ffmpeg делает копию с обложкой первым кадром (1/30 с) только для TikTok. Нет ffmpeg — уходит обычное видео.
 # Текстовые посты (24.10.2026): задания из «Посты!\Соцсети\*.json» → Threads, X, Bluesky, Instagram (с картинкой), LinkedIn.
+# 07.11.2026: упавшие сети перевыкладывает только облачный сторож (_blotato_повторы.json), компьютер подхватывает новый id.
+# 09.11.2026: Blotato часто оставляет X и Bluesky в «in-progress», хотя пост вышел. Bluesky теперь проверяется напрямую
+# через открытый API (без ключа), X без ошибки через 2 часа помечается «вышел?» без тревоги. Копия до правки — blotato.py.bak0911.
+# 11.11.2026: новые ролики в Blotato (IG, TikTok, YouTube, Threads) ставит облако — рубильник _blotato_облако_вкл.txt.
+# Компьютер забирает записи из _blotato_облако.json (_adopt_cloud) и дальше проверяет, X/Bluesky/LinkedIn, архив. Копия до правки — blotato.py.bak1111.
 # С 23.10.2026 опубликованные папки — по месяцам: «!!!ШОРТЫ ОПУБЛИКОВАННЫЕ\Октябрь 2026», список роликов — один, в корне.
 import json, re, os, struct, time, random, datetime, shutil, subprocess, tempfile, glob, urllib.request, urllib.error, urllib.parse
-from common import HERE, PUB, QUEUE, ROOT, log, read_pack
+from common import HERE, PUB, QUEUE, ROOT, log, read_pack, pack_guard
 
 API = 'https://backend.blotato.com/v2'
 KEYS = [HERE / 'blotato_ключ.txt', HERE / 'blotato_ключ.txt.txt']
@@ -252,6 +257,44 @@ def _when(fb_date, fb_time, now, name=None):
         at = now + datetime.timedelta(minutes=random.randint(20, 30))
     return at
 
+def _orphans(key, at, title, plats):
+    """14.11.2026 (дубль «72 Мадрид зимой» на YouTube): прошлая постановка могла зависнуть ПОСЛЕ того, как Blotato
+    уже создал пост, — id не записался, запись «загрузка» убрали, робот поставил заново, и вышло два ролика.
+    Перед постановкой ищем в расписании Blotato посты этой же сети с тем же названием (±2 суток)
+    или с пустым текстом ровно на это время (±5 мин). Возвращаем [(сеть, id расписания)]."""
+    items, cursor = [], None
+    for _ in range(20):
+        r = _req('GET', '/schedules?limit=50' + (f'&cursor={cursor}' if cursor else ''), key=key)
+        items += r.get('items', [])
+        cursor = r.get('cursor')
+        if not cursor:
+            break
+    def _first(t):
+        t = re.sub(r'[#⠀]', '', (t or '')).strip()
+        return t.splitlines()[0].strip()[:30].lower() if t else ''
+    head = _first(title)
+    found = []
+    for it in items:
+        d = it.get('draft') or {}
+        c = d.get('content') or {}
+        plat = _plat((d.get('target') or {}).get('targetType') or c.get('platform'))
+        if plat not in plats:
+            continue
+        try:
+            w = datetime.datetime.fromisoformat(str(it.get('scheduledAt') or it.get('scheduledTime')).replace('Z', '+00:00'))
+            w = w.astimezone().replace(tzinfo=None)
+        except Exception:
+            w = None
+        txt = c.get('text') or ''
+        ytt = (d.get('target') or {}).get('title') or ''
+        same = bool(head) and len(head) >= 12 and (_first(txt) == head or _first(ytt) == head) and \
+               (w is None or abs(w - at) <= datetime.timedelta(days=2))
+        if not same and w and not txt.strip() and abs(w - at) <= datetime.timedelta(minutes=5):
+            same = True
+        if same:
+            found.append((plat, it.get('id')))
+    return found
+
 def schedule(key, s):
     fb = _load(FBPLAN, {})
     now = datetime.datetime.now()
@@ -262,6 +305,8 @@ def schedule(key, s):
         folder = PUB / name
         video = next((f for f in folder.glob('*.mp4') if f.name.startswith('!!!')), None) if folder.exists() else None
         if not video:
+            continue
+        if not pack_guard(folder):                 # 10.11.2026: без нормальной упаковки в Blotato не ставим
             continue
         acc = _accounts(key, s)
         e = s[name] = {'fb': f"{v['date']} {v['time']}", 'status': 'загрузка', 'posts': {}}
@@ -275,6 +320,16 @@ def schedule(key, s):
         e['at'] = f"{at:%Y-%m-%d %H:%M}"
         e['video'] = vurl
         _save(s)
+        try:                                       # 14.11.2026: защита от дублей после зависшей постановки
+            for plat, sid in _orphans(key, at, title, [p for p in PLATFORMS if p in acc]):
+                try:
+                    _req('DELETE', f"/schedules/{sid}", key=key)
+                    log(f"BLOTATO ДУБЛЬ: в расписании уже был пост {plat} (id {sid}) — {name}, удалил перед новой постановкой")
+                except Exception as ex:
+                    log(f"ОШИБКА blotato дубль {plat} — {name}: не удалился старый пост {sid} ({str(ex)[:150]}) — не ставлю, чтобы не задвоить")
+                    e['posts'][plat] = {'status': 'ошибка', 'error': f'старый пост {sid} не удалился'}
+        except Exception as ex:
+            log(f"blotato проверка дублей — {name}: {str(ex)[:150]}")
         tturl = vurl
         if 'tiktok' in acc:
             ttv = _tiktok_video(video, cover)
@@ -288,6 +343,8 @@ def schedule(key, s):
         for p in PLATFORMS:
             if p not in acc:
                 e['posts'][p] = {'status': 'нет аккаунта'}; continue
+            if (e['posts'].get(p) or {}).get('status') == 'ошибка':
+                continue
             ptext = read_pack(folder, raw=True) if p == 'youtube' else text   # YouTube — упаковка как есть, со строкой про полное видео (решение 25.10.2026)
             if p == 'threads':
                 ptext = _threads_clean(ptext)
@@ -570,12 +627,65 @@ def _find(items, p, e, text):
             return it
     return None
 
+BS_HANDLE = 'kalmykov-valencia.bsky.social'
+
+def _bsky_find(since, head=None, video=None, back=30):
+    """Bluesky напрямую (открытый API, без ключа): пост, вышедший после since (минус 30 мин).
+    video=True — только с видео, False — только без видео. head — начало текста для сверки."""
+    q = urllib.parse.urlencode({'actor': BS_HANDLE, 'limit': 30, 'filter': 'posts_no_replies'})
+    url = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?' + q
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'publikator'}), timeout=30) as r:
+        feed = json.loads(r.read()).get('feed') or []
+    norm = lambda t: re.sub(r'\W+', '', (t or '').lower())[:30]
+    h = norm((head or '').strip().split('\n')[0])
+    cands = []
+    for it in feed:
+        post = it.get('post') or {}
+        rec = post.get('record') or {}
+        try:
+            c = datetime.datetime.fromisoformat(rec['createdAt'].replace('Z', '+00:00')).astimezone().replace(tzinfo=None)
+        except Exception:
+            continue
+        if c < since - datetime.timedelta(minutes=back):
+            continue
+        has_v = 'video' in json.dumps(rec.get('embed') or {})
+        if video is not None and has_v != video:
+            continue
+        link = f"https://bsky.app/profile/{BS_HANDLE}/post/{post.get('uri', '').rsplit('/', 1)[-1]}"
+        if h and norm(rec.get('text')) [:len(h)] == h:
+            return link
+        cands.append((abs((c - since).total_seconds()), link))
+    if not h and cands:
+        return min(cands)[1]
+    return None
+
+REPOSTS = QUEUE / '_blotato_повторы.json'   # пишет облачный сторож (07.11.2026), компьютер только читает
+
+def _adopt_reposts(s):
+    """Перевыкладку упавших сетей делает ТОЛЬКО облачный сторож (GitHub karusel-storozh.yml, решение Евгения 07.11.2026).
+    Компьютер сам не перевыкладывает: берёт из _blotato_повторы.json новый id и дальше проверяет его как обычно,
+    чтобы папка уехала в опубликованные."""
+    rep = _load(REPOSTS, {})
+    for name, nets in rep.items():
+        e = s.get(name)
+        if not isinstance(e, dict) or not isinstance(nets, dict):
+            continue
+        for p, r in nets.items():
+            x = (e.get('posts') or {}).get(p)
+            if not x or not r.get('id') or r['id'] == x.get('id') or x.get('status') == 'вышел':
+                continue
+            x['id_old'], x['id'], x['status'] = x.get('id'), r['id'], 'запланирован'
+            e['status'] = 'запланирован'; e.pop('check_alert', None)
+            log(f"BLOTATO {p} — {name}: облако перевыложило, проверяю новый id")
+    return s
+
 def check(key, s):
     """После времени выхода спрашиваем у Blotato, вышло ли.
     Сначала по id (GET /posts/{id}); если ответа нет или статус не «вышел/ошибка» — ищем в списке постов
     (после переноса времени старый id отвечает «in-progress» вечно). Не ясно — журнал раз в час,
     через 2 часа после выхода — журнал + Telegram. Ошибка публикации — журнал + Telegram сразу."""
     now = datetime.datetime.now()
+    _adopt_reposts(s)
     for name, e in s.items():
         if name.startswith('_') or not isinstance(e, dict) or not e.get('at') or e.get('status') == 'проверено':
             continue
@@ -622,6 +732,20 @@ def check(key, s):
                 why += f"; в списке: {t or '?'}"
             elif listed is not None:
                 why += "; в списке не найден"
+            mins_p = int((now - at).total_seconds() // 60)
+            if p == 'bluesky':
+                try:
+                    u = _bsky_find(at, read_pack(PUB / name), True)
+                except Exception as ex:
+                    u = None; why += f"; bsky напрямую: {str(ex)[:80]}"
+                if u:
+                    x['status'] = 'вышел'; x['url'] = u
+                    log(f"BLOTATO bluesky — {name}: Blotato молчит, но пост в Bluesky есть: {u}")
+                    continue
+            if p == 'twitter' and mins_p >= CHECK_ALERT_AFTER:
+                x['status'] = 'вышел?'; x['note'] = 'Blotato не дал статус, ошибки нет'
+                log(f"BLOTATO twitter — {name}: статус от Blotato так и не пришёл, ошибки нет — считаю вышедшим")
+                continue
             done = False
             unclear.append(f"{p} ({why})")
         if done:
@@ -659,11 +783,33 @@ def move(key, s):
         text = read_pack(PUB / name)
         at = datetime.datetime.fromisoformat(when)
         n = 0
+        nets = []
+        # 10.11.2026: у каждой сети в Blotato свой адрес видео, а у Threads/X/Bluesky свой текст — раньше их не находили.
+        # Теперь ещё: первая строка текста = название ролика (±2 суток от нового времени) или пост стоит ровно на старое время.
+        def _first(t):
+            t = re.sub(r'[#⠀]', '', (t or '')).strip()
+            return t.splitlines()[0].strip()[:30].lower() if t else ''
+        title = _first(text)
+        try: old_at = datetime.datetime.fromisoformat(e.get('at')) if e.get('at') else None
+        except Exception: old_at = None
+        def _when_local(it):
+            try:
+                w = datetime.datetime.fromisoformat(str(it.get('scheduledAt') or it.get('scheduledTime')).replace('Z', '+00:00'))
+                return w.astimezone().replace(tzinfo=None)
+            except Exception:
+                return None
         for it in items:
             c = (it.get('draft') or {}).get('content') or {}
             same = any(v and v in (c.get('mediaUrls') or []) for v in (e.get('video'), e.get('video_tt'))) or \
                    (text and (c.get('text') or '').strip() == text.strip())
+            if not same:
+                w = _when_local(it)
+                if w and title and len(title) >= 12 and _first(c.get('text')) == title and abs(w - at) <= datetime.timedelta(days=2):
+                    same = True
+                elif w and old_at and old_at != at and abs(w - old_at) <= datetime.timedelta(minutes=3) and not (c.get('text') or '').strip():
+                    same = True                    # пустой текст, но ровно на старом времени этого ролика
             if same:
+                nets.append(((it.get('draft') or {}).get('target') or {}).get('targetType') or c.get('platform') or '?')
                 patch = {'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
                 tg = (it.get('draft') or {}).get('target') or {}
                 if tg.get('targetType') == 'youtube' and tg.get('title') and '#shorts' not in tg['title'].lower():
@@ -671,10 +817,24 @@ def move(key, s):
                     patch['draft'] = d
                 _req('PATCH', f"/schedules/{it['id']}", {'patch': patch}, key)
                 n += 1
+        want_nets = [p for p, x in e.get('posts', {}).items() if x.get('status') == 'запланирован']
+        miss = [p for p in want_nets if p not in nets]
+        if miss:                                   # 10.11.2026: отладка — какие сети перенос не нашёл
+            try:
+                dbg = [{'id': it.get('id'), 'when': it.get('scheduledTime') or it.get('scheduledAt'),
+                        'target': ((it.get('draft') or {}).get('target') or {}).get('targetType'),
+                        'media': [str(u)[-50:] for u in (((it.get('draft') or {}).get('content') or {}).get('mediaUrls') or [])],
+                        'text': str((((it.get('draft') or {}).get('content') or {}).get('text') or ''))[:60],
+                        'keys': sorted(it.keys())}
+                       for it in items if ((it.get('draft') or {}).get('target') or {}).get('targetType') in miss]
+                (QUEUE / '_blotato_отладка.json').write_text(json.dumps({'name': name, 'video': str(e.get('video'))[-50:],
+                    'miss': miss, 'items': dbg}, ensure_ascii=False, indent=1), encoding='utf-8')
+            except Exception:
+                pass
         if n:
             e['at'] = f"{at:%Y-%m-%d %H:%M}"
             e['status'] = 'запланирован'
-            log(f"BLOTATO перенос {name} → {e['at']} ({n} сети)")
+            log(f"BLOTATO перенос {name} → {e['at']} ({n} сети: {', '.join(nets)}{'; НЕ нашёл: ' + ', '.join(miss) if miss else ''})")
         else:
             log(f"ОШИБКА blotato перенос {name}: в расписании Blotato не найден")
     _save(s)
@@ -752,12 +912,16 @@ def archive(s):
 # Всё отправлено (или попытки кончились) — задание и картинка уезжают в «Соцсети\отправлено».
 # Через 5+ минут проверяет выход; итог — в журнал и в Telegram (со ссылками).
 TEXT_DIR = ROOT / 'Брокер' / 'Посты' / 'Соцсети'
-TEXT_LIMITS = {'threads': 500, 'twitter': 280, 'bluesky': 300, 'instagram': 2200, 'linkedin': 3000}
+TEXT_LIMITS = {'threads': 500, 'twitter': 280, 'bluesky': 300, 'instagram': 2200, 'linkedin': 3000, 'tiktok': 2200}
 TEXT_TRIES = 3
 
 def _text_target(p):
     if p == 'threads':
         return {'targetType': 'threads', 'replyControl': 'everyone'}
+    if p == 'tiktok':                      # 09.11.2026: фото-пост в TikTok (картинка обязательна)
+        return {'targetType': 'tiktok', 'privacyLevel': 'PUBLIC_TO_EVERYONE', 'disabledComments': False,
+                'disabledDuet': False, 'disabledStitch': False, 'isBrandedContent': False,
+                'isYourBrand': False, 'isAiGenerated': False, 'isDraft': False}
     return {'targetType': p}
 
 def schedule_text(key, s):
@@ -793,8 +957,8 @@ def schedule_text(key, s):
             if len(text) > lim:
                 text = text[:lim - 1].rsplit(' ', 1)[0] + '…'
             media = []
-            if img and img.exists() and p in ('instagram', 'threads', 'twitter', 'bluesky', 'linkedin') \
-                    and (p == 'instagram' or j.get('image_all')):
+            if img and img.exists() and p in ('instagram', 'threads', 'twitter', 'bluesky', 'linkedin', 'tiktok') \
+                    and (p in ('instagram', 'tiktok') or j.get('image_all')):
                 if not img_url:
                     try:
                         img_url = e['image_url'] = _upload(img, key)
@@ -803,7 +967,7 @@ def schedule_text(key, s):
                         log(f"ОШИБКА текст-пост {p} — {f.stem}: картинка не загрузилась {str(ex)[:150]}")
                         continue
                 media = [img_url]
-            if p == 'instagram' and not media:
+            if p in ('instagram', 'tiktok') and not media:
                 x['tries'] = TEXT_TRIES; x['status'] = 'ошибка'; x['error'] = 'Instagram без картинки не принимает'
                 log(f"ОШИБКА текст-пост instagram — {f.stem}: нет картинки"); continue
             at = datetime.datetime.now() + datetime.timedelta(minutes=2)
@@ -834,6 +998,12 @@ def schedule_text(key, s):
             except Exception as ex:
                 log(f"текст-пост перенос {f.name}: {str(ex)[:150]}")
 
+def _safe_bsky(at):
+    try:
+        return _bsky_find(at, None, False, back=5)
+    except Exception:
+        return None
+
 def check_text(key, s):
     from common import tg
     now = datetime.datetime.now()
@@ -856,6 +1026,11 @@ def check_text(key, s):
             elif st == 'failed':
                 x['status'] = 'ошибка'; x['error'] = (r.get('errorMessage') or '')[:300]
                 log(f"ОШИБКА текст-пост {p} не вышел — {name}: {x['error'][:200]}")
+            elif p == 'bluesky' and (u := _safe_bsky(datetime.datetime.fromisoformat(x['at']))):
+                x['status'] = 'вышел'; x['url'] = u
+            elif p == 'twitter' and now - datetime.datetime.fromisoformat(x['at']) > datetime.timedelta(hours=2):
+                x['status'] = 'вышел?'
+                log(f"BLOTATO текст-пост twitter — {name}: статус от Blotato не пришёл, ошибки нет — считаю вышедшим")
             elif now - datetime.datetime.fromisoformat(x['at']) > datetime.timedelta(hours=2):
                 x['status'] = 'не ясно'
                 log(f"ОШИБКА текст-пост {p} — {name}: через 2 часа статус не ясен ({st})")
@@ -870,6 +1045,41 @@ def check_text(key, s):
             tg(f"Текстовый пост «{name}»: {res}")
         _save(s)
 
+CLOUD = QUEUE / '_blotato_облако.json'           # пишет облако (GitHub blotato-oblako.yml), компьютер только читает
+CLOUD_SW = QUEUE / '_blotato_облако_вкл.txt'      # рубильник: есть — новые ролики в Blotato ставит облако
+CLOUD_ACK = QUEUE / '_blotato_облако_принял.txt'  # компьютер подтверждает, что увидел рубильник и сам больше не ставит
+
+def _adopt_cloud(s):
+    """11.11.2026 (решение Евгения): ролики в Blotato ставит облако. Компьютер забирает его записи к себе,
+    чтобы проверять, ставить X/Bluesky/LinkedIn и переносить папки как раньше. Сам облачный файл не пишет."""
+    cloud = _load(CLOUD, {})
+    for name, e in cloud.items():
+        if not isinstance(e, dict):
+            continue
+        cur = s.get(name)
+        if cur is None or (cur.get('_облако') and cur.get('status') == 'загрузка' and e.get('status') != 'загрузка'):
+            e = json.loads(json.dumps(e)); jr = e.pop('_журнал', [])
+            s[name] = e
+            ok = [p for p, x in e.get('posts', {}).items() if x.get('status') == 'запланирован']
+            log(f"BLOTATO (облако) {e.get('at', '')} — {name}: {', '.join(ok) or e.get('status', '')}")
+    return cloud
+
+def _cloud_on():
+    """Рубильник включён — подтверждаю облаку и сам новые ролики не ставлю."""
+    try:
+        sw = CLOUD_SW.read_text(encoding='utf-8-sig').strip()
+    except Exception:
+        return False
+    if not sw:
+        return False
+    try:
+        if CLOUD_ACK.read_text(encoding='utf-8-sig').strip() != sw:
+            CLOUD_ACK.write_text(sw, encoding='utf-8')
+            log("BLOTATO: новые ролики теперь ставит облако, компьютер только проверяет")
+    except Exception:
+        CLOUD_ACK.write_text(sw, encoding='utf-8')
+    return True
+
 def run():
     key = _key()
     if not key:
@@ -879,8 +1089,15 @@ def run():
     LOCK.write_text('1')
     try:
         s = _load(STATE, {})
-        try: schedule(key, s)
-        except Exception as ex: log(f"ОШИБКА blotato постановка: {str(ex)[:200]}")
+        try: cloud = _adopt_cloud(s)
+        except Exception as ex: cloud = {}; log(f"blotato облако: {str(ex)[:150]}")
+        if _cloud_on():
+            _save(s)                                   # постановку делает облако (11.11.2026)
+        else:
+            try:
+                for n in cloud: s.setdefault(n, cloud[n])
+                schedule(key, s)
+            except Exception as ex: log(f"ОШИБКА blotato постановка: {str(ex)[:200]}")
         try: schedule_x(key, s)
         except Exception as ex: log(f"ОШИБКА blotato X: {str(ex)[:200]}")
         try: schedule_bs(key, s)

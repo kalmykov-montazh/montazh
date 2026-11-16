@@ -1,14 +1,30 @@
 # Facebook, личный профиль: отложенный Reels (видео + обложка + текст + время)
 import datetime, re
 import random, time
-from common import pause, read_pack, human_click, human_type, warm_up, log
+from common import pause, read_pack, human_click, human_type, warm_up, log, fb_clean, fb_note_comment
 
 MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 
 def publish(page, j, folder):
-    video = _find_video(folder)
-    cover = folder / 'обложка.jpg'
+    # 10.11.2026: окно робота на время публикации РАЗВЁРНУТО (как у текстовых постов). Свёрнутое окно
+    # страница видит как скрытую (document.hidden) — загрузка и клики в скрытой вкладке выдают робота.
+    import textposts
+    textposts._window(page, 'normal')
+    try:
+        _publish(page, j, folder)
+    finally:
+        textposts._window(page, 'minimized')
+
+def _publish(page, j, folder):
+    # 10.11.2026: задание может указать своё видео и обложку (рилс-объявление аренды из папки карусели):
+    # "video": "shorts.mp4", "cover_file": "01.jpg", "groups": [названия групп], "dry": true — проверка без публикации
+    video = folder / j['video'] if j.get('video') else _find_video(folder)
+    cover = folder / j.get('cover_file', 'обложка.jpg')
     text = j.get('text') or read_pack(folder)
+    # 14.11.2026 (Евгений): ссылок в тексте FB нет — Telegram-канал строкой «…ссылка в первом комментарии»
+    text, cut = fb_clean(text)
+    if cut and not j.get('dry'):
+        fb_note_comment(text.split('\n')[0], cut, f"рилс {folder.name}")
     # 07.11.2026 (решение Евгения): каждый раз по-разному, как человек — то быстро за пару минут,
     # то полистал ленту, то «отвлёкся» на звонок посреди публикации
     style = random.choices(['быстро', 'обычно', 'с отвлечением'], weights=[30, 45, 25])[0]
@@ -43,6 +59,8 @@ def publish(page, j, folder):
     if style == 'обычно' and random.random() < 0.3:
         pause(20, 90)                              # перечитал текст
     _distract(page, stop_at, 'перед кнопкой')
+    if j.get('groups') or j.get('dry'):
+        _pick_groups(page, j, folder)
     if j.get('mode') == 'live':                    # с 08.11.2026 все рилсы — сразу
         _publish_now(page, j, folder, text)
         return
@@ -526,3 +544,175 @@ def _verify(page, first_line, hhmm=None):
         pause(30, 60)
         page.reload(wait_until='domcontentloaded')
     raise RuntimeError('не нашёл ролик в «Запланированных» — проверить вручную')
+
+
+class DryRun(Exception):
+    pass
+
+def _pick_groups(page, j, folder):
+    """10.11.2026: группы отмечаются прямо в окне Reels при публикации («Поделиться в группах»),
+    как текстовые посты. Список групп — в задании ("groups"). Не вышло отметить — рилс всё равно
+    публикуется, в журнал пишется «ГРУППЫ НЕ ВЫБРАНЫ» (Claude потом раскидает репостом).
+    "dry": true — дойти до списка групп, записать, что видно, закрыть окно без публикации."""
+    import textposts
+    want = list(j.get('groups') or [])
+    name = getattr(folder, 'name', str(folder))
+    dlg = page.locator('[role="dialog"]').last
+    btn = dlg.get_by_text('Поделиться в группах', exact=True)
+    if not btn.count():
+        btn = page.get_by_text('Поделиться в группах', exact=True)
+    if not btn.count():
+        _debug(page, f"нет поделиться в группах {name[:25]}")
+        log(f"ГРУППЫ НЕ ВЫБРАНЫ: в окне Reels нет пункта «Поделиться в группах» — {name}")
+        if j.get('dry'):
+            _discard_reel(page); raise DryRun()
+        return
+    human_click(page, btn.last); pause(3, 5)
+    try:
+        available = textposts._load_picker(page)
+    except Exception as e:
+        _debug(page, f"окно групп не то {name[:25]}")
+        log(f"ГРУППЫ НЕ ВЫБРАНЫ: окно выбора групп не распознано ({str(e).splitlines()[0][:80]}) — {name}")
+        if j.get('dry'):
+            _discard_reel(page); raise DryRun()
+        _close_picker(page)
+        return
+    if j.get('dry'):
+        log(f"окно групп рилса, все {len(available)}: {'; '.join(available)}")
+    picked, miss = [], []
+    for g in want:
+        r = _find_row(page, g)
+        if not r:
+            miss.append(g); log(f'группа не нашлась в окне Reels (и поиском): {g}'); continue
+        if j.get('dry'):
+            picked.append(r['name']); continue
+        if not r['checked']:
+            x = r['x'] + r['w'] * random.uniform(0.3, 0.7)
+            y = r['y'] + r['h'] * random.uniform(0.35, 0.65)
+            page.mouse.move(x, y, steps=random.randint(10, 18)); pause(0.2, 0.6)
+            page.mouse.click(x, y, delay=random.randint(60, 150)); pause(0.8, 2.0)
+        r2 = page.evaluate(JS_ROW_FUZZY, g)
+        if r2 and r2['checked']:
+            picked.append(r['name'])
+        else:
+            log(f'не отметилась группа: {g}')
+    _clear_search(page)
+    if j.get('dry'):
+        log(f"ПРОВЕРКА рилс+группы без публикации: сразу в окне {len(available)} групп; из задания найдено "
+            f"{len(picked)} из {len(want)}{'; нет: ' + '; '.join(miss) if miss else ''} — {name}")
+        _debug(page, f"проверка групп рилса {name[:25]}")
+        _discard_reel(page); raise DryRun()
+    _close_picker(page)
+    j['groups_done'] = picked
+    log(f"РИЛС + группы в окне: отмечено {len(picked)} из {len(want)}: {'; '.join(picked)}"
+        f"{' | нет: ' + '; '.join(miss) if miss else ''} — {name}")
+
+# окно «Публикация в группах» сразу показывает ~20 групп; остальные — через поиск «Поиск групп» (10.11.2026)
+JS_ROW_FUZZY = r"""(want) => {
+  const norm = s => (s || '').toLowerCase().replace(/[\ufeff]/g, '').replace(/[^0-9a-zа-яёіїєґ]+/gi, '');
+  const dlg = [...document.querySelectorAll('[role=dialog]')].find(d => d.innerText.includes('Публикация в группах'));
+  if (!dlg) return null;
+  const w = norm(want);
+  // 14.11.2026: в результатах поиска строка устроена иначе — поднимаемся вверх, пока не найдём текст,
+  // имя — первая НЕпустая строка; сравниваем со всеми строками текста (раньше имя было пустым — «Привет, Испания !» не находилась)
+  const rows = [...dlg.querySelectorAll('input[type=checkbox]')].map(b => {
+    let row = b.closest('[role=button]') || b.parentElement.parentElement;
+    for (let i = 0; i < 6 && row && !(row.innerText || '').trim(); i++) row = row.parentElement;
+    const lines = (row && row.innerText || '').replace(/\ufeff/g, '').split('\n').map(x => x.trim()).filter(Boolean);
+    const nm = lines[0] || '';
+    return {b, row, nm, n: norm(nm), ns: lines.map(norm)};
+  }).filter(r => r.row);
+  const r = rows.find(r => r.n === w || r.ns.includes(w))
+         || rows.find(r => w.length > 8 && r.ns.some(x => x.length > 8 && (x.startsWith(w) || w.startsWith(x))));
+  if (!r) return null;
+  r.row.scrollIntoView({block: 'center'});
+  const box = r.row.getBoundingClientRect();
+  return {name: r.nm, x: box.x, y: box.y, w: box.width, h: box.height,
+          checked: r.b.checked || r.b.getAttribute('aria-checked') === 'true'};
+}"""
+
+def _search_box(page):
+    for sel in ('input[placeholder="Поиск групп"]', 'input[aria-label="Поиск групп"]',
+                '[role="dialog"] input[placeholder*="оиск"]', '[role="dialog"] input[aria-label*="оиск"]',
+                '[role="dialog"] input[type="search"]'):
+        box = page.locator(sel)
+        if box.count():
+            try: box.first.scroll_into_view_if_needed(timeout=5000)
+            except Exception: pass
+            return box.first
+    try:
+        info = page.evaluate("""() => [...document.querySelectorAll('input, [contenteditable=true], [role=searchbox], [role=combobox]')]
+          .filter(e => e.getBoundingClientRect().width > 0)
+          .map(e => [e.tagName, e.type || '', e.getAttribute('placeholder') || '', e.getAttribute('aria-label') || '', e.getAttribute('role') || ''].join('/')).slice(0, 15)""")
+        log('окно групп: не вижу поле «Поиск групп»; поля на странице: ' + ' | '.join(info))
+    except Exception:
+        log('окно групп: не вижу поле «Поиск групп»')
+    return None
+
+def _clear_search(page):
+    box = _search_box(page)
+    if box is not None:
+        try:
+            human_click(page, box); box.press('Control+A'); box.press('Delete'); pause(1.5, 3)
+        except Exception:
+            pass
+
+def _find_row(page, g):
+    r = page.evaluate(JS_ROW_FUZZY, g)
+    if r:
+        pause(0.5, 1.5); return page.evaluate(JS_ROW_FUZZY, g)
+    box = _search_box(page)
+    if box is None:
+        return None
+    human_click(page, box)
+    box.press('Control+A'); box.press('Delete'); pause(0.5, 1)
+    words = re.sub(r'[^\w\s]', ' ', g).split()
+    # 14.11.2026: пробуем по очереди 3 слова, 2 слова, одно самое длинное слово (без знаков препинания)
+    tries = []
+    for q in (' '.join(words[:3])[:28], ' '.join(words[:2])[:28], max(words, key=len) if words else ''):
+        if q and len(q) >= 3 and q not in tries:
+            tries.append(q)
+    r = None
+    for i, q in enumerate(tries):
+        if i:
+            human_click(page, box); box.press('Control+A'); box.press('Delete'); pause(0.5, 1)
+        human_type(page, q)
+        pause(3, 5)
+        r = page.evaluate(JS_ROW_FUZZY, g)
+        if r:
+            if i:
+                log(f"поиск: «{g}» нашлась по «{q}»")
+            break
+        try:
+            seen = page.evaluate(JS_SEEN)
+            log(f"поиск «{q}»: в списке {len(seen)}: {'; '.join(seen[:6])}")
+        except Exception:
+            pass
+    return r
+
+JS_SEEN = r"""() => {
+  const dlg = [...document.querySelectorAll('[role=dialog]')].find(d => d.innerText.includes('Публикация в группах'));
+  if (!dlg) return [];
+  return [...dlg.querySelectorAll('input[type=checkbox]')].map(b => {
+    let row = b.closest('[role=button]') || b.parentElement.parentElement;
+    for (let i = 0; i < 6 && row && !(row.innerText || '').trim(); i++) row = row.parentElement;
+    return ((row && row.innerText) || '').split('\n').map(x => x.trim()).filter(Boolean)[0] || '(пусто)';
+  });
+}"""
+
+def _close_picker(page):
+    b = page.get_by_role('button', name='Готово', exact=True)
+    if b.count():
+        human_click(page, b.last); pause(2, 4)
+
+def _discard_reel(page):
+    """Закрыть окно Reels без публикации (проверка)."""
+    for _ in range(3):
+        page.keyboard.press('Escape'); pause(1, 2)
+        for nm in ('Выйти', 'Не сохранять', 'Удалить', 'Закрыть'):
+            b = page.get_by_role('button', name=nm, exact=True)
+            if b.count():
+                try: human_click(page, b.last); pause(1, 2)
+                except Exception: pass
+    try: page.goto('about:blank')
+    except Exception: pass

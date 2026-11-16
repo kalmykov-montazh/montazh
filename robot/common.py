@@ -113,3 +113,122 @@ def warm_up(page, short=False, profile=False):
             pass
     page.mouse.wheel(0, -2000)
     pause(2, 4)
+
+# ЗАЩИТА ОТ ПУСТОЙ УПАКОВКИ (10.11.2026, решение Евгения): 9.11 «73 12 Мусор мимо контейнера» ушёл в Blotato
+# с пустым описанием — в папке была только заглушка «упаковка — сцены.txt». Теперь без нормальной
+# «упаковка.txt» (меньше 3 строк с текстом) ролик не ставим ни в Facebook, ни в Blotato.
+PACK_MIN_LINES = 3
+PACK_WARN = QUEUE / '_нет_упаковки.json'        # {папка: дата последней тревоги} — тревога раз в сутки
+
+def pack_problem(folder: Path):
+    """None — упаковка в порядке, иначе причина словами."""
+    p = folder / 'упаковка.txt'
+    if not p.exists():
+        alt = [f.name for f in folder.glob('упаковка*.txt')]
+        return 'нет «упаковка.txt»' + (f" (есть только {', '.join('«' + a + '»' for a in alt)})" if alt else '')
+    try: lines = [l for l in p.read_text(encoding='utf-8-sig').splitlines() if l.strip().strip('\u2800').strip()]
+    except Exception as e: return f'«упаковка.txt» не читается: {str(e)[:80]}'
+    if len(lines) < PACK_MIN_LINES:
+        return f'в «упаковка.txt» {len(lines)} строк(и) с текстом, нужно хотя бы {PACK_MIN_LINES}'
+    return None
+
+def pack_guard(folder: Path):
+    """True — можно ставить. False — нельзя; пишу в журнал и в Telegram (не чаще раза в сутки на папку)."""
+    why = pack_problem(folder)
+    import json
+    try: warned = json.loads(PACK_WARN.read_text(encoding='utf-8'))
+    except Exception: warned = {}
+    if not why:
+        if folder.name in warned:
+            warned.pop(folder.name)
+            try: PACK_WARN.write_text(json.dumps(warned, ensure_ascii=False, indent=1), encoding='utf-8')
+            except Exception: pass
+        return True
+    today = datetime.date.today().isoformat()
+    if warned.get(folder.name) != today:
+        warned[folder.name] = today
+        try: PACK_WARN.write_text(json.dumps(warned, ensure_ascii=False, indent=1), encoding='utf-8')
+        except Exception: pass
+        log(f"ОШИБКА нет упаковки — {folder.name}: {why}. Ролик не ставлю; появится нормальная «упаковка.txt» — встанет сам")  # ОШИБКА → log сам шлёт в Telegram
+    return False
+
+
+def sync_playwright_engine():
+    """11.11.2026: движок браузера для робота — Patchright (та же Playwright, но без следов управления
+    браузером, которые видит страница). Нет пакета — ставит сам (pip, не чаще раза в сутки).
+    Не встал или лежит файл «_без_patchright.txt» рядом с роботом — обычная Playwright, как раньше."""
+    if not (HERE / '_без_patchright.txt').exists():
+        try:
+            from patchright.sync_api import sync_playwright
+            return sync_playwright, 'patchright'
+        except ImportError:
+            mark = HERE / '_patchright_установка.txt'
+            if not mark.exists() or time.time() - mark.stat().st_mtime > 24 * 3600:
+                import subprocess, sys
+                mark.write_text(time.strftime('%Y-%m-%d %H:%M'), encoding='utf-8')
+                log('движок: ставлю Patchright (pip install patchright)')
+                try:
+                    r = subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', 'patchright'],
+                                       timeout=600, capture_output=True, text=True)
+                    if r.returncode:
+                        log(f'движок: Patchright не встал ({(r.stderr or r.stdout)[-200:].strip()})')
+                except Exception as e:
+                    log(f'движок: Patchright не встал ({e})')
+                try:
+                    from patchright.sync_api import sync_playwright
+                    log('движок: Patchright установлен')
+                    return sync_playwright, 'patchright'
+                except ImportError:
+                    pass
+    from playwright.sync_api import sync_playwright
+    return sync_playwright, 'playwright'
+
+
+# ---------- 14.11.2026 (решение Евгения): В ТЕКСТЕ FACEBOOK ССЫЛОК НЕТ — ссылка первым комментарием ----------
+# Особенно объявления (аренда, продажа: пост, карусель, рилс): строку с Telegram-каналом заменяем на
+# «Больше объектов в моём Телеграм-канале, ссылка в первом комментарии», остальные ссылки вырезаем.
+# Что вырезали — в «_задания/_первый_комментарий.json»: оттуда комментарий ставит задача (Claude в браузере).
+import re as _re
+FB_TG_LINE = 'Больше объектов в моём Телеграм-канале, ссылка в первом комментарии'
+FB_TG_COMMENT = 'Больше объектов в Валенсии в моём Телеграм-канале: https://t.me/kalmykov_realty'
+_URL = _re.compile(r'(https?://\S+|www\.\S+|t\.me/\S+|wa\.me/\S+)', _re.I)
+
+
+def fb_clean(text):
+    """Возвращает (текст без ссылок, [вырезанные ссылки])."""
+    if not text:
+        return text, []
+    out, cut = [], []
+    for line in text.split('\n'):
+        links = _URL.findall(line)
+        if not links:
+            out.append(line); continue
+        cut += links
+        if any('t.me/kalmykov_realty' in l.lower() for l in links):
+            if FB_TG_LINE not in out:
+                out.append(FB_TG_LINE)
+            continue
+        rest = _URL.sub('', line).rstrip(' :—-–👉📲📱').rstrip()
+        if rest.strip():
+            out.append(rest)
+    t = '\n'.join(out)
+    t = _re.sub(r'\n{3,}', '\n\n', t).strip()
+    return t, cut
+
+
+def fb_note_comment(key, links, where):
+    """Запомнить: под публикацией (первая строка key) нужен первый комментарий с этими ссылками."""
+    try:
+        import json
+        p = QUEUE / '_первый_комментарий.json'
+        d = json.loads(p.read_text(encoding='utf-8')) if p.exists() else []
+        txt = FB_TG_COMMENT if any('kalmykov_realty' in l for l in links) else ''
+        other = [l for l in links if 'kalmykov_realty' not in l]
+        if other:
+            txt = (txt + '\n' if txt else '') + '\n'.join(other)
+        d.append({'когда': f"{datetime.datetime.now():%Y-%m-%d %H:%M}", 'где': where,
+                  'первая строка': (key or '')[:80], 'комментарий': txt, 'поставлен': False})
+        p.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding='utf-8')
+        log(f"ССЫЛКИ из текста FB убраны ({where}) — нужен первый комментарий: {(key or '')[:40]}")
+    except Exception as e:
+        log(f"fb_note_comment: {e}")

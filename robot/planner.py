@@ -28,12 +28,30 @@ NEW_FROM = datetime.date(2026, 11, 8)
 NEW_WINDOWS = [('09:00', '10:15'), ('12:20', '13:40'), ('16:00', '17:30'), ('19:50', '21:15')]
 NEW_BASE = ['09:37', '13:00', '16:45', '20:32']   # середины окон — для определения номера слота
 
+# РЕШЕНИЕ Евгения 10.11.2026 00:45 (файл «FB — решения 10.11.2026»): с 11.11 окна сдвинуты вперёд,
+# первый рилс не раньше 10:00: 10:00–10:50 / 12:40–13:40 / 15:50–17:00 / 20:30–21:40, время каждый день своё.
+# Между 1-м и 2-м рилсом — утренняя новость (textposts.py, 11:10–12:10, не ближе 45 мин к рилсу).
+# С 12.11.2026 (textposts.py): ещё новости 14:50–15:40 и 17:50–19:40, ночная 22:30–01:30 — не ближе 45 мин к рилсу.
+# Уже разложенные на 11.11 и дальше переставляет relayout_1111() (на 10.11 не трогает). Копия до правки — planner.py.bak-1011.
+NEW2_FROM = datetime.date(2026, 11, 11)
+NEW2_WINDOWS = [('10:00', '10:50'), ('12:40', '13:40'), ('15:50', '17:00'), ('20:30', '21:40')]
+NEW2_BASE = ['10:25', '13:10', '16:25', '21:05']
+
+from common import pack_guard                # 10.11.2026: без упаковки не ставим
+
 def _base(day):
+    if day >= NEW2_FROM:
+        return NEW2_BASE
     if day >= NEW_FROM:
         return NEW_BASE
     return SLOTS if day >= SLOTS_FROM else OLD_SLOTS
 
 def _slots(day):
+    if day >= NEW2_FROM:
+        import random
+        m = lambda t: int(t[:2]) * 60 + int(t[3:5])
+        return [(lambda x: f"{x // 60:02d}:{x % 60:02d}")(random.Random(f"{day.isoformat()}-{i}-v1111").randint(m(a), m(b)))
+                for i, (a, b) in enumerate(NEW2_WINDOWS)]
     if day >= NEW_FROM:
         import random
         out = []
@@ -116,7 +134,81 @@ def _pending_folders():
             except Exception: pass
     return s
 
+def _in_window(day, hhmm):
+    if day < NEW2_FROM:
+        return True
+    m = lambda t: int(t[:2]) * 60 + int(t[3:5])
+    return any(m(a) <= m(hhmm) <= m(b) for a, b in NEW2_WINDOWS)
+
+def relayout_1111():
+    """10.11.2026: ролики FB, уже разложенные на 11.11 и дальше по старым окнам, — на те же дни и номера слотов,
+    но в новые окна. Повторный запуск безвреден: кто уже в новом окне — не трогается. Blotato — через
+    «_blotato_перенос.json» на новое время FB + своё смещение 5–40 мин."""
+    p = _load()
+    now = datetime.datetime.now()
+    earliest = now + datetime.timedelta(minutes=LEAD_MIN)
+    days = {}
+    for k, v in p.items():
+        if v.get('platform', 'fb') != 'fb' or not v.get('date') or not v.get('time'):
+            continue
+        try: d = datetime.date.fromisoformat(v['date'])
+        except Exception: continue
+        if d >= NEW2_FROM:
+            days.setdefault(d, []).append((v['time'].zfill(5), k))
+    jobs = {}
+    for f in QUEUE.glob('*.json'):
+        if f.name.startswith('_'):
+            continue
+        try: j = json.loads(f.read_text(encoding='utf-8-sig'))
+        except Exception: continue
+        if j.get('platform') == 'fb' and j.get('folder'):
+            jobs[j['folder']] = (f, j)
+    move, changed = {}, False
+    for d, items in sorted(days.items()):
+        items.sort()
+        slots = _slots(d)
+        for rank, (t, k) in enumerate(items):
+            v = p[k]
+            if v.get('status') != 'задание' or v.get('mode') != 'live' or _in_window(d, t) or k not in jobs:
+                continue
+            old_at = datetime.datetime.combine(d, datetime.time(*map(int, t.split(':'))))
+            si = rank if len(items) <= 4 else _slot_index(d, t)
+            nt = slots[min(si, 3)]
+            new_at = datetime.datetime.combine(d, datetime.time(*map(int, nt.split(':'))))
+            if old_at < earliest or new_at < earliest:
+                continue                      # скоро выход — не трогаем
+            f, j = jobs[k]
+            j['time'] = nt
+            safe = re.sub(r'[^\w\- ]', '', k)[:40].strip()
+            nf = QUEUE / f"{d.isoformat()}_{nt.replace(':', '')}_fb_{safe}.json"
+            nf.write_text(json.dumps(j, ensure_ascii=False), encoding='utf-8')
+            if nf != f:
+                f.unlink(missing_ok=True)
+            v['time'] = nt
+            v['было_1111'] = t
+            changed = True
+            bt = new_at + datetime.timedelta(minutes=blotato_offset(k))
+            move[k] = f"{bt:%Y-%m-%d %H:%M}"
+            log(f"ОКНА 1111: {k} — {d.isoformat()} {t} → {nt}; Blotato {bt:%H:%M}")
+    if changed:
+        _save(p)
+    if move:
+        try:
+            from blotato import MOVE, STATE
+            st = json.loads(STATE.read_text(encoding='utf-8'))
+            move = {k: w for k, w in move.items() if k in st}
+            if move:
+                try: cur = json.loads(MOVE.read_text(encoding='utf-8'))
+                except Exception: cur = {}
+                cur.update(move)
+                MOVE.write_text(json.dumps(cur, ensure_ascii=False), encoding='utf-8')
+                log(f"ОКНА 1111: Blotato перенос заказан для {len(move)} роликов")
+        except Exception as e:
+            log(f"ОШИБКА окна 1111: перенос Blotato не заказан ({str(e)[:150]})")
+
 def plan():
+    try: relayout_1111()                      # 10.11.2026: новые окна рилсов с 11.11
+    except Exception as e: log(f"ОШИБКА окна 1111: {str(e)[:150]}")
     p = _load()
     # слот с ошибкой (ролик не встал) считаем свободным — иначе утро пропадает (22.10.2026)
     busy = {(v['date'], _slot_index(datetime.date.fromisoformat(v['date']), v['time'].zfill(5))) for v in p.values()
@@ -138,6 +230,9 @@ def plan():
             seen_new[d.name] = seen.get(d.name) or [time.time(), 0]
             continue
         m = NUM.match(d.name)
+        if m and any(f.suffix.lower() == '.mp4' for f in d.iterdir()) and not pack_guard(d):   # 10.11.2026
+            seen_new[d.name] = seen.get(d.name) or [time.time(), 0]
+            continue
         if m and any(f.suffix.lower() == '.mp4' for f in d.iterdir()):
             sizes = sum(f.stat().st_size for f in d.iterdir() if f.suffix.lower() == '.mp4')
             s = seen.get(d.name)
@@ -204,7 +299,7 @@ def cleanup():
     now = time.time()
     day = 86400
     for f in QUEUE.iterdir():
-        if not f.is_file() or f.name in ('журнал.txt', '_план.json', '_идёт.lock', '_пульс.txt', '_пульс_конец.txt', '_blotato.json', '_blotato.lock') or f.suffix == '.json':
+        if not f.is_file() or f.name.startswith('_') or f.name in ('журнал.txt',) or f.suffix == '.json':
             continue
         age = now - f.stat().st_mtime
         base = f.name.split('.')[0]
@@ -245,6 +340,9 @@ def blotato_offset(name):
     return random.Random(f"blotato-{name}").randint(5, 40)
 
 def migrate_0811():
+    # 08.11.2026 10:58: переход уже выполнен; метку уносила cleanup() в архив, и переход
+    # повторялся каждые 10 минут (повторные живые публикации). Больше не запускается никогда.
+    return
     if MIGRATE_MARK.exists():
         return
     from common import read_pack

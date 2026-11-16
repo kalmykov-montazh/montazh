@@ -3,6 +3,7 @@
 # Готово -> .done, ошибка -> .error + .png (скрин) + .error.txt. Всё пишется в журнал.txt.
 # Запуск: Планировщик Windows каждые 10 минут (publish.vbs). «py publish.py login» — вход в соцсети.
 import sys, json, time, random, traceback, os, datetime
+from pathlib import Path
 from common import QUEUE, PUB, PROFILE, log, pause
 import fb
 import planner
@@ -23,9 +24,9 @@ LIVE_EARLY = 15   # 07.11.2026: было 12; публикация теперь �
 def launch(pw):
     # 07.11.2026: без метки «браузером управляет программа» (navigator.webdriver, полоса автотеста)
     return pw.chromium.launch_persistent_context(
-        str(PROFILE), channel='chrome', headless=False, locale='ru-RU',
-        viewport={'width': 1400, 'height': 900},
-        args=['--start-minimized', '--disable-blink-features=AutomationControlled'],
+        str(PROFILE), channel='chrome', headless=False, locale='ru-RU', chromium_sandbox=True,
+        no_viewport=True,          # 10.11.2026: без подмены размера страницы (размер окна = размер страницы, как у человека)
+        args=['--start-minimized', '--window-size=1400,950', '--disable-blink-features=AutomationControlled'],
         ignore_default_args=['--enable-automation'])
 
 PULSE = QUEUE / '_пульс.txt'
@@ -69,10 +70,90 @@ def pulse_end():
     try: PULSE_END.write_text(f"{time.time()} {time.strftime('%Y-%m-%d %H:%M')}", encoding='utf-8')
     except Exception: pass
 
+# 13.11.2026: «перенос к удалению». Список «Брокер\Посты\_служебное\_к_удалению.txt» — по одному полному пути
+# в строке. Каждый файл ПЕРЕНОСИМ (не удаляем) в «Монтаж!\к удалению»; имя занято — добавляем дату и время.
+# Перенесённые и ненайденные строки из списка убираем. Насовсем ничего не удаляется — папку чистит Евгений.
+from common import ROOT as _ROOT
+import shutil
+TRASH_LIST = _ROOT / 'Брокер' / 'Посты' / '_служебное' / '_к_удалению.txt'
+TRASH_DIR = _ROOT / 'к удалению'
+
+def move_to_trash():
+    if not TRASH_LIST.exists():
+        return
+    try:
+        lines = TRASH_LIST.read_text(encoding='utf-8-sig').splitlines()
+    except Exception as e:
+        log(f"к удалению: не прочитал список ({str(e)[:120]})"); return
+    paths = [l.strip().strip('"').strip() for l in lines if l.strip()]
+    if not paths:
+        return
+    TRASH_DIR.mkdir(parents=True, exist_ok=True)
+    base = _ROOT.parent                                  # G:\Мой диск — за его пределы ничего не трогаем
+    moved, missing, keep = 0, [], []
+    for s in paths:
+        p = Path(s)
+        try:
+            rp = p.resolve()
+        except Exception:
+            rp = p
+        if not (str(rp).lower().startswith(str(base).lower() + os.sep)) or rp == TRASH_DIR or TRASH_DIR in rp.parents \
+                or rp == TRASH_LIST.resolve():
+            missing.append(f"{s} (не трогаю: вне Моего диска или служебный)"); continue
+        if not p.exists():
+            missing.append(s); continue
+        dest = TRASH_DIR / p.name
+        if dest.exists():
+            dest = TRASH_DIR / f"{p.stem} {time.strftime('%Y-%m-%d %H-%M-%S')}{p.suffix}"
+            n = 2
+            while dest.exists():
+                dest = TRASH_DIR / f"{p.stem} {time.strftime('%Y-%m-%d %H-%M-%S')} ({n}){p.suffix}"; n += 1
+        try:
+            shutil.move(str(p), str(dest)); moved += 1
+        except Exception as e:
+            keep.append(s)                               # файл занят — оставляю в списке, попробую в следующий запуск
+            log(f"к удалению: не смог перенести {p.name} ({str(e)[:100]}) — попробую позже")
+    try:
+        TRASH_LIST.write_text(''.join(k + '\n' for k in keep), encoding='utf-8')
+    except Exception as e:
+        log(f"к удалению: не смог обновить список ({str(e)[:120]})")
+    log(f"к удалению: перенёс {moved}, не нашёл {len(missing)}" + (': ' + '; '.join(missing) if missing else ''))
+
+# 13.11.2026: «входящие» от задач Claude по расписанию. Задачи не видят «Монтаж!», но умеют создавать файлы
+# в Google Диске коннектором — кладут задание в «Мой диск\_задания_робота_от_Claude». Берём только лонги FB
+# ("platform":"fb","kind":"long") и переносим в _задания. Остальное — .отклонено, ничего не публикуем.
+INBOX = _ROOT.parent / '_задания_робота_от_Claude'
+
+def take_inbox():
+    if not INBOX.exists():
+        return
+    for f in sorted(INBOX.glob('*.json')):
+        try:
+            j = json.loads(f.read_text(encoding='utf-8-sig'))
+            ok = j.get('platform') == 'fb' and j.get('kind') == 'long' and j.get('folder_abs') and j.get('date') and j.get('time')
+        except Exception:
+            ok = False
+        if not ok:
+            try: f.rename(f.with_suffix('.отклонено'))
+            except Exception: pass
+            log(f"входящие Claude: {f.name} отклонено — не задание лонга FB")
+            continue
+        dest = QUEUE / f.name
+        if dest.exists():
+            dest = QUEUE / f"{f.stem}_{time.strftime('%H%M%S')}.json"
+        try:
+            shutil.move(str(f), str(dest)); log(f"входящие Claude: взял {f.name} (лонг FB {j['date']} {j['time']})")
+        except Exception as e:
+            log(f"входящие Claude: не смог перенести {f.name} ({str(e)[:100]})")
+
 def run_jobs():
     QUEUE.mkdir(parents=True, exist_ok=True)
     try: pulse()
     except Exception: pass
+    try: take_inbox()                                   # 13.11.2026: задания лонгов от задач Claude через Google Диск
+    except Exception as e: log(f"входящие Claude: ошибка {str(e)[:150]}")
+    try: move_to_trash()                                # 13.11.2026: перенос к удалению
+    except Exception as e: log(f"к удалению: ошибка {str(e)[:150]}")
     try: claude_guard.run()
     except Exception as e: log(f"сторож Claude: ошибка {str(e)[:150]}")
     try: planner.cleanup()
@@ -88,6 +169,7 @@ def run_jobs():
     try: crypto_yt.run()                                # YouTube «Всё о крипте» — 1 шортс в день в 18:00
     except Exception as e: log(f"крипто: ошибка {str(e)[:150]}")
     jobs, live, live_soon = [], [], []
+    late_n = 0                                         # 13.11.2026: счётчик опоздавших новостей для сдвига
     for f in sorted(f for f in QUEUE.glob('*.json') if not f.name.startswith('_')):
         try: j = json.loads(f.read_text(encoding='utf-8-sig'))
         except Exception: continue
@@ -96,9 +178,42 @@ def run_jobs():
             if d is None:
                 continue                                   # ещё не время
             if d is False:                                 # компьютер был выключен — слот пропускаем
+                # 13.11.2026 (решение Евгения, вариант А: ни один пост не терять): новость, которую проспали,
+                # не выбрасываем, а ставим ещё раз через 20+ минут (несколько опоздавших — с шагом 70 минут), один раз
+                # и только до 23:30 того же дня. Повтор — обычное задание, дальше всё как всегда
+                try:
+                    _now = datetime.datetime.now()
+                    if j.get('kind') in textposts.NEWS_KINDS and not j.get('late_requeued') \
+                            and textposts._next_text(j['kind']) and j.get('day') == f'{_now:%Y-%m-%d}':
+                        _at = _now + datetime.timedelta(minutes=20 + 70 * late_n + random.randint(0, 10))
+                        if _at.hour < 23 or (_at.hour == 23 and _at.minute <= 30):
+                            late_n += 1
+                            r = dict(j, at=f'{_at:%Y-%m-%d %H:%M}', late_requeued=True)
+                            (QUEUE / f"{_at:%Y-%m-%d_%H%M}_fbtext_{j['kind']}_опоздание.json").write_text(
+                                json.dumps(r, ensure_ascii=False), encoding='utf-8')
+                            f.rename(f.with_suffix('.done'))
+                            log(f"ПОВТОР текст {j['kind']} {j['at']} — опоздали, поставил на {_at:%H:%M}")
+                            continue
+                except Exception as e3:
+                    log(f"повтор опоздавшего не поставлен: {str(e3)[:120]}")
                 f.rename(f.with_suffix('.done'))
                 textposts.mark(j, 'пропущен (опоздание)')
                 log(f"ПРОПУСК текст {j['kind']} {j['at']} — сильно опоздали")
+                continue
+            if j.get('kind') == 'short' and j.get('day', '') >= textposts.NEWS_FROM.isoformat():   # 10.11.2026: коротыши с 11.11 не публикуем
+                f.rename(f.with_suffix('.done'))
+                textposts.mark(j, 'отменён (коротыши с 11.11 не выходят)')
+                log(f"текст short {j['at']} не публикую: с 11.11 вместо коротыша утренняя новость")
+                continue
+            if j.get('kind') == 'photo' and j.get('day', '') >= textposts.NEWS4_FROM.isoformat():   # 11.11.2026: фото-посты с 12.11 не публикуем
+                f.rename(f.with_suffix('.done'))
+                textposts.mark(j, 'отменён (фото-посты с 12.11 не выходят)')
+                log(f"текст photo {j['at']} не публикую: с 12.11 вместо фото-поста дневная новость")
+                continue
+            if j.get('kind') in textposts.NEWS_KINDS and not textposts._next_text(j['kind']):   # 11.11.2026: пустая папка — ПРОПУСК
+                f.rename(f.with_suffix('.done'))
+                textposts.mark(j, 'пропущен (нет текста)')
+                log(f"ПРОПУСК текст {j['kind']} {j['at']} — в «{textposts.FOLDER_NAMES.get(j['kind'])}» пусто")
                 continue
         elif j.get('mode') == 'live':                      # тест 04.11.2026: публикуем сразу, в свою минуту
             at = datetime.datetime.fromisoformat(f"{j['date']} {j['time'].zfill(5)}")
@@ -139,10 +254,19 @@ def run_jobs():
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 3 * 3600:
         return
     LOCK.write_text(str(os.getpid()))
-    from playwright.sync_api import sync_playwright
+    from common import sync_playwright_engine
+    sync_playwright, engine = sync_playwright_engine()
     try:
         with sync_playwright() as pw:
-            ctx = launch(pw)
+            try:
+                ctx = launch(pw)
+            except Exception as e:
+                if engine != 'patchright':
+                    raise
+                log(f'движок: Patchright не запустил Chrome ({str(e).splitlines()[0][:150]}) — запасной Playwright')
+                from common import HERE as _RH
+                (_RH / '_без_patchright.txt').write_text('авто: не запустился ' + time.strftime('%Y-%m-%d %H:%M'), encoding='utf-8')
+                raise
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.set_default_timeout(60000)
             if dele:                                      # 07.11.2026: сначала убрать старые отложки FB
@@ -164,6 +288,25 @@ def run_jobs():
                         job.rename(job.with_suffix('.done'))
                         textposts.mark(j, 'готово')
                         log(f"ГОТОВО текст {j['kind']} {j['at']}")
+                    elif j.get('kind') in ('arenda', 'long'):   # 10.11.2026: рилс-объявление аренды; 13.11.2026: лонг в ленту FB
+                        # "long": видео и обложка лежат в своей папке лонга — "folder_abs" (полный путь), "video", "cover_file", "text"
+                        what = 'лонг' if j.get('kind') == 'long' else 'рилс аренды'
+                        fld = Path(j['folder_abs']) if j.get('folder_abs') else PUB / j['folder']
+                        if j.get('cover_url') and j.get('cover_file') and not (fld / j['cover_file']).exists():
+                            try:                               # 13.11.2026: обложка с YouTube — робот скачивает сам
+                                import urllib.request
+                                cp = fld / j['cover_file']; cp.parent.mkdir(parents=True, exist_ok=True)
+                                req = urllib.request.Request(j['cover_url'], headers={'User-Agent': 'Mozilla/5.0'})
+                                cp.write_bytes(urllib.request.urlopen(req, timeout=30).read())
+                                log(f"обложка скачана: {cp.name} ({cp.stat().st_size // 1024} КБ)")
+                            except Exception as e:
+                                log(f"обложка не скачалась ({str(e)[:100]}) — ставлю без неё")
+                        try:
+                            fb.publish(page, j, fld)
+                        except fb.DryRun:
+                            job.rename(job.with_suffix('.done')); log(f"ПРОВЕРКА {what} закончена — {j['folder']}"); continue
+                        job.rename(job.with_suffix('.done'))   # в _план.json не пишем: Blotato его второй раз не выложит
+                        log(f"ГОТОВО {what} {j['date']} {j.get('time_set', j['time'])}, групп {len(j.get('groups_done', []))} — {j['folder']}")
                     else:
                         PLATFORMS[j['platform']](page, j, PUB / j['folder'])
                         job.rename(job.with_suffix('.done'))
@@ -198,7 +341,9 @@ def run_jobs():
             if reel_due:
                 try:
                     if batch: time.sleep(random.uniform(120, 300))
-                    reel_groups.run(page)
+                    textposts._window(page, 'normal')     # 10.11.2026: не делиться из свёрнутого (скрытого) окна
+                    try: reel_groups.run(page)
+                    finally: textposts._window(page, 'minimized')
                 except Exception as e:
                     log(f"РИЛС В ГРУППЫ: сбой {str(e).splitlines()[0][:150]}")
             ctx.close()
@@ -237,9 +382,10 @@ def _delete_scheduled(page, dele):
         pause(4, 9)
 
 def login():
-    from playwright.sync_api import sync_playwright
+    from common import sync_playwright_engine
+    sync_playwright, _ = sync_playwright_engine()
     with sync_playwright() as pw:
-        ctx = pw.chromium.launch_persistent_context(str(PROFILE), channel='chrome', headless=False, locale='ru-RU')
+        ctx = pw.chromium.launch_persistent_context(str(PROFILE), channel='chrome', headless=False, locale='ru-RU', chromium_sandbox=True, no_viewport=True)
         urls = ['https://www.facebook.com/', 'https://www.instagram.com/', 'https://www.threads.net/',
                 'https://www.tiktok.com/login', 'https://studio.youtube.com/']
         page = ctx.pages[0] if ctx.pages else ctx.new_page()

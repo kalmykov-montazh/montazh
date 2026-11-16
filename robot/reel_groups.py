@@ -28,7 +28,11 @@ def _start_time(day):
     m = random.Random(f"reelgroups-{day}").randint(19 * 60, 21 * 60 + 50)
     return datetime.datetime.combine(day, datetime.time(m // 60, m % 60))
 
+OFF = True   # 11.11.2026 10:48, Евгений: ВЫКЛЮЧЕНО насовсем — Facebook сам раскидывает рилсы по «подходящим группам», а у робота 09–10.11 вышло 0 групп (не находил поиск групп и кнопку). Включать только по слову Евгения
+
 def due():
+    if OFF:
+        return False
     if FORCE.exists():
         return True
     now = datetime.datetime.now()
