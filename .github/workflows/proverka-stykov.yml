@@ -11,6 +11,10 @@ on:
       spisok:
         description: "Файл в репозитории со списком путей внутри «Монтаж!» (по строке)"
         required: true
+      tag:
+        description: "Метка запуска (ветки отчётов ot-<метка>-<шард>)"
+        required: false
+        default: "x"
       shards:
         description: "На сколько машин делить (до 20)"
         required: false
@@ -74,7 +78,10 @@ jobs:
               if [ -n "$raw" ]; then rclone copyto "montazh:$d/$raw" "v/raw.mp4" && R=v/raw.mp4; fi
               if [ -n "$old" ]; then rclone copyto "montazh:$old" "v/raw.mp4" && R=v/raw.mp4; fi
               export WORDS=""
+              export PLAN="" SKLEIKA=""
               if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/osnova_words.json" v/words.json; then export WORDS=v/words.json; fi
+              if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/plan.json" v/plan.json 2>/dev/null; then export PLAN=v/plan.json; fi
+              if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/skleika.json" v/skleika.json 2>/dev/null; then export SKLEIKA=v/skleika.json; fi
               if python3 scripts/proverka_stykov.py v/final.mp4 "$R" > "out/$key.json" 2> "out/$key.err"; then
                 python3 - "$p" "out/$key.json" <<'PY'
           import json, sys
@@ -92,7 +99,7 @@ jobs:
       - name: Отчёты в ветку ot-<шард>
         if: always()
         run: |
-          mkdir o && cp -r out/. o/ && cd o && git init -q && git checkout -q -b "ot-${{ matrix.shard }}"
+          mkdir o && cp -r out/. o/ && cd o && git init -q && git checkout -q -b "ot-${{ inputs.tag }}-${{ matrix.shard }}"
           git config user.name bot; git config user.email bot@x
           git add -A; git commit -qm "otchety ${{ github.run_id }}" || true
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "ot-${{ matrix.shard }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "ot-${{ inputs.tag }}-${{ matrix.shard }}"

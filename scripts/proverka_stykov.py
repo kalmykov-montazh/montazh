@@ -112,6 +112,15 @@ def known(w):
         import pymorphy3; _m = pymorphy3.MorphAnalyzer()
     return any(p.is_known for p in _m.parse(w))
 
+def frag(x, y):
+    # признак среза: одно слово — кусок другого (начало/конец) или отличается только первой/последней буквой
+    x, y = norm(x), norm(y)
+    if len(x) < 2 or len(y) < 2 or x == y or x.isdigit() or y.isdigit(): return False
+    s, l = (x, y) if len(x) <= len(y) else (y, x)
+    if len(l) - len(s) >= 2 and (l.startswith(s) or l.endswith(s)) and len(s) >= 2: return True
+    if len(x) == len(y) and len(x) >= 4 and (x[1:] == y[1:]) : return True
+    return False
+
 def ctx(ws, t, r=2.0): return ' '.join(w['w'] for w in ws if t - r <= (w['s'] + w['e']) / 2 <= t + r)
 
 def at(ws, t, pad=0.12): return [w for w in ws if w['s'] - pad <= t <= w['e'] + pad]
@@ -126,7 +135,7 @@ def main():
     a = load(V); D = len(a) / SR
     gw = giga(a); ww = whisper(a)
     J, db, st, peak = joints(a)
-    flags = []
+    flags = []; CUTS = []
     def add(kind, t, why, strong):
         flags.append({'kind': kind, 't': round(t, 2), 'why': why, 'strong': bool(strong),
                       'giga': ctx(gw, t), 'whisper': ctx(ww, t)})
@@ -147,8 +156,8 @@ def main():
                 t = (w['s'] + w['e']) / 2
                 other = at(ww if src == 'GigaAM' else gw, t)
                 if other and all(sim(o['w'], w['w']) > 0.85 for o in other): continue   # обе слышат одинаково — имя/термин
-                near = min([abs(t - j['t']) for j in J] or [99])
-                add('НЕ СЛОВО', t, f"{src} слышит «{w['w']}» — такого слова нет" + (f"; стык в {near:.2f} с" if near < 0.6 else ''), near < 0.6)
+                fr_ = any(frag(w['w'], o['w']) for o in other)
+                add('НЕ СЛОВО', t, f"{src} слышит «{w['w']}» — такого слова нет; другая: «{' '.join(o['w'] for o in other)}»", fr_)
 
     # разночтения двух программ
     A = [norm(w['w']) for w in gw]; B = [norm(w['w']) for w in ww]
@@ -161,10 +170,10 @@ def main():
         tt = [w for w in gw[i1:i2]] + [w for w in ww[j1:j2]]
         if not tt: continue
         t = sum((w['s'] + w['e']) / 2 for w in tt) / len(tt)
-        near = min([abs(t - j['t']) for j in J] or [99])
         lowp = [w for w in ww[j1:j2] if w.get('p', 1) < 0.5]
-        add('РАЗНОЧТЕНИЕ', t, f"GigaAM: «{ga}» / Whisper: «{wb}»" + (f"; стык в {near:.2f} с" if near < 0.6 else '') +
-            (f"; Whisper не уверен в «{' '.join(w['w'] for w in lowp)}»" if lowp else ''), near < 0.6 and bool(lowp))
+        fr_ = any(frag(x, y) for x in ga.split() for y in wb.split())
+        add('РАЗНОЧТЕНИЕ', t, f"GigaAM: «{ga}» / Whisper: «{wb}»" +
+            (f"; Whisper не уверен в «{' '.join(w['w'] for w in lowp)}»" if lowp else ''), fr_)
 
     # сверка с задуманным текстом (osnova_words.json — слова, которые монтаж оставил, на шкале основы)
     WJ = os.environ.get('WORDS')
@@ -195,7 +204,10 @@ def main():
             while k2 < len(I) and not (okg[k2] or okw[k2]): k2 += 1
             txt = ' '.join(w['w'] for w in I[k:k2]); t = I[k]['s'] + off
             if not all(NUMW.match(x) or x.isdigit() for x in IN[k:k2]):
-                add('НЕ СЛЫШНО', t, f"по плану «{txt}», а обе программы слышат другое", True)
+                hv = ' '.join(w['w'] for w in gw if abs((w['s'] + w['e']) / 2 - t) < 0.6) + ' / ' + ' '.join(w['w'] for w in ww if abs((w['s'] + w['e']) / 2 - t) < 0.6)
+                frag = any(len(norm(h)) >= 2 and norm(h) != norm(x) and (norm(x).startswith(norm(h)) or norm(x).endswith(norm(h)) or norm(x)[1:] == norm(h)[1:])
+                           for h in hv.split() for x in txt.split())
+                add('НЕ СЛЫШНО', t, f"по плану «{txt}», слышно: {hv}", frag)
             k = k2
         # лишнее: обе программы слышат слово, которого нет в плане
         def extra(model, mp):
@@ -206,7 +218,59 @@ def main():
             g = [x for x in at(gw, tm, 0.15)]
             if g and not any(sim(x['w'], y['w']) >= 0.75 for x in g for y in I if abs(y['s'] + off - tm) < 1.0):
                 if any(sim(x['w'], w['w']) >= 0.6 for x in g) and not NUMW.match(norm(w['w'])) and not norm(w['w']).isdigit():
-                    add('ЛИШНЕЕ', tm, f"обе программы слышат «{w['w']}», в плане его нет", True)
+                    add('ЛИШНЕЕ', tm, f"обе программы слышат «{w['w']}», в плане его нет", not known(w['w']))
+
+    # ---- РЕЗЫ: по плану монтажа (plan.json + сырое) и стыки кусков склейки (skleika.json) ----
+    cuts = []   # (время в готовом, описание, плохо_по_сырому)
+    PJ = os.environ.get('PLAN'); SJ = os.environ.get('SKLEIKA')
+    if WJ and os.path.exists(WJ):
+        if PJ and os.path.exists(PJ) and RAW and os.path.exists(RAW):
+            import proverka_rezov
+            rw_a = load(RAW)
+            for c in proverka_rezov.rezy(json.load(open(PJ, encoding='utf-8')), rw_a, SR):
+                cuts.append((c['os'] + off, f"рез «{c['last']} | {c['first']}»", c))
+        if SJ and os.path.exists(SJ):
+            sk = json.load(open(SJ, encoding='utf-8'))
+            k0 = 0
+            for n_, part in enumerate(sk.get('parts', [])):
+                fr = [norm(x) for x in part.get('from', '').split() if norm(x)]
+                if not fr: continue
+                for k in range(k0, len(IN) - len(fr) + 1):
+                    if all(sim(IN[k + q], fr[q]) >= 0.75 for q in range(len(fr))):
+                        if n_ > 0 and k > 0:
+                            tj = (I[k - 1]['e'] + I[k]['s']) / 2 + off
+                            cuts.append((tj, f"стык кусков «{I[k-1]['w']} | {I[k]['w']}»", None))
+                        k0 = k + 1; break
+        # каждый рез: громкость сырого в момент реза + отдельное распознавание окна ±1,6 с (без общего контекста)
+        for tj, name, c in cuts:
+            if c and c['bad']:
+                add('РЕЗ ПО СЛОВУ', tj, f"{name}: {c['why']}", True)
+            w0, w1 = max(0.0, tj - 1.6), min(D, tj + 1.6)
+            seg = a[int(w0 * SR):int(w1 * SR)]
+            try:
+                segs, _ = _wm.transcribe(seg, language='ru', word_timestamps=True, beam_size=5, vad_filter=False,
+                                         condition_on_previous_text=False, temperature=0)
+                lw = [{'w': w.word.strip(), 's': w.start + w0, 'e': w.end + w0} for sg in segs for w in (sg.words or [])]
+            except Exception:
+                lw = []
+            gl = giga(seg); gl = [{**w, 's': w['s'] + w0, 'e': w['e'] + w0} for w in gl]
+            # слова плана у реза: последнее до и первое после
+            before = [x for x in I if x['e'] + off <= tj + 0.05][-2:]
+            after = [x for x in I if x['s'] + off >= tj - 0.05][:2]
+            miss = []
+            for x in before + after:
+                xm = (x['s'] + x['e']) / 2 + off
+                if NUMW.match(norm(x['w'])) or norm(x['w']).isdigit() or re.search(r'[a-z]', norm(x['w'])): continue
+                hw = [y for y in lw if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
+                hg = [y for y in gl if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
+                okw = any(sim(y['w'], x['w']) >= 0.75 for y in hw); okg = any(sim(y['w'], x['w']) >= 0.75 for y in hg)
+                if not okw and not okg:
+                    miss.append(f"«{x['w']}» (слышно: {' '.join(y['w'] for y in hw) or '—'} / {' '.join(y['w'] for y in hg) or '—'})")
+            if miss:
+                add('СТЫК', tj, f"{name}: у реза не слышно {', '.join(miss)}", True)
+            rec = {'t': round(tj, 2), 'name': name, 'win_whisper': ' '.join(y['w'] for y in lw), 'win_giga': ' '.join(y['w'] for y in gl)}
+            if c: rec.update({k_: c[k_] for k_ in ('end_db', 'after_db', 'before_db', 'start_db', 'bad')})
+            CUTS.append(rec)
 
     # сверка с исходником
     if RAW and os.path.exists(RAW):
@@ -238,7 +302,7 @@ def main():
         if db[-4:].max() > peak - 14: add('КОНЕЦ', D, 'голос громкий в последнем кадре — последнее слово срезано?', True)
 
     flags.sort(key=lambda f: f['t'])
-    print(json.dumps({'file': V, 'dur': round(D, 2), 'joints': J, 'flags': flags,
+    print(json.dumps({'file': V, 'dur': round(D, 2), 'joints': J, 'cuts': CUTS, 'flags': flags,
                       'giga': ' '.join(w['w'] for w in gw), 'whisper': ' '.join(w['w'] for w in ww),
                       'gw': gw, 'ww': ww}, ensure_ascii=False, default=float))
 
