@@ -92,7 +92,36 @@ h1{font-size:28px;line-height:1.25;color:#16294a;margin:0 0 8px}h2{font-size:20p
 .list a{display:block;text-decoration:none;color:#16233a;padding:14px 0;border-bottom:1px solid #dde3ea}.list a:last-child{border:0}
 .list b{display:block;color:#16294a;font-size:17px;line-height:1.35}.list span{color:#5f6b7a;font-size:13px}
 .note{font-size:13px;color:#64707b}.card h2{margin:24px 0 10px}.card ol,.card ul{margin:0 0 16px;padding-left:22px}.card li{margin:6px 0}.src{font-size:15px}
+.yt{position:relative;display:block;width:100%;border:0;padding:0;border-radius:16px;overflow:hidden;background:#000;cursor:pointer;aspect-ratio:16/9;font:inherit;text-align:left}
+.yt img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+.yt b{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;color:#fff;font-size:15px;line-height:1.35;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.yt .play{position:absolute;left:50%;top:45%;width:64px;height:44px;margin:-22px 0 0 -32px;border-radius:12px;background:#f00}
+.yt .play::after{content:"";position:absolute;left:26px;top:13px;border-left:16px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent}
+.yt iframe{width:100%;height:100%;border:0;display:block}
+.card>h2:first-child{margin-top:0}
 @media (max-width:600px){h1{font-size:23px}.card{padding:18px}}"""
+
+# 16.11.2026: под каждой новостью — лонг по теме (часы просмотра YouTube для монетизации).
+# Первое совпадение по ключам в заголовке и тексте; иначе — «Год жизни в Испании с нуля».
+VIDEOS = [
+    (('врач', 'медицин', 'больниц', 'лекарств', 'аптек', 'sip', 'пациент'), '6a1WSjx0vUY', 'Медицина в Испании 2026: сколько платить за лекарства и врача'),
+    (('временную защит', 'временной защит', 'временная защит', 'внж', 'nie', 'tie', 'беженц', 'украинц', 'резиденц', 'extranjer'), 'C5Y5ka8njw8', 'Временная защита → ВНЖ на 4 года и ПМЖ: все пути'),
+    (('аренд', 'съём', 'съем', 'квартир', 'жиль', 'залог', 'депозит', 'арендатор', 'хозя', 'собственник', 'ипотек'), 'aDXC1UsvBhI', 'Штрафы и аренда в Испании: 3000 € за ошибку'),
+    (('штраф', 'dgt', 'дорожн', 'на дорог', 'водител', 'машин', 'авто', 'полици', 'парков', 'бензин', 'топлив'), 'GFh4QCWANTo', '15 штрафов в Испании, о которых узнают слишком поздно'),
+    (('город', 'климат', 'погод', 'переезд', 'где жить', 'жара', 'холод', 'зим'), 'G_K6PE4DJ90', 'Где жить в Испании: климат и аренда в 15 городах'),
+]
+VIDEO_DEFAULT = ('sMPqoMeQARg', 'Год жизни в Испании с нуля: язык, документы, работа, школа')
+
+def pick_video(it):
+    text = (it['title'] + ' ' + ' '.join(' '.join(p) for p in it['paras'])).lower()
+    title = it['title'].lower()
+    for keys, vid, name in VIDEOS:      # сначала по заголовку
+        if any(k in title for k in keys): return vid, name
+    for keys, vid, name in VIDEOS[:4]:  # потом по тексту (климат/города — только по заголовку)
+        if any(k in text for k in keys): return vid, name
+    return VIDEO_DEFAULT
+
+YT_JS = """<script>document.querySelectorAll('.yt').forEach(function(b){b.addEventListener('click',function(){b.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+b.dataset.id+'?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="YouTube"></iframe>'},{once:true})});</script>"""
 
 def wa(text):
     return 'https://wa.me/34624916605?text=' + urllib.parse.quote(text)
@@ -135,12 +164,15 @@ def article_html(it):
         paras += '<h2>Что делать</h2><ol>' + ''.join(f'<li>{esc(x)}</li>' for x in ex['todo']) + '</ol>'
     if ex.get('src'):
         paras += '<h2>Источники</h2><ul class="src">' + ''.join(f'<li><a href="{esc(u)}" target="_blank" rel="noopener nofollow">{esc(n)}</a></li>' for u, n in ex['src']) + '</ul>'
+    vid, vname = pick_video(it)
     body = f"""<a class="back" href="/novosti/">← Все новости Испании</a>
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
 {paras}</article>
+<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button></div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
-<p class="note"><a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>"""
+<p class="note"><a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
+{YT_JS}"""
     return page(it['title'] + ' — новости Испании', it['desc'], f"{BASE}/novosti/{it['slug']}", body, extra)
 
 def index_html(items):
