@@ -127,7 +127,7 @@ def main():
     J, db, st, peak = joints(a)
     flags = []
     def add(kind, t, why, strong):
-        flags.append({'kind': kind, 't': round(t, 2), 'why': why, 'strong': strong,
+        flags.append({'kind': kind, 't': round(t, 2), 'why': why, 'strong': bool(strong),
                       'giga': ctx(gw, t), 'whisper': ctx(ww, t)})
 
     # стыки по живой речи
@@ -196,7 +196,7 @@ def main():
     flags.sort(key=lambda f: f['t'])
     print(json.dumps({'file': V, 'dur': round(D, 2), 'joints': J, 'flags': flags,
                       'giga': ' '.join(w['w'] for w in gw), 'whisper': ' '.join(w['w'] for w in ww),
-                      'gw': gw, 'ww': ww}, ensure_ascii=False))
+                      'gw': gw, 'ww': ww}, ensure_ascii=False, default=float))
 
 if __name__ == '__main__':
     main()
