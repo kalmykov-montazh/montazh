@@ -1,5 +1,6 @@
 <?php
 // Історія курсів для графіка на головній: по одному значенню на день (останнє за день)
+date_default_timezone_set('Europe/Kyiv');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=300');
 $f = __DIR__ . '/_data/rates_hist.json';
