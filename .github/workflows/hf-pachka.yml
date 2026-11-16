@@ -191,6 +191,14 @@ jobs:
             echo "::warning::Начало ролика — замечания: $(tr '\n' ' ' < nachalo.txt | cut -c1-900)"
             rclone copyto nachalo.txt "montazh:$DEST/НАЧАЛО — проверить.txt"
           fi
+      - name: Проверка стыков — две программы слушают каждое слово и каждый рез (правило 16.11.2026)
+        if: ${{ success() && inputs.osnova != '2' }}
+        continue-on-error: true
+        timeout-minutes: 40
+        env:
+          DEST: ${{ matrix.v.dest }}
+          KEY: ${{ matrix.v.key }}
+        run: bash scripts/proverka_stykov_shag.sh hfp/final.mp4 "$DEST" "$KEY" "$(ls raw/src.mp4 2>/dev/null)"
       - name: Кадры для проверки — в ветку tmp-hfp-<n> (зашифровано)
         if: ${{ inputs.enc != '' }}
         env:
