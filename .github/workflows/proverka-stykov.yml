@@ -82,6 +82,7 @@ jobs:
               if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/osnova_words.json" v/words.json; then export WORDS=v/words.json; fi
               if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/plan.json" v/plan.json 2>/dev/null; then export PLAN=v/plan.json; fi
               if [ -n "$wk" ] && rclone copyto "montazh:Брокер/работа/$wk/skleika.json" v/skleika.json 2>/dev/null; then export SKLEIKA=v/skleika.json; fi
+              export CLIPS="out/$key"
               if python3 scripts/proverka_stykov.py v/final.mp4 "$R" > "out/$key.json" 2> "out/$key.err"; then
                 python3 - "$p" "out/$key.json" <<'PY'
           import json, sys

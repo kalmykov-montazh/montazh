@@ -362,6 +362,19 @@ def main():
         if db[-4:].max() > peak - 14: add('КОНЕЦ', D, 'голос громкий в последнем кадре — последнее слово срезано?', True)
 
     flags.sort(key=lambda f: f['t'])
+    # куски звука для ручной проверки (спектрограмма): у каждого сильного замечания ±1,5 с, плюс начало и конец ролика
+    CD = os.environ.get('CLIPS')
+    if CD:
+        import wave
+        os.makedirs(CD, exist_ok=True)
+        def clip(t0, t1, name):
+            x = a[int(max(0, t0) * SR):int(min(D, t1) * SR)]
+            w = wave.open(f'{CD}/{name}.wav', 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+            w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes()); w.close()
+        clip(0, 1.5, 'nachalo'); clip(D - 1.5, D, 'konec')
+        for f_ in flags:
+            if f_['strong'] or f_['kind'] in ('КОНЕЦ', 'НАЧАЛО', 'ПОВТОР', 'РЕЗ ПО СЛОВУ'):
+                clip(f_['t'] - 1.5, f_['t'] + 1.5, f"t{f_['t']:07.2f}")
     print(json.dumps({'file': V, 'dur': round(D, 2), 'joints': J, 'cuts': CUTS, 'flags': flags,
                       'giga': ' '.join(w['w'] for w in gw), 'whisper': ' '.join(w['w'] for w in ww),
                       'gw': gw, 'ww': ww}, ensure_ascii=False, default=float))
