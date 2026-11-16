@@ -61,6 +61,7 @@ BS_START = '2026-10-24'
 BS_PLAN = [('2026-11-06', 1), ('2026-11-13', 2), ('2026-11-27', 3), ('9999-12-31', 4)]
 BS_MAX_SEC = 180                  # видео в Bluesky — не длиннее 3:00
 BS_MAX_TEXT = 300
+SIDE_AHEAD = 3                    # 16.11.2026 (решение Евгения): X, Bluesky, LinkedIn — не дальше 3 дней (сегодня + 2)
 
 # Плейлисты YouTube (новая структура из 10 плейлистов, решение Евгения 25.10.2026;
 # файл проекта «YouTube — плейлисты и автораскладка шортсов»). Один плейлист на шортс, по id.
@@ -103,8 +104,10 @@ def _key():
 
 def _req(method, path, body=None, key=None):
     data = json.dumps(body).encode() if body is not None else None
-    r = urllib.request.Request(API + path, data=data, method=method,
-                               headers={'blotato-api-key': key, 'Content-Type': 'application/json'})
+    h = {'blotato-api-key': key}
+    if data is not None:                       # 16.11.2026: DELETE с Content-Type и пустым телом Blotato отвечает 400
+        h['Content-Type'] = 'application/json'
+    r = urllib.request.Request(API + path, data=data, method=method, headers=h)
     try:
         with urllib.request.urlopen(r, timeout=60) as resp:
             return json.loads(resp.read() or b'{}')
@@ -126,6 +129,31 @@ def _load(p, default):
 
 def _save(s):
     STATE.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding='utf-8')
+
+def _full(x):
+    """16.11.2026: Blotato отказал, потому что очередь полна (200 постов на Starter, код 20010). Это не ошибка поста —
+    сеть ставим позже, когда место освободится."""
+    if isinstance(x, dict):
+        x = (x.get('error') or '') if x.get('status') in ('ошибка', 'очередь полна') else ''
+    x = str(x or '')
+    return '20010' in x or 'maximum number of scheduled' in x
+
+def _has(e, plat):
+    """Сеть уже поставлена (или окончательно упала). Пост, не вставший из-за полной очереди, — не считается."""
+    x = (e.get('posts') or {}).get(plat)
+    return bool(x) and not _full(x)
+
+def _side_limit():
+    return (datetime.date.today() + datetime.timedelta(days=SIDE_AHEAD - 1)).isoformat()
+
+def _full_log(s, what):
+    """Про полную очередь — в журнал и Telegram не чаще раза в сутки."""
+    today = datetime.date.today().isoformat()
+    if s.get('_full_log') != today:
+        s['_full_log'] = today
+        log(f"ОШИБКА blotato: очередь Blotato полна (200 постов) — {what}. Поставлю сам, когда место освободится")
+    else:
+        print('blotato: очередь полна —', what)
 
 def _accounts(key, s):
     if s.get('_accounts') and s['_accounts'].get('_v') == 4:
@@ -319,6 +347,8 @@ def schedule(key, s):
         at = _when(v['date'], v['time'], datetime.datetime.now(), name)
         e['at'] = f"{at:%Y-%m-%d %H:%M}"
         e['video'] = vurl
+        if curl:
+            e['cover'] = curl
         _save(s)
         try:                                       # 14.11.2026: защита от дублей после зависшей постановки
             for plat, sid in _orphans(key, at, title, [p for p in PLATFORMS if p in acc]):
@@ -358,8 +388,12 @@ def schedule(key, s):
                 r = _req('POST', '/posts', body, key)
                 e['posts'][p] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
             except Exception as ex:
-                e['posts'][p] = {'status': 'ошибка', 'error': str(ex)[:300]}
-                log(f"ОШИБКА blotato {p} — {name}: {str(ex)[:200]}")
+                if _full(ex):                          # 16.11.2026: очередь полна — поставит _retry_full позже
+                    e['posts'][p] = {'status': 'очередь полна', 'error': str(ex)[:300]}
+                    log(f"BLOTATO очередь полна — {name} {p}: поставлю позже")
+                else:
+                    e['posts'][p] = {'status': 'ошибка', 'error': str(ex)[:300]}
+                    log(f"ОШИБКА blotato {p} — {name}: {str(ex)[:200]}")
             _save(s)
             time.sleep(2)
         e['status'] = 'запланирован'
@@ -449,7 +483,11 @@ def _ramp(key, s, plat, skey, label, start, plan, max_sec, max_text):
             days.setdefault(v['date'], []).append((v.get('time', ''), name))
     for date, items in sorted(days.items()):
         n = _x_per_day(date, start, plan)
-        if not n or date in xs or date < now.date().isoformat():
+        if not n or date < now.date().isoformat() or date > _side_limit():
+            continue
+        if date in xs:                                 # день уже разобран: дотянуть то, что не встало из-за полной очереди
+            if any(_full((s.get(nm, {}).get('posts') or {}).get(plat)) for nm in xs[date]):
+                _side_post(key, s, plat, label, xs[date], acc, max_text)
             continue
         items.sort()
         first = datetime.datetime.fromisoformat(f"{date} {items[0][0]}")
@@ -477,29 +515,35 @@ def _ramp(key, s, plat, skey, label, start, plan, max_sec, max_text):
         if not picked:
             log(f"{label} {date}: подходящих роликов нет, в {label} сегодня ничего")
             continue
-        for nm in picked:
-            e = s[nm]
-            if e.get('moved') or plat in e.get('posts', {}):
-                continue
-            at = datetime.datetime.fromisoformat(e['at'])
-            if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
-                at = datetime.datetime.now() + datetime.timedelta(minutes=random.randint(20, 30))
-            text = _x_text(read_pack(PUB / nm), nm, max_text)
-            body = {'post': {'accountId': acc[plat],
-                             'content': {'text': text, 'mediaUrls': [e['video']], 'platform': plat},
-                             'target': {'targetType': plat}},
-                    'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
-            try:
-                r = _req('POST', '/posts', body, key)
-                e['posts'][plat] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
-                if e.get('status') == 'проверено':
-                    e['status'] = 'запланирован'
-                log(f"BLOTATO {label} {at:%Y-%m-%d %H:%M} — {nm}")
-            except Exception as ex:
-                e['posts'][plat] = {'status': 'ошибка', 'error': str(ex)[:300]}
-                log(f"ОШИБКА blotato {label} — {nm}: {str(ex)[:200]}")
-            _save(s)
-            time.sleep(2)
+        _side_post(key, s, plat, label, picked, acc, max_text)
+
+def _side_post(key, s, plat, label, picked, acc, max_text):
+    for nm in picked:
+        e = s.get(nm)
+        if not e or e.get('moved') or _has(e, plat):
+            continue
+        at = datetime.datetime.fromisoformat(e['at'])
+        if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
+            at = datetime.datetime.now() + datetime.timedelta(minutes=random.randint(20, 30))
+        text = _x_text(read_pack(PUB / nm), nm, max_text)
+        body = {'post': {'accountId': acc[plat],
+                         'content': {'text': text, 'mediaUrls': [e['video']], 'platform': plat},
+                         'target': {'targetType': plat}},
+                'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
+        try:
+            r = _req('POST', '/posts', body, key)
+            e['posts'][plat] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
+            if e.get('status') == 'проверено':
+                e['status'] = 'запланирован'
+            log(f"BLOTATO {label} {at:%Y-%m-%d %H:%M} — {nm}")
+        except Exception as ex:
+            if _full(ex):
+                e['posts'][plat] = {'status': 'очередь полна', 'error': str(ex)[:300]}
+                _full_log(s, f"{label} {nm}"); _save(s); return
+            e['posts'][plat] = {'status': 'ошибка', 'error': str(ex)[:300]}
+            log(f"ОШИБКА blotato {label} — {nm}: {str(ex)[:200]}")
+        _save(s)
+        time.sleep(2)
 
 # Threads (разбор 27.10.2026): хештеги и строки про ссылки/видео/личку режут охват — убираем ТОЛЬКО для Threads.
 _TH_DROP = re.compile(r'(Полное видео|Монтаж делал|в шапке профиля|ссылка в шапке|Пишите в личку|youtu\.be|https?://|www\.|t\.me/)', re.I)
@@ -538,7 +582,11 @@ def schedule_li(key, s):
         if v.get('platform', 'fb') == 'fb' and v.get('date'):
             days.setdefault(v['date'], []).append((v.get('time', ''), name))
     for date, items in sorted(days.items()):
-        if date < LI_START or date in ls or date < now.date().isoformat():
+        if date < LI_START or date < now.date().isoformat() or date > _side_limit():
+            continue
+        if date in ls:                                 # дотянуть не вставшее из-за полной очереди
+            if any(_full((s.get(nm, {}).get('posts') or {}).get('linkedin')) for nm in ls[date]):
+                _li_post(key, s, ls[date], acc)
             continue
         if date < LI_DAILY and datetime.date.fromisoformat(date).weekday() not in LI_DAYS:
             continue
@@ -566,31 +614,37 @@ def schedule_li(key, s):
         if not picked:
             log(f"LinkedIn {date}: деловых роликов нет (недвижимость, аренда, налоги, документы), в LinkedIn ничего")
             continue
-        for nm in picked:
-            e = s[nm]
-            if e.get('moved') or 'linkedin' in e.get('posts', {}):
-                continue
-            at = datetime.datetime.fromisoformat(e['at'])
-            if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
-                at = datetime.datetime.now() + datetime.timedelta(minutes=random.randint(20, 30))
-            text = _no_links(read_pack(PUB / nm)) or re.sub(r'^\d+\s+', '', nm)
-            if len(text) > LI_MAX_TEXT:
-                text = text[:LI_MAX_TEXT - 1].rsplit(' ', 1)[0] + '…'
-            body = {'post': {'accountId': acc['linkedin'],
-                             'content': {'text': text, 'mediaUrls': [e['video']], 'platform': 'linkedin'},
-                             'target': {'targetType': 'linkedin'}},
-                    'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
-            try:
-                r = _req('POST', '/posts', body, key)
-                e['posts']['linkedin'] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
-                if e.get('status') == 'проверено':
-                    e['status'] = 'запланирован'
-                log(f"BLOTATO LinkedIn {at:%Y-%m-%d %H:%M} — {nm}")
-            except Exception as ex:
-                e['posts']['linkedin'] = {'status': 'ошибка', 'error': str(ex)[:300]}
-                log(f"ОШИБКА blotato LinkedIn — {nm}: {str(ex)[:200]}")
-            _save(s)
-            time.sleep(2)
+        _li_post(key, s, picked, acc)
+
+def _li_post(key, s, picked, acc):
+    for nm in picked:
+        e = s.get(nm)
+        if not e or e.get('moved') or _has(e, 'linkedin'):
+            continue
+        at = datetime.datetime.fromisoformat(e['at'])
+        if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
+            at = datetime.datetime.now() + datetime.timedelta(minutes=random.randint(20, 30))
+        text = _no_links(read_pack(PUB / nm)) or re.sub(r'^\d+\s+', '', nm)
+        if len(text) > LI_MAX_TEXT:
+            text = text[:LI_MAX_TEXT - 1].rsplit(' ', 1)[0] + '…'
+        body = {'post': {'accountId': acc['linkedin'],
+                         'content': {'text': text, 'mediaUrls': [e['video']], 'platform': 'linkedin'},
+                         'target': {'targetType': 'linkedin'}},
+                'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
+        try:
+            r = _req('POST', '/posts', body, key)
+            e['posts']['linkedin'] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
+            if e.get('status') == 'проверено':
+                e['status'] = 'запланирован'
+            log(f"BLOTATO LinkedIn {at:%Y-%m-%d %H:%M} — {nm}")
+        except Exception as ex:
+            if _full(ex):
+                e['posts']['linkedin'] = {'status': 'очередь полна', 'error': str(ex)[:300]}
+                _full_log(s, f"LinkedIn {nm}"); _save(s); return
+            e['posts']['linkedin'] = {'status': 'ошибка', 'error': str(ex)[:300]}
+            log(f"ОШИБКА blotato LinkedIn — {nm}: {str(ex)[:200]}")
+        _save(s)
+        time.sleep(2)
 
 CHECK_LOG_EVERY = 60               # минут: «ещё не ясно» пишем в журнал не чаще раза в час на ролик
 CHECK_ALERT_AFTER = 120           # минут после выхода: всё ещё не ясно — журнал + Telegram (один раз)
@@ -1080,6 +1134,56 @@ def _cloud_on():
         CLOUD_ACK.write_text(sw, encoding='utf-8')
     return True
 
+def _retry_full(key, s):
+    """16.11.2026: основные 4 сети, не вставшие из-за полной очереди (в т.ч. старые записи «ошибка» с кодом 20010),
+    ставим заново, как только в очереди есть место. Работает на компьютере, пишет в _blotato.json."""
+    todo = [(n, e) for n, e in s.items() if isinstance(e, dict) and not n.startswith('_') and e.get('at') and e.get('video')
+            and not e.get('moved') and any(_full((e.get('posts') or {}).get(p)) for p in PLATFORMS)]
+    if not todo:
+        return
+    acc = _accounts(key, s)
+    for name, e in sorted(todo, key=lambda kv: kv[1]['at']):
+        folder = PUB / name
+        if not folder.exists():
+            continue
+        text = read_pack(folder)
+        title = text.splitlines()[0].strip() if text else re.sub(r'^\d+\s+', '', name)
+        at = datetime.datetime.fromisoformat(e['at'])
+        if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
+            at = datetime.datetime.now() + datetime.timedelta(minutes=random.randint(20, 30))
+        curl = e.get('cover')
+        if not curl and (folder / 'обложка.jpg').exists():
+            try:
+                curl = e['cover'] = _upload(folder / 'обложка.jpg', key)
+            except Exception as ex:
+                log(f"blotato повтор {name}: обложка не загрузилась ({str(ex)[:100]})")
+        for p in PLATFORMS:
+            if p not in acc or not _full((e.get('posts') or {}).get(p)):
+                continue
+            ptext = read_pack(folder, raw=True) if p == 'youtube' else text
+            if p == 'threads':
+                ptext = _threads_clean(ptext)
+                if len(ptext) > 500:
+                    ptext = ptext[:497].rsplit(' ', 1)[0] + '…'
+            body = {'post': {'accountId': acc[p],
+                             'content': {'text': ptext, 'mediaUrls': [e.get('video_tt') or e['video'] if p == 'tiktok' else e['video']], 'platform': p},
+                             'target': _target(p, title, curl, acc, name)},
+                    'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
+            try:
+                r = _req('POST', '/posts', body, key)
+                e['posts'][p] = {'id': r.get('postSubmissionId'), 'status': 'запланирован'}
+                log(f"BLOTATO {at:%Y-%m-%d %H:%M} — {name}: {p} поставлен (раньше не влез — очередь была полна)")
+            except Exception as ex:
+                if _full(ex):
+                    _full_log(s, f"ждут {len(todo)} ролик(ов), первый — {name}"); _save(s); return
+                e['posts'][p] = {'status': 'ошибка', 'error': str(ex)[:300]}
+                log(f"ОШИБКА blotato {p} — {name}: {str(ex)[:200]}")
+            _save(s)
+            time.sleep(2)
+        if e.get('status') == 'проверено':
+            e['status'] = 'запланирован'
+        _save(s)
+
 def run():
     key = _key()
     if not key:
@@ -1098,6 +1202,8 @@ def run():
                 for n in cloud: s.setdefault(n, cloud[n])
                 schedule(key, s)
             except Exception as ex: log(f"ОШИБКА blotato постановка: {str(ex)[:200]}")
+        try: _retry_full(key, s)
+        except Exception as ex: log(f"ОШИБКА blotato повтор после полной очереди: {str(ex)[:200]}")
         try: schedule_x(key, s)
         except Exception as ex: log(f"ОШИБКА blotato X: {str(ex)[:200]}")
         try: schedule_bs(key, s)
