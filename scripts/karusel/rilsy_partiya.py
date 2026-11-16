@@ -127,8 +127,8 @@ for it in cfg['items']:
         at = datetime.datetime.fromisoformat(it['at'])
         # 16.11.2026: Facebook сам пишет — подпись 100–200 знаков даёт +137% просмотров. Длиннее/короче — не ставим.
         fbt = bez_ssylok(it.get('text_fb') or it['text'])
-        if not 100 <= len(fbt) <= 200:
-            r['fb_zadanie'] = f'НЕ ПОСТАВЛЕНО: подпись для Facebook {len(fbt)} знаков, нужно 100–200 (поле text_fb)'
+        if not 100 <= len(fbt) <= 200 or fbt.count('#') > 3:   # 16.11 21:47: контрольный список FB — «качественная подпись»
+            r['fb_zadanie'] = f'НЕ ПОСТАВЛЕНО: подпись для Facebook {len(fbt)} знаков, хэштегов {fbt.count("#")} — нужно 100–200 и не больше 3 (поле text_fb)'
             res.append(r); print(json.dumps(r, ensure_ascii=False)); continue
         job = {'platform': 'fb', 'kind': 'arenda', 'mode': 'live', 'folder': f'../Посты/Карусели/{name}',
                'video': 'reel.mp4', 'cover_file': 'reel/01.jpg' if (D / 'reel' / '01.jpg').exists() else '01.jpg', 'date': f'{at:%Y-%m-%d}', 'time': f'{at:%H:%M}',
