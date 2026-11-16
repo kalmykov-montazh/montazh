@@ -72,7 +72,7 @@ if mode == 'status':
                 x['status'] = 'не ясно'; x['error'] = str(ex)[:300]
         print(p, x.get('status'), x.get('url') or '', (x.get('error') or '')[:300])
 else:
-    pics = sorted(f for f in D.iterdir() if f.suffix.lower() in ('.jpg', '.jpeg', '.png') and f.stem[:2].isdigit())
+    pics = sorted(f for f in D.iterdir() if f.suffix.lower() in ('.jpg', '.jpeg', '.png') and f.stem.isdigit() and len(f.stem) <= 3)   # 16.11.2026: только 01.jpg… — фото вида 20261116_*.jpg в карусель не брать
     urls = [upload(f) for f in pics]
     print('фото загружено:', len(urls))
     vid = D / 'shorts.mp4'
