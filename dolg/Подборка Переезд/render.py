@@ -59,7 +59,7 @@ for k in range(k0, k1):
         if 0 <= dt < 9:
             a = min(1, dt / 0.35, (9 - dt) / 0.35); a = a * a * (3 - 2 * a)
             over(o, QR, int(1920 - (1920 - 1390) * a), 150)
-    if src in CORNER: over(o, CORNER[src], W - CORNER[src][1].shape[1] - 30, 30)
+    if src in CORNER and not any(0 <= T - c[0] < c[4] for c in D['ch']): over(o, CORNER[src], W - CORNER[src][1].shape[1] - 30, 30)
     z = 1.0
     for p in D['punch']:
         dd = T - p
