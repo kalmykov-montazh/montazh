@@ -178,7 +178,13 @@ def main():
     # сверка с задуманным текстом (osnova_words.json — слова, которые монтаж оставил, на шкале основы)
     WJ = os.environ.get('WORDS')
     if WJ and os.path.exists(WJ):
-        I = [w for w in json.load(open(WJ, encoding='utf-8')) if norm(w['w'])]
+        I = []
+        for w in json.load(open(WJ, encoding='utf-8')):
+            parts_ = [x for x in w['w'].split() if norm(x)]
+            if not parts_: continue
+            L_ = sum(len(x) for x in parts_); s_ = w['s']
+            for x in parts_:   # в склейках слово плана бывает фразой — делим по длине
+                e_ = s_ + (w['e'] - w['s']) * len(x) / L_; I.append({'w': x, 's': s_, 'e': e_}); s_ = e_
         IN = [norm(w['w']) for w in I]
         def heard(model):
             M = [norm(w['w']) for w in model]; ok = [False] * len(I); mp = [None] * len(I)
@@ -205,9 +211,9 @@ def main():
             txt = ' '.join(w['w'] for w in I[k:k2]); t = I[k]['s'] + off
             if not all(NUMW.match(x) or x.isdigit() for x in IN[k:k2]):
                 hv = ' '.join(w['w'] for w in gw if abs((w['s'] + w['e']) / 2 - t) < 0.6) + ' / ' + ' '.join(w['w'] for w in ww if abs((w['s'] + w['e']) / 2 - t) < 0.6)
-                frag = any(len(norm(h)) >= 2 and norm(h) != norm(x) and (norm(x).startswith(norm(h)) or norm(x).endswith(norm(h)) or norm(x)[1:] == norm(h)[1:])
+                fragm = any(len(norm(h)) >= 2 and norm(h) != norm(x) and (norm(x).startswith(norm(h)) or norm(x).endswith(norm(h)) or norm(x)[1:] == norm(h)[1:])
                            for h in hv.split() for x in txt.split())
-                add('НЕ СЛЫШНО', t, f"по плану «{txt}», слышно: {hv}", frag)
+                add("НЕ СЛЫШНО", t, f"по плану «{txt}», слышно: {hv}", fragm)
             k = k2
         # лишнее: обе программы слышат слово, которого нет в плане
         def extra(model, mp):
@@ -263,7 +269,16 @@ def main():
                 if NUMW.match(norm(x['w'])) or norm(x['w']).isdigit() or re.search(r'[a-z]', norm(x['w'])): continue
                 hw = [y for y in lw if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
                 hg = [y for y in gl if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
-                okw = any(sim(y['w'], x['w']) >= 0.75 for y in hw); okg = any(sim(y['w'], x['w']) >= 0.75 for y in hg)
+                th = 0.6 if len(norm(x['w'])) >= 5 else 0.75
+                def good(hs):
+                    if not hs: return False
+                    if len(norm(x['w'])) >= 4 and norm(x['w']) in ''.join(norm(y['w']) for y in hs): return True   # «по-настоящему» = «по настоящему»
+                    y = max(hs, key=lambda y: sim(y['w'], x['w']))
+                    if sim(y['w'], x['w']) < th: return False
+                    if frag(y['w'], x['w']): return False             # слышен кусок слова («кон» вместо «балкон»)
+                    if known(x['w']) and not known(y['w']): return False   # слово исказилось («звукориацию»)
+                    return True
+                okw = good(hw); okg = good(hg)
                 if not okw and not okg:
                     miss.append(f"«{x['w']}» (слышно: {' '.join(y['w'] for y in hw) or '—'} / {' '.join(y['w'] for y in hg) or '—'})")
             if miss:
@@ -271,6 +286,49 @@ def main():
             rec = {'t': round(tj, 2), 'name': name, 'win_whisper': ' '.join(y['w'] for y in lw), 'win_giga': ' '.join(y['w'] for y in gl)}
             if c: rec.update({k_: c[k_] for k_ in ('end_db', 'after_db', 'before_db', 'start_db', 'bad')})
             CUTS.append(rec)
+
+    # ---- КАЖДОЕ СЛОВО: распознаём ролик окнами 3,2 с (шаг 1,6 с) без общего контекста — так срезанное слово
+    # не «дорисовывается» по смыслу. Каждое слово (по плану, а если плана нет — по Whisper целиком) проверяем
+    # в окне, где оно ближе к середине. Не услышали ни Whisper, ни GigaAM — замечание.
+    if os.environ.get('WINDOWS', '1') == '1' and D < 400:
+        base = [dict(x, s=x['s'] + off, e=x['e'] + off) for x in I] if (WJ and os.path.exists(WJ)) else [dict(x) for x in ww]
+        near_cut = [c[0] for c in cuts] if (WJ and os.path.exists(WJ)) else []
+        step, half = 1.6, 1.6
+        cs = np.arange(half, max(half + 0.01, D - half + step), step)
+        WIN = []
+        for c0 in cs:
+            w0, w1 = max(0.0, c0 - half), min(D, c0 + half); seg = a[int(w0 * SR):int(w1 * SR)]
+            try:
+                segs, _ = _wm.transcribe(seg, language='ru', word_timestamps=True, beam_size=5, vad_filter=False,
+                                         condition_on_previous_text=False, temperature=0)
+                lw = [{'w': w.word.strip(), 's': w.start + w0, 'e': w.end + w0} for sg in segs for w in (sg.words or [])]
+            except Exception:
+                lw = []
+            gl = [{**w, 's': w['s'] + w0, 'e': w['e'] + w0} for w in giga(seg)]
+            WIN.append((c0, w0, w1, lw, gl))
+        for x in base:
+            xn = norm(x['w'])
+            if not xn or NUMW.match(xn) or xn.isdigit() or re.search(r'[a-z]', xn) or len(xn) < 3: continue
+            xm = (x['s'] + x['e']) / 2
+            cand = [q for q in WIN if q[1] + 0.45 <= xm <= q[2] - 0.45] or [min(WIN, key=lambda q: abs(q[0] - xm))]
+            th = 0.6 if len(xn) >= 5 else 0.75
+            def good(hs):
+                if not hs: return False
+                if len(xn) >= 4 and xn in ''.join(norm(y['w']) for y in hs): return True
+                y = max(hs, key=lambda y: sim(y['w'], x['w']))
+                if sim(y['w'], x['w']) < th: return False
+                if frag(y['w'], x['w']): return False
+                if known(x['w']) and not known(y['w']): return False
+                return True
+            heard_ok = False; hw = hg = []
+            for c0, w0, w1, lw, gl in cand:
+                hw = [y for y in lw if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
+                hg = [y for y in gl if y['s'] - 0.35 <= xm <= y['e'] + 0.35]
+                if good(hw) or good(hg): heard_ok = True; break
+            if not heard_ok:
+                nc = min([abs(xm - q) for q in near_cut] or [99])
+                add('СЛОВО', xm, f"«{x['w']}» в отдельном прослушивании не слышно: {' '.join(y['w'] for y in hw) or '—'} / {' '.join(y['w'] for y in hg) or '—'}"
+                    + (f"; рез в {nc:.2f} с" if nc < 0.8 else ''), True)
 
     # сверка с исходником
     if RAW and os.path.exists(RAW):
