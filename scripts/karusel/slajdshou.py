@@ -308,7 +308,8 @@ def main():
     if full:
         slides = [Image.open(p).convert("RGB") for p in files]
         bgs = [None] * n
-        bands = [site_band_full(i == n - 1) for i in range(n)]
+        bez = os.path.exists(os.path.join(folder, "reel", "_bez_plashki"))   # сайт уже на слайдах (шпаргалки)
+        bands = [Image.new("RGBA", (W, H), (0, 0, 0, 0)) if bez else site_band_full(i == n - 1) for i in range(n)]
     else:
         slides = [Image.open(p).convert("RGB").resize((SW, SH)) for p in files]
         bgs = [make_bg(s) for s in slides]
