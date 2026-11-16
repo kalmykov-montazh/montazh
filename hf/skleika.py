@@ -62,9 +62,13 @@ for n, p in enumerate(parts):
     # pre: распознавание часто ставит начало слова позже, чем оно звучит — сдвиг начала куска раньше (с)
     pre = float(item["parts"][p["n"]].get("pre", 0)) if "n" in p else 0.0
     t0 = 0.0 if i0 == 0 and not pre else quiet(A, max(pe - pre, s0 - 0.35 - pre, 0), s0 - 0.02 - pre, s0 - 0.08 - pre)
+    # 16.11.2026: точный рез, выверенный по звуку основы (секунды основы) — t0/t1 в куске перекрывают автоподбор
+    P = item["parts"][p["n"]] if "n" in p else {}
+    if "t0" in P: t0 = float(P["t0"])
     e1 = W[i1]["e"]; ns = W[i1 + 1]["s"] if i1 + 1 < len(W) else min(D, e1 + 0.5)
     t1 = quiet(A, e1 - 0.06, min(ns, e1 + 0.45), e1 + 0.1)
     t1 = min(t1, D)
+    if "t1" in P: t1 = min(float(P["t1"]), D)
     L = t1 - t0
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t0:.3f}", "-i", f"{d}/osnova.mp4", "-t", f"{L:.3f}",
                     "-vf", "fps=30,format=yuv420p", "-af", f"aresample=48000,afade=t=in:d=0.02,afade=t=out:st={max(0, L - 0.03):.3f}:d=0.03",
