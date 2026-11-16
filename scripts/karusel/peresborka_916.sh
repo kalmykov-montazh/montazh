@@ -37,8 +37,8 @@ PY
   if python3 scripts/karusel/slajdshou.py "$D" "$D/reel.mp4" ${T:+--trek $T} > "$D/_log.txt" 2>&1 && [ -f "$D/reel.mp4" ]; then
     wh=$(ffprobe -v error -select_streams v -show_entries stream=width,height -of csv=p=0 "$D/reel.mp4")
     du=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$D/reel.mp4")
-    [ -f "$D/_old_reel.mp4" ] && rclone copyto "$D/_old_reel.mp4" "montazh:$P/_старое 16.11/reel.mp4"
-    [ -f "$D/_old_shorts.mp4" ] && rclone copyto "$D/_old_shorts.mp4" "montazh:$P/_старое 16.11/shorts.mp4"
+    [ -f "$D/_old_reel.mp4" ] && rclone copyto --ignore-existing "$D/_old_reel.mp4" "montazh:$P/_старое 16.11/reel.mp4"
+    [ -f "$D/_old_shorts.mp4" ] && rclone copyto --ignore-existing "$D/_old_shorts.mp4" "montazh:$P/_старое 16.11/shorts.mp4"
     rclone copyto "$D/reel.mp4" "montazh:$P/reel.mp4"
     [ $had_sh = 1 ] && rclone copyto "$D/reel.mp4" "montazh:$P/shorts.mp4"
     rclone copy "$D/reel" "montazh:$P/reel"

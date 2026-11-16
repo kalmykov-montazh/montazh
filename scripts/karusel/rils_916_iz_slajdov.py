@@ -6,8 +6,7 @@
 #  - слайд-«шпаргалка» (ровный тёмный фон, текст): фон продолжается вверх и вниз тем же цветом построчно — шва нет,
 #    это просто высокий слайд; жёлтая полоска — у верхнего края кадра; текст оказывается в безопасной зоне;
 #    в папке reel/ кладётся метка _bez_plashki (сайт на слайде уже есть — slajdshou.py свой не рисует);
-#  - фото-слайд: слайд ставится на y=250; сверху продолжение фото (зеркало верхней полосы, мягко размыто и затемнено,
-#    без резкой границы), снизу — плавный переход тёмной подложки в почти чёрный. Старые надписи «Листайте →» и «1/7»
+#  - фото-слайд: слайд ставится к верху кадра, снизу — плавное продолжение его тёмной подложки в почти чёрный. Старые надписи «Листайте →» и «1/7»
 #    стираются (cv2.inpaint), если на первом слайде есть жёлтое «Листайте».
 import os, sys, glob, json
 import numpy as np
@@ -51,19 +50,17 @@ def stare_metki(im):
 
 
 def photo_916(im):
-    a = np.asarray(im)
-    y0 = 250; sh = a.shape[0]
-    out = Image.new("RGB", (W, H))
-    top = Image.fromarray(a[0:y0][::-1].copy()).filter(ImageFilter.GaussianBlur(14))
-    t = np.asarray(top).astype(float)
-    k = np.linspace(0.2, 0.95, y0)[:, None, None]       # чем выше, тем темнее
-    out.paste(Image.fromarray((t * k).astype(np.uint8)), (0, 0))
-    out.paste(im, (0, y0))
-    last = a[-6:].mean(0)                               # нижняя подложка: от последних строк к почти чёрному
-    n = H - (y0 + sh)
-    g = np.linspace(0, 1, n)[:, None, None]
+    # фото-слайд ставится к верху кадра (текст слайда оказывается на 880–1270, в безопасной зоне),
+    # снизу — продолжение его тёмной подложки, плавно в почти чёрный: шва и «полос» нет
+    a = np.asarray(im); sh = a.shape[0]
+    out = Image.new("RGB", (W, H)); out.paste(im, (0, 0))
+    last = a[-6:].astype(float).mean(0)
+    k = np.ones(81) / 81                                # сглаживаем по ширине — без вертикальных полосок
+    last = np.stack([np.convolve(np.pad(last[:, c], 40, mode='edge'), k, 'valid') for c in range(3)], 1)
+    n = H - sh
+    g = np.linspace(0, 1, n)[:, None, None] ** 0.7
     bot = last[None] * (1 - g) + np.array([12, 12, 14])[None, None] * g
-    out.paste(Image.fromarray(bot.astype(np.uint8)), (0, y0 + sh))
+    out.paste(Image.fromarray(bot.astype(np.uint8)), (0, sh))
     return out
 
 
@@ -71,7 +68,7 @@ def main(folder):
     fs = sorted(glob.glob(os.path.join(folder, "[0-9][0-9].jpg")))
     if not fs: sys.exit("нет слайдов")
     ims = [Image.open(f).convert("RGB").resize((1080, 1350)) for f in fs]
-    flat = sum(is_flat(i) for i in ims) > len(ims) / 2
+    flat = all(is_flat(i) for i in ims)               # шпаргалка — только если ВСЕ слайды с ровным фоном
     rd = os.path.join(folder, "reel"); os.makedirs(rd, exist_ok=True)
     stare = False
     if not flat:
