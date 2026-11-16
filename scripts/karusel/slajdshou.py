@@ -205,6 +205,38 @@ def write_wav(path, data):
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(data.tobytes())
 
 
+# ---------- 16.11.2026: музыка FreePD (CC0) вместо своего синтеза ----------
+# Евгений 16.11: своя музыка «нудная» — ставим весёлые треки FreePD (CC0, общественное достояние,
+# без указания автора). Сайт freepd.com закрыт, берём с зеркала archive.org. Не скачалось — свой синтез.
+FREEPD = ["upbeat/Funshine.mp3", "upbeat/City Sunshine.mp3", "upbeat/Happy Whistling Ukulele.mp3",
+          "upbeat/Ukulele Song.mp3", "upbeat/Inventing Flight.mp3", "upbeat/And Just Like That.mp3"]
+
+
+def freepd_audio(total, trek, out_wav, lufs=-16):
+    """Готовит wav длиной total из трека FreePD (старт — где трек уже звучит в полную силу). True/False."""
+    import urllib.parse, urllib.request, re, statistics, tempfile
+    t = FREEPD[trek % len(FREEPD)]
+    cache = os.path.join(tempfile.gettempdir(), "freepd_" + re.sub(r"\W", "_", t))
+    try:
+        if not os.path.exists(cache):
+            u = "https://archive.org/download/freepd/" + urllib.parse.quote(t)
+            with urllib.request.urlopen(u, timeout=120) as r, open(cache, "wb") as f: f.write(r.read())
+        st = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", cache, "-af",
+                             "asetnsamples=n=22050,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level",
+                             "-f", "null", "-"], capture_output=True, text=True).stderr
+        v = [float(x) if x != "-inf" else -120 for x in re.findall(r"RMS_level=(\S+)", st)]
+        med = statistics.median(v) if v else -20
+        off = next((k for k, x in enumerate(v) if x >= med - 2), 0) * 0.5
+        fo = max(0, total - 1.5)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(off), "-i", cache, "-t", f"{total:.3f}",
+                        "-af", f"afade=t=in:d=0.3,afade=t=out:st={fo:.3f}:d=1.5,loudnorm=I={lufs}:TP=-1.5:LRA=11",
+                        "-ar", "48000", "-ac", "2", out_wav], check=True)
+        return t
+    except Exception as e:
+        print("FreePD не вышло:", e)
+        return False
+
+
 # ---------- сборка ----------
 def main():
     folder = sys.argv[1]
@@ -228,7 +260,8 @@ def main():
 
     if trek is None: trek = int(hashlib.md5(os.path.basename(os.path.abspath(folder)).encode()).hexdigest(), 16) % len(TREKI)
     wav = outp + ".wav"
-    write_wav(wav, music(total, trek))
+    src = freepd_audio(total, trek, wav)
+    if not src: write_wav(wav, music(total, trek))
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
            "-i", wav, "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-shortest", "-movflags", "+faststart", outp]
@@ -247,7 +280,7 @@ def main():
     p.stdin.close(); p.wait()
     os.remove(wav)
     with open(os.path.join(os.path.dirname(outp) or ".", "_музыка.txt"), "w", encoding="utf-8") as fh:
-        fh.write(f"трек {trek + 1} из {len(TREKI)} (свой, синтез), длина {total:.1f} с, слайдов {n}\n")
+        fh.write((f"FreePD {src} (CC0)" if src else f"трек {trek + 1} из {len(TREKI)} (свой, синтез)") + f", длина {total:.1f} с, слайдов {n}\n")
     print(f"готово: {outp}  {total:.1f} с, слайдов {n}, музыка — трек {trek + 1}")
 
 
