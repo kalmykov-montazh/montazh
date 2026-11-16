@@ -486,7 +486,7 @@ def _ramp(key, s, plat, skey, label, start, plan, max_sec, max_text):
         if not n or date < now.date().isoformat() or date > _side_limit():
             continue
         if date in xs:                                 # день уже разобран: дотянуть то, что не встало из-за полной очереди
-            if any(_full((s.get(nm, {}).get('posts') or {}).get(plat)) for nm in xs[date]):
+            if any(isinstance(s.get(nm), dict) and not _has(s[nm], plat) and not s[nm].get('moved') for nm in xs[date]):
                 _side_post(key, s, plat, label, xs[date], acc, max_text)
             continue
         items.sort()
@@ -520,7 +520,7 @@ def _ramp(key, s, plat, skey, label, start, plan, max_sec, max_text):
 def _side_post(key, s, plat, label, picked, acc, max_text):
     for nm in picked:
         e = s.get(nm)
-        if not e or e.get('moved') or _has(e, plat):
+        if not e or not e.get('video') or not e.get('at') or e.get('moved') or _has(e, plat):
             continue
         at = datetime.datetime.fromisoformat(e['at'])
         if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
@@ -585,7 +585,7 @@ def schedule_li(key, s):
         if date < LI_START or date < now.date().isoformat() or date > _side_limit():
             continue
         if date in ls:                                 # дотянуть не вставшее из-за полной очереди
-            if any(_full((s.get(nm, {}).get('posts') or {}).get('linkedin')) for nm in ls[date]):
+            if any(isinstance(s.get(nm), dict) and not _has(s[nm], 'linkedin') and not s[nm].get('moved') for nm in ls[date]):
                 _li_post(key, s, ls[date], acc)
             continue
         if date < LI_DAILY and datetime.date.fromisoformat(date).weekday() not in LI_DAYS:
@@ -619,7 +619,7 @@ def schedule_li(key, s):
 def _li_post(key, s, picked, acc):
     for nm in picked:
         e = s.get(nm)
-        if not e or e.get('moved') or _has(e, 'linkedin'):
+        if not e or not e.get('video') or not e.get('at') or e.get('moved') or _has(e, 'linkedin'):
             continue
         at = datetime.datetime.fromisoformat(e['at'])
         if at < datetime.datetime.now() + datetime.timedelta(minutes=10):
