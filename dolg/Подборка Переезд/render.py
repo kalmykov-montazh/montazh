@@ -44,6 +44,15 @@ for k in range(k0, k1):
     f = rd.next()
     if f is None: f = prev if prev is not None else np.zeros((H, W, 3), np.uint8)
     o = f.copy()
+    if src in ('V', 'M') and s + T - OFF[i] < 40:   # старая плашка «В ЭТОМ ВИДЕО» — закрасить фоном
+        reg = o[120:222, 40:470].astype(np.float32)
+        orange = ((reg[..., 2] > 190) & (reg[..., 1] > 120) & (reg[..., 1] < 200) & (reg[..., 0] < 90)).mean()
+        if orange > 0.25:
+            top = o[112:116, 40:470].astype(np.float32).mean(0); bot = o[226:230, 40:470].astype(np.float32).mean(0)
+            a = np.linspace(0, 1, 102)[:, None, None]; fill = top[None] * (1 - a) + bot[None] * a
+            o[120:222, 40:470] = cv2.GaussianBlur(fill, (0, 0), 6).astype(np.uint8)
+    if src == 'V' and s + T - OFF[i] > 11.5 and o[1000:1060, 90:370].mean() < 70:   # счётчик «5 / 17»
+        o[1015:1055, 90:370] = o[972:1012, 90:370]
     for q in D['qr']:
         dt = T - q
         if 0 <= dt < 9:

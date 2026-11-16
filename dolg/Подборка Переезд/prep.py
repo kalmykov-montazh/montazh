@@ -122,6 +122,9 @@ add(BODY - 0.1, whoosh(0.15))
 pk = np.abs(y).max(); y = y / max(1, pk / 0.89)
 with wave.open('out/mix.wav', 'wb') as o_:
     o_.setnchannels(2); o_.setsampwidth(2); o_.setframerate(SR); o_.writeframes((np.clip(y, -1, 1) * 32767).astype(np.int16).tobytes())
+subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', 'out/mix.wav', '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-ar', str(SR), '-ac', '2', 'out/mix2.wav'], check=True)
+os.replace('out/mix2.wav', 'out/mix.wav')
+print('LUFS', re.findall(r'I:\s+(-?[\d.]+) LUFS', subprocess.run(['ffmpeg', '-hide_banner', '-i', 'out/mix.wav', '-af', 'ebur128', '-f', 'null', '-'], capture_output=True, text=True).stderr)[-1], flush=True)
 
 WD = {s: json.load(open(f'{s}.words.json')) for s in KEYS}
 PUNCH = []; last = -99
