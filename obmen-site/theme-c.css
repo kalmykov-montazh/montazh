@@ -1,0 +1,10 @@
+/* Вариант В — мягкий тёмный, светлее блоки, крупнее цифры */
+:root{--dark:#17191E;--dark2:#1E2128;--dark3:#282C35;--dark4:#323743;--muted:#A3A8B3;--muted2:#6E7380}
+.top-bar,.card,.svc-card,.ic,.map-wrap,.fi,.ccard,.ai{border-color:#333844!important}
+.board-row:hover td{background:#2E333D!important}
+.rate-num{font-size:3rem!important}
+@media(max-width:650px){.rate-num{font-size:2.3rem!important}}
+.board-row td{background:#262A33!important}
+footer{border-top-color:#262A33!important}
+.bbar{background:rgba(23,25,30,.96)!important}
+.faq details{border-bottom-color:#333844!important}

@@ -1,0 +1,28 @@
+/* Вариант А — светлый: белый фон, тёмный текст, зелёные цифры, золото акцентом */
+:root{--dark:#F4F2EC;--dark2:#FFFFFF;--dark3:#F7F5EF;--dark4:#ECE8DD;--text:#1B1B1B;--muted:#6B6B6B;--muted2:#9A9A9A;--gold:#B8892A;--gold2:#B8892A;--green:#0E9F6E;--red:#D93848}
+body{color:#1B1B1B}
+header{background:#fff!important;border-bottom-color:var(--gold)!important;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.logo .l2{color:#1B1B1B!important}
+.top-bar{background:#FBF9F4!important;border-bottom-color:#E8E3D6!important}
+.top-bar-item strong{color:#1B1B1B!important}
+.rates-hero{background:#fff!important;border-bottom-color:#EEE9DD!important}
+.board-row td{background:#F7F5EF!important}
+.board-row:hover td{background:#F0ECE2!important}
+.rate-num.sell{color:#1B1B1B!important}
+.card,.svc-card,.ic,.map-wrap{background:#fff!important;border-color:#E8E3D6!important;box-shadow:0 2px 14px rgba(0,0,0,.04)}
+.fi,.ccard,.ai{background:#F7F5EF!important;border-color:#E2DCCD!important;color:#1B1B1B!important}
+.fix-steps ol{color:#333!important}
+.soc a{color:#1B1B1B!important;background:#fff!important}
+.ic a,.ic strong,[style*="color:#fff"]{color:#1B1B1B!important}
+footer{background:#fff!important;border-top-color:#E8E3D6!important}
+.bbar{background:rgba(255,255,255,.97)!important;border-top-color:#E2DCCD!important}
+.cp-box{background:#fff!important}
+.cp-box button{border-color:#ddd!important}
+.faq details{border-bottom-color:#EEE9DD!important}
+.ch-tabs{background:#F0ECE2!important}
+.ch-stats div{background:#F7F5EF!important}
+#ch-svg .gr{stroke:rgba(0,0,0,.07)}
+.opt-badge,.ch-tabs button.on,.hcall,.bb-call,.cp-box a{color:#fff!important}
+.hcall svg,.bb-call svg,.cp-box a svg{fill:#fff!important}
+.flag{box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.mo .modal{background:#fff!important}

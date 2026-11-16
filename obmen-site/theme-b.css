@@ -1,0 +1,9 @@
+/* Вариант Б — графит-синий с золотом */
+:root{--dark:#0D1320;--dark2:#121A2A;--dark3:#1A2438;--dark4:#22304A;--muted:#93A0B8;--muted2:#5F6E8A}
+.top-bar,.board-row td,.ccard,.ai{border-color:#24314A!important}
+.card,.svc-card,.ic,.map-wrap,.fi{border-color:#24314A!important}
+.board-row:hover td{background:#1F2B42!important}
+footer{border-top-color:#1A2438!important}
+.bbar{background:rgba(13,19,32,.96)!important}
+.faq details{border-bottom-color:#24314A!important}
+#ch-svg .gr{stroke:rgba(255,255,255,.08)}
