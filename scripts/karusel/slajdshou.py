@@ -12,6 +12,15 @@
 #     гитара с синкопой, мягкая бочка, хлопок, шейкер, бас, маримба; не дискотека;
 #     6 мелодий-вариантов, вариант по названию папки (или --trek N), громкость средняя ~−17 dB,
 #     вход 0,3 с, выход 1,5 с, конец музыки = конец видео. Какой трек — пишется в _музыка.txt.
+#
+# 16.11.2026 (Евгений 21:34): Facebook у рилса «Зима в Валенсии» — «качество контента: видео с неполным заполнением
+# экрана», показ занижен. ТЕПЕРЬ рилс собирается ТОЛЬКО из полноэкранных слайдов 1080×1920 (папка reel/):
+#  — есть reel/01.jpg … (1080×1920) — берём их;
+#  — нет, но есть spec.json и фото к нему — сами рисуем reel/ (slajdy.py --reel) и берём;
+#  — нет ни того ни другого (старые карусели, нарисованные вручную) — НЕ собираем, выходим с ошибкой.
+#    Старый вид «слайд 4:5 по центру + размытые полосы» — только флагом --s-polosami (не для Facebook).
+# Сайт: маленький kalmykovgroup.com под текстом (у=1500, слева), на последнем слайде — жёлтая плашка вверху (у≈520),
+# в безопасной зоне Reels. Номеров «1/7» и «Листайте» в рилсе не бывает.
 import os, sys, json, glob, subprocess, hashlib
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
@@ -72,6 +81,47 @@ def site_band(last):
         d.rounded_rectangle((x - 30, y - 18, x + w + 30, y + 82), 22, fill=YEL + (255,))
         d.text((x, y), t, font=f, fill=(0, 0, 0, 255))
     return L
+
+
+def site_band_full(last):
+    """16.11: сайт для полноэкранного рилса — в безопасной зоне."""
+    L = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(L)
+    if not last:
+        d.text((60, 1500), SITE, font=F(38), fill=(255, 255, 255, 200))
+    else:
+        f = F(64); w = d.textbbox((0, 0), SITE, font=f)[2]; x, y = (W - w) // 2, 520
+        d.rounded_rectangle((x - 30, y - 18, x + w + 30, y + 82), 22, fill=YEL + (255,))
+        d.text((x, y), SITE, font=f, fill=(0, 0, 0, 255))
+    return L
+
+
+def frame_full(slide, band, k, direction):
+    z = 1.0 + 0.04 * (k if direction else 1 - k)          # на весь экран наезд мягче, чтобы текст не уходил к краю
+    sw, sh = int(W * z), int(H * z)
+    s = slide.resize((sw, sh), Image.BILINEAR)
+    s = s.crop(((sw - W) // 2, (sh - H) // 2, (sw - W) // 2 + W, (sh - H) // 2 + H)).convert("RGBA")
+    s.alpha_composite(band)
+    return s.convert("RGB")
+
+
+def full_slides(folder):
+    """Список путей полноэкранных слайдов или None."""
+    rd = os.path.join(folder, "reel")
+    fs = sorted(glob.glob(os.path.join(rd, "[0-9][0-9].jpg")))
+    if fs and all(Image.open(p).size == (W, H) for p in fs): return fs
+    sp = os.path.join(folder, "spec_reel.json")             # вырезки-панели под 9:16 (novye_pachka.py)
+    if not os.path.exists(sp): sp = os.path.join(folder, "spec.json")
+    if os.path.exists(sp):
+        base = os.path.dirname(os.path.abspath(sp))
+        sl = json.load(open(sp, encoding="utf-8")).get("slides", [])
+        if sl and all(os.path.exists(os.path.join(base, x["photo"])) for x in sl):
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import slajdy
+            slajdy.render(sp, rd, "916")
+            return sorted(glob.glob(os.path.join(rd, "[0-9][0-9].jpg")))
+        print("в spec.json есть фото, которых нет в папке:",
+              [x["photo"] for x in sl if not os.path.exists(os.path.join(base, x["photo"]))][:5])
+    return None
 
 
 def frame_of(slide, bg, band, k, direction):
@@ -243,20 +293,34 @@ def main():
     outp = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith("--") else os.path.join(folder, "shorts.mp4")
     trek = None
     if "--trek" in sys.argv: trek = int(sys.argv[sys.argv.index("--trek") + 1])
-    files = sorted(p for p in glob.glob(os.path.join(folder, "[0-9][0-9].jpg")))
+    polosy = "--s-polosami" in sys.argv
+    full = None if polosy else full_slides(folder)
+    if full:
+        files = full
+    else:
+        if not polosy:
+            sys.exit("НЕ СОБРАН: нет полноэкранных слайдов reel/01.jpg… и нет spec.json с фото. Рилс с размытыми полосами "
+                     "Facebook режет («неполное заполнение экрана», 16.11.2026). Сначала spec.json + фото → slajdy.py --reel")
+        files = sorted(p for p in glob.glob(os.path.join(folder, "[0-9][0-9].jpg")))
     if not files: sys.exit("нет 01.jpg, 02.jpg …")
     n = len(files)
     dur = durations(folder, n)
-    slides = [Image.open(p).convert("RGB").resize((SW, SH)) for p in files]
-    bgs = [make_bg(s) for s in slides]
-    bands = [site_band(i == n - 1) for i in range(n)]
+    if full:
+        slides = [Image.open(p).convert("RGB") for p in files]
+        bgs = [None] * n
+        bands = [site_band_full(i == n - 1) for i in range(n)]
+    else:
+        slides = [Image.open(p).convert("RGB").resize((SW, SH)) for p in files]
+        bgs = [make_bg(s) for s in slides]
+        bands = [site_band(i == n - 1) for i in range(n)]
+    fr = (lambda sl, b, bd, k, dr: frame_full(sl, bd, k, dr)) if full else frame_of
     starts = np.cumsum([0] + dur[:-1])
     total = float(sum(dur))
     nf = int(round(total * FPS))
 
     def single(i, t):
         k = min(1, max(0, (t - starts[i]) / (dur[i] + XF)))
-        return frame_of(slides[i], bgs[i], bands[i], k, i % 2 == 0)
+        return fr(slides[i], bgs[i], bands[i], k, i % 2 == 0)
 
     if trek is None: trek = int(hashlib.md5(os.path.basename(os.path.abspath(folder)).encode()).hexdigest(), 16) % len(TREKI)
     wav = outp + ".wav"
@@ -266,7 +330,7 @@ def main():
            "-i", wav, "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-shortest", "-movflags", "+faststart", outp]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    first0 = frame_of(slides[0], bgs[0], bands[0], 0, True)
+    first0 = fr(slides[0], bgs[0], bands[0], 0, True)
     for fi in range(nf):
         t = fi / FPS
         i = int(np.searchsorted(starts, t, side="right") - 1)
@@ -281,7 +345,7 @@ def main():
     os.remove(wav)
     with open(os.path.join(os.path.dirname(outp) or ".", "_музыка.txt"), "w", encoding="utf-8") as fh:
         fh.write((f"FreePD {src} (CC0)" if src else f"трек {trek + 1} из {len(TREKI)} (свой, синтез)") + f", длина {total:.1f} с, слайдов {n}\n")
-    print(f"готово: {outp}  {total:.1f} с, слайдов {n}, музыка — трек {trek + 1}")
+    print(f"готово: {outp}  {total:.1f} с, слайдов {n}, {'ВО ВЕСЬ ЭКРАН 9:16' if full else 'С ПОЛОСАМИ (старый вид)'}, музыка — трек {trek + 1}")
 
 
 if __name__ == "__main__":

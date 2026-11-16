@@ -7,6 +7,8 @@
 #     и shorts.mp4 на Диске заменить тоже;
 #  4) Facebook — задание роботу «Брокер/К публикации/_задания/ГГГГ-ММ-ДД_ЧЧММ_fb_РИЛС <папка>.json»
 #     (kind arenda = рилс из папки карусели + группы в окне Reels, mode live).
+# 16.11.2026: рилс только во весь экран 9:16 (slajdshou.py без полос); подпись для Facebook — поле "text_fb",
+#     100–200 знаков (иначе задание роботу не ставится); обложка FB — reel/01.jpg.
 # Итог — out/итог.json и кадры out/*.jpg (для проверки Claude).
 import json, sys, os, subprocess, pathlib, datetime, urllib.request, urllib.error, shutil
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -70,7 +72,10 @@ for it in cfg['items']:
     remote = f"montazh:Брокер/Посты/Карусели/{name}"
     try:
         sh('rclone', 'copy', remote, str(D), '--include', '[0-9][0-9].jpg', '--include', 'spec.json',
-           '--include', 'karusel.json', '--include', '_отправлено.json', '--include', 'karusel_slajdy.json')
+           '--include', 'karusel.json', '--include', '_отправлено.json', '--include', 'karusel_slajdy.json',
+           '--include', 'reel/**', '--include', 'src/**')
+        # 16.11.2026: рилс только во весь экран 9:16 — подтянуть фото к spec.json, слайды reel/ потом на Диск
+        print(sh('python3', str(ROOT / 'scripts/karusel/foto_dlya_rilsa.py'), str(D)).stdout.strip())
         p = subprocess.run(['python3', str(ROOT / 'scripts/karusel/slajdshou.py'), str(D), str(D / 'reel.mp4')]
                            + (['--trek', str(int(it['trek']) - 1)] if it.get('trek') else []),
                            capture_output=True, text=True)
@@ -86,6 +91,7 @@ for it in cfg['items']:
         sh('ffmpeg', '-loglevel', 'error', '-y', '-i', str(v), '-vf', f"select='{sel}',scale=216:384,tile=5x1",
            '-frames:v', '1', '-update', '1', str(OUT / f'{name}.jpg'))
         sh('rclone', 'copyto', str(v), f'{remote}/reel.mp4')
+        if (D / 'reel').is_dir(): sh('rclone', 'copy', str(D / 'reel'), f'{remote}/reel')
         sh('rclone', 'copyto', str(D / '_музыка.txt'), f'{remote}/_музыка.txt')
         if dry:
             r['dry'] = True; res.append(r); continue
@@ -119,9 +125,14 @@ for it in cfg['items']:
             r['youtube_zamena'] = hit or 'НЕ НАЙДЕН в расписании Blotato'
             if hit: sh('rclone', 'copyto', str(v), f'{remote}/shorts.mp4')
         at = datetime.datetime.fromisoformat(it['at'])
+        # 16.11.2026: Facebook сам пишет — подпись 100–200 знаков даёт +137% просмотров. Длиннее/короче — не ставим.
+        fbt = bez_ssylok(it.get('text_fb') or it['text'])
+        if not 100 <= len(fbt) <= 200:
+            r['fb_zadanie'] = f'НЕ ПОСТАВЛЕНО: подпись для Facebook {len(fbt)} знаков, нужно 100–200 (поле text_fb)'
+            res.append(r); print(json.dumps(r, ensure_ascii=False)); continue
         job = {'platform': 'fb', 'kind': 'arenda', 'mode': 'live', 'folder': f'../Посты/Карусели/{name}',
-               'video': 'reel.mp4', 'cover_file': '01.jpg', 'date': f'{at:%Y-%m-%d}', 'time': f'{at:%H:%M}',
-               'text': bez_ssylok(it['text']), 'groups': it.get('groups', [])}
+               'video': 'reel.mp4', 'cover_file': 'reel/01.jpg' if (D / 'reel' / '01.jpg').exists() else '01.jpg', 'date': f'{at:%Y-%m-%d}', 'time': f'{at:%H:%M}',
+               'text': fbt, 'groups': it.get('groups', [])}
         jn = f'{at:%Y-%m-%d_%H%M}_fb_РИЛС {name}.json'
         (OUT / jn).write_text(json.dumps(job, ensure_ascii=False, indent=1), encoding='utf-8')
         cp = sh('rclone', 'copyto', str(OUT / jn), f'montazh:Брокер/К публикации/_задания/{jn}')

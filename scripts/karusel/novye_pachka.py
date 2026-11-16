@@ -5,6 +5,8 @@
 # slajdy.py (крупный текст) → slajdshou.py (музыка, трек из "trek") →
 # «Брокер/На проверке/Рилсы из каруселей/<name>/»: 01..NN.jpg, reel.mp4, spec.json, _текст.txt, _музыка.txt.
 # Для проверки Claude: pics/<name>_слайды.jpg (все слайды) и pics/<name>_рилс.jpg (5 кадров).
+# 16.11.2026: рилс только во весь экран — слайды reel/01.jpg … 1080×1920 (slajdy.py --reel, вырезки-панели
+# рисуются отдельно под 9:16) и spec_reel.json; reel/ и src/ кладутся на Диск рядом, чтобы рилс можно было пересобрать.
 import json, sys, os, subprocess, pathlib
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance, ImageDraw
 
@@ -19,15 +21,17 @@ def sh(*a):
     return (p.stdout + p.stderr).strip()
 
 
-def panel(src, box, out):
+def panel(src, box, out, reel=False):
+    # reel=True — под рилс 1080×1920: вырезка в верхней половине (280…1180), ниже место под текст
+    PW, PH, top, mh = (1080, 1920, 280, 900) if reel else (W, H, 60, 860)
     im = ImageOps.exif_transpose(Image.open(src)).convert('RGB')
     w, h = im.size
     cr = im.crop((int(box[0] * w), int(box[1] * h), int(box[2] * w), int(box[3] * h)))
-    bg = ImageOps.fit(im, (W, H), Image.LANCZOS).filter(ImageFilter.GaussianBlur(40))
+    bg = ImageOps.fit(im, (PW, PH), Image.LANCZOS).filter(ImageFilter.GaussianBlur(40))
     bg = ImageEnhance.Brightness(bg).enhance(0.45)
-    sc = min(1000 / cr.width, 860 / cr.height)
+    sc = min(1000 / cr.width, mh / cr.height)
     cr = cr.resize((int(cr.width * sc), int(cr.height * sc)), Image.LANCZOS)
-    bg.paste(cr, ((W - cr.width) // 2, 60 + (860 - cr.height) // 2))
+    bg.paste(cr, ((PW - cr.width) // 2, top + (mh - cr.height) // 2))
     bg.save(out, quality=94)
 
 
@@ -48,18 +52,23 @@ for k in cfg:
         need = sorted({s['photo'] for s in k['slides']})
         (D / '_need.txt').write_text('\n'.join(need), encoding='utf-8')
         sh('rclone', 'copy', 'montazh:Брокер/Посты/Фото', str(D / 'src'), '--files-from', str(D / '_need.txt'))
-        slides = []
+        slides, rslides = [], []
         for i, s in enumerate(k['slides'], 1):
             s = dict(s); src = D / 'src' / s['photo']
             if not src.exists(): raise RuntimeError('нет фото ' + s['photo'])
+            r = dict(s)
             if s.get('panel'):
-                p = D / 'src' / f'p_{i:02d}.jpg'; panel(src, s.pop('panel'), p); s['photo'] = 'src/' + p.name
+                box = s.pop('panel'); r.pop('panel')
+                p = D / 'src' / f'p_{i:02d}.jpg'; panel(src, box, p); s['photo'] = 'src/' + p.name
+                q = D / 'src' / f'r_{i:02d}.jpg'; panel(src, box, q, reel=True); r['photo'] = 'src/' + q.name
             else:
-                s['photo'] = 'src/' + s['photo']
-            slides.append(s)
+                s['photo'] = r['photo'] = 'src/' + s['photo']
+            slides.append(s); rslides.append(r)
         spec = {'plashka': k.get('plashka', ''), 'slides': slides}
         (D / 'spec.json').write_text(json.dumps(spec, ensure_ascii=False, indent=1), encoding='utf-8')
+        (D / 'spec_reel.json').write_text(json.dumps(dict(spec, slides=rslides), ensure_ascii=False, indent=1), encoding='utf-8')
         print(name, sh('python3', str(ROOT / 'scripts/karusel/slajdy.py'), str(D / 'spec.json'), str(D))[-200:])
+        print(name, sh('python3', str(ROOT / 'scripts/karusel/slajdy.py'), str(D / 'spec_reel.json'), str(D / 'reel'), '--reel')[-120:])
         print(name, sh('python3', str(ROOT / 'scripts/karusel/slajdshou.py'), str(D), str(D / 'reel.mp4'),
                        '--trek', str(int(k.get('trek', 1)) - 1))[-300:])
         (D / '_текст.txt').write_text(k['text'], encoding='utf-8')
@@ -73,8 +82,10 @@ for k in cfg:
            '-frames:v', '1', '-update', '1', str(PICS / f'{name}_рилс.jpg'))
         vol = sh('ffmpeg', '-hide_banner', '-i', str(v), '-af', 'volumedetect', '-f', 'null', '-')
         vol = ' '.join(l.split('] ')[-1] for l in vol.splitlines() if 'mean_volume' in l)
-        for f in nums + [v, D / 'spec.json', D / '_текст.txt', D / '_музыка.txt']:
+        for f in nums + [v, D / 'spec.json', D / 'spec_reel.json', D / '_текст.txt', D / '_музыка.txt']:
             if f.exists(): sh('rclone', 'copyto', str(f), f'{DST}/{name}/{f.name}')
+        sh('rclone', 'copy', str(D / 'reel'), f'{DST}/{name}/reel')
+        sh('rclone', 'copy', str(D / 'src'), f'{DST}/{name}/src')
         print(f'ИТОГ {name}: слайдов {len(nums)}, рилс {dur:.1f} с, {vol}')
     except Exception as ex:
         print(f'ОШИБКА {name}: {ex}')

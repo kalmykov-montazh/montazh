@@ -39,9 +39,15 @@ jobs:
             which ffmpeg > /dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq ffmpeg > /dev/null; }
             pip install -q pillow numpy
             rm -f k/shorts.mp4
-            python3 scripts/karusel/slajdshou.py k k/shorts.mp4 2>&1 | tee out.txt
-            rclone copyto k/shorts.mp4 "montazh:$F/shorts.mp4"
-            rclone copyto k/_музыка.txt "montazh:$F/_музыка.txt"
+            # 16.11.2026: рилс только во весь экран 9:16 — фото к spec.json, слайды reel/ (без полос)
+            python3 scripts/karusel/foto_dlya_rilsa.py k 2>&1 | tee out.txt
+            python3 scripts/karusel/slajdshou.py k k/shorts.mp4 2>&1 | tee -a out.txt
+            [ -f k/shorts.mp4 ] || echo "РИЛС НЕ СОБРАН (нет слайдов 9:16 / spec.json) — shorts в YouTube не ставим" | tee -a out.txt
+            [ -d k/reel ] && rclone copy k/reel "montazh:$F/reel"
+            if [ -f k/shorts.mp4 ]; then
+              rclone copyto k/shorts.mp4 "montazh:$F/shorts.mp4"
+              rclone copyto k/_музыка.txt "montazh:$F/_музыка.txt"
+            fi
           fi
           if [ "$M" = "video" ]; then
             touch k/_отправлено.json
