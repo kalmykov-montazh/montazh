@@ -52,7 +52,7 @@ export async function onRequestGet({ env }) {
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
       })).json();
     }
-    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
+    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); if (!isRedo) done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
     else posted.push('ошибка: ' + r.description);
   }
   // Воскресенье после 19:00 по Испании — итог недели (один раз)
