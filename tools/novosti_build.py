@@ -184,7 +184,7 @@ def article_html(it):
 <div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
-<p class="note"><a href="https://t.me/ispaniya_zakony" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
+<p class="note"><a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
 {YT_JS}"""
     if it.get('img'):   # 17.11.2026: фото из Facebook — вверху статьи и в превью соцсетей и Telegram
         body = body.replace(f"<article class=\"card\"><h1>", f"<article class=\"card\"><img src=\"{it['img']}\" alt=\"\" style=\"width:100%;border-radius:12px;margin:0 0 14px;display:block\" loading=\"lazy\"><h1>", 1)
@@ -198,7 +198,7 @@ def index_html(items):
     rows = ''.join(f'<a href="/novosti/{it["slug"]}"><b>{esc(it["title"])}</b><span>{human_date(it["published"])}</span></a>' for it in items)
     body = f"""<a class="back" href="/">← Евгений Калмыков · главная</a>
 <div class="card"><h1>Новости Испании</h1><p class="date">Жильё, аренда, ВНЖ и документы, деньги, транспорт — каждый день простыми словами</p>
-<p style="margin:0 0 12px"><a class="go" href="https://t.me/ispaniya_zakony" target="_blank" rel="noopener" style="background:#2aa1da">Все новости в Telegram-канале</a></p>
+<p style="margin:0 0 12px"><a class="go" href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="background:#2aa1da">Все новости в Telegram-канале</a></p>
 <div class="list">{rows or '<p>Скоро здесь будут новости</p>'}</div></div>"""
     return page('Новости Испании — жильё, ВНЖ, деньги, законы | Евгений Калмыков',
                 'Свежие новости Испании простыми словами: аренда и цены на жильё, ВНЖ и документы, деньги, законы, транспорт. Каждый день',
@@ -212,7 +212,7 @@ def update_home(items):
     block = (f'{a}<section class="newsbox" style="background:var(--surface);border-radius:20px;padding:20px 24px">'
              f'<h2 style="margin:0 0 10px;font-family:var(--display);font-size:20px">Новости Испании</h2>'
              f'<ul style="margin:0;padding-left:20px;line-height:1.6">{rows}</ul>'
-             f'<p style="margin:12px 0 0"><a href="/novosti/" style="font-weight:700">Все новости →</a> · <a href="https://t.me/ispaniya_zakony" target="_blank" rel="noopener" style="font-weight:700">Новости каждый день в Telegram →</a></p></section>{b}')
+             f'<p style="margin:12px 0 0"><a href="/novosti/" style="font-weight:700">Все новости →</a> · <a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="font-weight:700">Новости каждый день в Telegram →</a></p></section>{b}')
     if a in s:
         s = re.sub(re.escape(a) + '.*?' + re.escape(b), lambda m: block, s, flags=re.S)
     elif items:

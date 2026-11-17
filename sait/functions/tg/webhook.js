@@ -10,7 +10,7 @@ const GUIDES = {
 };
 const SITE = 'https://kalmykovgroup.com';
 
-const MENU = Object.entries(GUIDES).map(([k, g]) => [{ text: g.title, callback_data: 'g:' + k }]);
+const MENU = Object.entries(GUIDES).map(([k, g]) => [{ text: g.title, callback_data: 'g:' + k }]).concat([[{ text: '📰 Новости и законы Испании — каждый день', url: 'https://t.me/+DF-daga43CM5MzVk' }]]);
 
 async function hookSecret(env) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kalmykov-bot:' + env.TG_TOKEN));
