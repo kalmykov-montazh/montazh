@@ -379,7 +379,7 @@ def main():
         if (SLUZH.match(n_) or SLUZH2.match(n_)) and not any(abs(w['s'] - t) < 1.0 for t in seen_sl):
             seen_sl.append(w['s'])
             near = norm(ctx(gw, w['s'], 1.5))
-            strong = bool(SLUZH.match(n_)) or 'сослов' in near or 'давай' in near or 'ещераз' in near
+            strong = bool(SLUZH.match(n_)) or 'сослов' in near   # «нужно заново взять ситу» — обычная речь
             add('СЛУЖЕБНОЕ', w['s'], f"слышно «{w['w']}» — команда при записи? {ctx(gw, w['s'])}", strong)
     for i in range(len(gw) - 1):
         if norm(gw[i]['w']) == 'со' and norm(gw[i + 1]['w']).startswith('слов') and not any(abs(gw[i]['s'] - t) < 1.0 for t in seen_sl):
