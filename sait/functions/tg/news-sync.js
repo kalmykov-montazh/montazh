@@ -36,8 +36,8 @@ export async function onRequestGet({ env }) {
   }
   const redo = ((await env.BOT_KV.get('redo')) || '').split(',').map(x => x.trim()).filter(Boolean);
   // 17.11.2026: v2 — фото сверху, под ним заголовок (Евгений 14:23). Переход на «богатые» сообщения с крупным заголовком — один раз перевыложить всё, что уже вышло
-  if (!(await env.BOT_KV.get('rich:v2'))) {
-    await env.BOT_KV.put('rich:v2', '1');
+  if (!(await env.BOT_KV.get('rich:v3'))) {
+    await env.BOT_KV.put('rich:v3', '1');
     for (const k of (await env.BOT_KV.list({ prefix: 'msg:' })).keys) redo.push(k.name.slice(4));
   }
   if (redo.length) {
@@ -66,7 +66,7 @@ export async function onRequestGet({ env }) {
     let len = 0;
     for (const p of (it.paras || [])) { const t = p.join(' ').trim(); if (!t) continue; if (len + t.length > 1400 && paras.length) break; paras.push(t); len += t.length; }
     const html = (it.img ? `<img src="${SITE + it.img}"/>` : '') + `<h2>${esc(it.title)}</h2>` +
-      paras.map(t => `<p>${esc(t)}</p>`).join('') + `<p><b>${link}</b></p>`;
+      `<p>${paras.map(esc).join('<br/><br/>')}<br/><br/><b>${link}</b></p>`;
     r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendRichMessage`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, rich_message: { html } }),
