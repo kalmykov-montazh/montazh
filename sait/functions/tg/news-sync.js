@@ -22,15 +22,19 @@ export async function onRequestGet({ env }) {
   const now = Date.now();
   const day = new Date(now + 3600e3).toISOString().slice(0, 10); // день по Испании (зима)
   let done = parseInt(await env.BOT_KV.get('newsday:' + day) || '0', 10);
+  // Перевыложить вручную: в Cloudflare KV (kalmykov-bot) ключ «redo» = слаги через запятую. Выкладывает их сейчас, ключ стирает (17.11.2026)
+  const redo = ((await env.BOT_KV.get('redo')) || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (redo.length) { await env.BOT_KV.delete('redo'); for (const sl of redo) await env.BOT_KV.delete('news:' + sl); }
   const items = Object.values(data)
-    .filter(it => it.published && now - Date.parse(it.published) < 20 * 3600e3 && Date.parse(it.published) <= now)
+    .filter(it => redo.includes(it.slug) || (it.published && now - Date.parse(it.published) < 20 * 3600e3 && Date.parse(it.published) <= now))
     .sort((a, b) => Date.parse(a.published) - Date.parse(b.published));
   const posted = [];
   for (const it of items) {
-    if (done >= PER_DAY) break;
+    const isRedo = redo.includes(it.slug);
+    if (done >= PER_DAY && !isRedo) continue;
     if (await env.BOT_KV.get('news:' + it.slug)) continue;
     // 17.11.2026: ждём фото из Facebook (робот публикует в окно слота) — до 4 часов, потом без фото
-    if (!it.img && now - Date.parse(it.published) < 4 * 3600e3) continue;
+    if (!isRedo && !it.img && now - Date.parse(it.published) < 4 * 3600e3) continue;
     const url = `${SITE}/novosti/${it.slug}`;
     const link = `<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
     let r;
@@ -48,7 +52,7 @@ export async function onRequestGet({ env }) {
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
       })).json();
     }
-    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
+    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
     else posted.push('ошибка: ' + r.description);
   }
   // Воскресенье после 19:00 по Испании — итог недели (один раз)
