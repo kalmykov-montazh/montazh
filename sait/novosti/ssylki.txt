@@ -1,4 +1,5 @@
 формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+17.11 Железная дорога бастует сегодня | https://kalmykovgroup.com/novosti/2026-11-17-zheleznaya-doroga-bastuet-do-polunochi-vot-chto-segodnya-hod | полная
 16.11 Забастовка автотранспорта на Рождество | https://kalmykovgroup.com/novosti/2026-11-16-na-23-i-24-dekabrya-obyavili-zabastovku-vsego-avtotransporta | полная
 16.11 Рождество 200 тысяч на работу | https://kalmykovgroup.com/novosti/2026-11-16-k-rozhdestvu-v-ispanii-naberut-200-tysyach-chelovek-na-vreme | полная
 16.11 Помидоры и ягоды дороже | https://kalmykovgroup.com/novosti/2026-11-16-pomidory-za-god-podorozhali-na-21-yagody-na-54-a-kofe-stal-d | полная
