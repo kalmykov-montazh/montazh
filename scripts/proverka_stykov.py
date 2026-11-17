@@ -114,6 +114,20 @@ def known(w):
         import pymorphy3; _m = pymorphy3.MorphAnalyzer()
     return any(p.is_known for p in _m.parse(w))
 
+LAT = {'sh': 'ш', 'ch': 'ч', 'ck': 'к', 'th': 'т', 'ph': 'ф', 'a': 'а', 'b': 'б', 'c': 'к', 'd': 'д', 'e': 'е', 'f': 'ф', 'g': 'г', 'h': 'х',
+       'i': 'и', 'j': 'х', 'k': 'к', 'l': 'л', 'm': 'м', 'n': 'н', 'o': 'о', 'p': 'п', 'q': 'к', 'r': 'р', 's': 'с', 't': 'т', 'u': 'у',
+       'v': 'в', 'w': 'в', 'x': 'кс', 'y': 'й', 'z': 'с'}
+def lat2cyr(w):
+    w = w.lower(); out = ''; i = 0
+    while i < len(w):
+        if w[i:i + 2] in LAT: out += LAT[w[i:i + 2]]; i += 2
+        else: out += LAT.get(w[i], w[i]); i += 1
+    return out
+def foreign_ok(x, hs):
+    # слово не из словаря (имя, испанский термин) — достаточно, что звучит похоже; срез на таких проверяем по громкости, не по буквам
+    if known(x): return False
+    return any(sim(lat2cyr(y['w']), x) >= 0.5 or sim(y['w'], x) >= 0.5 for y in hs)
+
 def frag(x, y):
     # признак среза: одно слово — кусок другого (начало/конец) или отличается только первой/последней буквой
     x, y = norm(x), norm(y)
@@ -274,6 +288,7 @@ def main():
                 th = 0.6 if len(norm(x['w'])) >= 5 else 0.75
                 def good(hs):
                     if not hs: return False
+                    if foreign_ok(x['w'], hs): return True
                     if len(norm(x['w'])) >= 4 and norm(x['w']) in ''.join(norm(y['w']) for y in hs): return True   # «по-настоящему» = «по настоящему»
                     y = max(hs, key=lambda y: sim(y['w'], x['w']))
                     if sim(y['w'], x['w']) < th: return False
@@ -317,6 +332,7 @@ def main():
             th = 0.6 if len(xn) >= 5 else 0.75
             def good(hs):
                 if not hs: return False
+                if foreign_ok(x['w'], hs): return True
                 if len(xn) >= 4 and xn in ''.join(norm(y['w']) for y in hs): return True
                 y = max(hs, key=lambda y: sim(y['w'], x['w']))
                 if sim(y['w'], x['w']) < th: return False
@@ -386,7 +402,7 @@ def main():
     # лишняя речь: окно слышит заметно больше слов, чем общая расшифровка в том же месте
     for c0, w0, w1, lw, gl in WIN:
         a0, a1 = w0 + 0.4, w1 - 0.4
-        nb = sum(1 for w in ww if a0 <= (w['s'] + w['e']) / 2 <= a1)
+        nb = max(sum(1 for w in ww if a0 <= (w['s'] + w['e']) / 2 <= a1), sum(1 for w in gw if a0 <= (w['s'] + w['e']) / 2 <= a1))
         ng = sum(1 for w in gl if a0 <= (w['s'] + w['e']) / 2 <= a1)
         nl = sum(1 for w in lw if a0 <= (w['s'] + w['e']) / 2 <= a1)
         nx = max(ng, nl)
