@@ -260,6 +260,18 @@ def attach_photos(data, zhurnal='zhurnal.txt'):
                 print('сжать не вышло, кладу как есть:', str(e2)[:80])
                 shutil.copyfile('/tmp/ph_src', str(out))
             it['img'] = f"/novosti/img/{it['slug']}.jpg"; it['photo'] = name; changed = True
+            # 17.11.2026: горизонтальная копия 16:9 для Telegram-канала (фото на всю ширину, без белых полос)
+            try:
+                from PIL import Image
+                (NEWS / 'img-wide').mkdir(exist_ok=True)
+                im = Image.open(str(out)); w, h = im.size; nh = int(w * 9 / 16)
+                if nh > h:
+                    nw = int(h * 16 / 9); l = (w - nw) // 2; c = im.crop((l, 0, l + nw, h))
+                else:
+                    t = (h - nh) // 2; c = im.crop((0, t, w, t + nh))
+                c.convert('RGB').save(str(NEWS / 'img-wide' / f"{it['slug']}.jpg"), 'JPEG', quality=86)
+            except Exception as e3:
+                print('широкое фото не вышло:', str(e3)[:80])
             print('фото', it['slug'], '←', name)
         except Exception as e:
             print('фото не взял', it['slug'], name, str(e)[:120])
