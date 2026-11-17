@@ -66,7 +66,7 @@ jobs:
         run: |
           mkdir -p out v
           i=0
-          while IFS=$'\t' read -r p wk old || [ -n "$p" ]; do
+          while IFS=$'\t' read -r -u 3 p wk old || [ -n "$p" ]; do
             [ -z "$p" ] && continue
             if [ $((i % N)) -eq "$SH" ]; then
               key=$(printf '%s' "$p" | md5sum | cut -c1-12)
@@ -96,7 +96,7 @@ jobs:
               fi
             fi
             i=$((i+1))
-          done < "$SP"
+          done 3< "$SP"   # 17.11.2026: ffmpeg внутри цикла читал stdin и съедал строки списка
       - name: Отчёты в ветку ot-<шард>
         if: always()
         run: |
