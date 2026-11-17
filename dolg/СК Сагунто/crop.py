@@ -114,16 +114,37 @@ else:
 Y = np.clip(Y, lo, hi)
 print(K, mode, flush=True)
 
-# --- 3. рендер: окно на всю ширину, crop по времени через sendcmd, HDR→обычный цвет уже после обрезки
-CW = w0 - w0 % 2; CH = int(round(CW * 9 / 16 / 2) * 2); sc = h0 / SH
-ys = [int(round(y * sc / 2) * 2) for y in Y]; ys = [min(max(0, y), h0 - CH) for y in ys]
-with open(f'{K}.cmd', 'w') as o:
-    for j in range(n):
-        o.write(f'{j / FPSs:.2f} crop@c y {ys[j]};\n')
-y0 = ys[0]
-vf = f'sendcmd=f={K}.cmd,crop@c={CW}:{CH}:0:{y0},{TM},scale=1920:1080:flags=lanczos,fps=30'
-subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', SRC, '-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '17', '-g', '30',
-                '-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2', f'{K}.mov'], check=True)
+# --- 2б. «двойная камера» телефона: улица на весь кадр + окошко с лицом справа вверху (x 697–1018, y 60–632 из 1080×1920)
+PIP = None
+if VERT and ok.sum() > 0.3 * n:
+    bx0, bx1, by0, by1 = 697 / 1080 * SW, 1018 / 1080 * SW, 60 / 1920 * SH, 632 / 1920 * SH
+    cs = [(S[j, 1] + S[j, 2]) / 2 for j in range(n) if ok[j]]
+    inside = np.mean([by0 <= c <= by1 for c in cs])
+    if inside > 0.7 and np.median([S[j, 2] - S[j, 1] for j in range(n) if ok[j]]) < (by1 - by0):
+        PIP = True
+if PIP:
+    k = w0 / 1080
+    bw, bh, bx, by = [int(round(v * k / 2) * 2) for v in (321, 572, 697, 60)]
+    band = int(round(w0 * 9 / 16 / 2) * 2); y_b = int(round((632 + 24) * k / 2) * 2)
+    y_b = min(y_b, h0 - band)
+    fc = (f"[0:v]{TM},split[a][b];[a]crop={w0}:{band}:0:{y_b},scale=1920:1080:flags=lanczos[bg];"
+          f"[b]crop={bw}:{bh}:{bx}:{by},scale=460:820:flags=lanczos,pad=468:828:4:4:white[p];[bg][p]overlay=W-w-70:(H-h)/2,fps=30[v]")
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', SRC, '-filter_complex', fc, '-map', '[v]', '-map', '0:a', '-c:v', 'libx264', '-preset', 'veryfast',
+                    '-crf', '17', '-g', '30', '-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2', f'{K}.mov'], check=True)
+    mode = 'двойная камера — улица + окошко с лицом справа'
+    ys = []; CH = band
+    print(K, mode, flush=True)
+else:
+    # --- 3. рендер: окно на всю ширину, crop по времени через sendcmd, HDR→обычный цвет уже после обрезки
+    CW = w0 - w0 % 2; CH = int(round(CW * 9 / 16 / 2) * 2); sc = h0 / SH
+    ys = [int(round(y * sc / 2) * 2) for y in Y]; ys = [min(max(0, y), h0 - CH) for y in ys]
+    with open(f'{K}.cmd', 'w') as o:
+        for j in range(n):
+            o.write(f'{j / FPSs:.2f} crop@c y {ys[j]};\n')
+    y0 = ys[0]
+    vf = f'sendcmd=f={K}.cmd,crop@c={CW}:{CH}:0:{y0},{TM},scale=1920:1080:flags=lanczos,fps=30'
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', SRC, '-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '17', '-g', '30',
+                    '-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2', f'{K}.mov'], check=True)
 json.dump({'k': K, 'mode': mode, 'dur': dur, 'faces': float(ok.mean()), 'win_h_src': CH, 'y': ys}, open(f'{K}.crop.json', 'w'))
 # лист кадров результата раз в 6 с — проверить головы глазами
 subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', f'{K}.mov', '-vf', 'fps=1/3,scale=384:216,drawtext=text=%{pts\\:hms}:x=6:y=6:fontsize=18:fontcolor=yellow:box=1:boxcolor=black@0.6,tile=6x8:padding=3',
