@@ -76,7 +76,9 @@ F44, F36, F70 = font(44), font(36), font(70)
 CH = []
 for c in P['ch']:
     src, t, k, txt = c[:4]; after = c[4] if len(c) > 4 else 0; yy = c[5] if len(c) > 5 else 22; du = c[6] if len(c) > 6 else 4.0
-    CH.append([round(out_t(src, t, after), 2), k, txt, yy, du])
+    ot = out_t(src, t, after)
+    if ot is None: print('плашка вне кусков, пропуск:', c, flush=True); continue
+    CH.append([round(ot, 2), k, txt, yy, du])
 for i, (_, k, txt, *_r) in enumerate(CH):
     tmp = ImageDraw.Draw(Image.new('RGBA', (10, 10)))
     w1 = tmp.textlength(k + '  ', font=F44) if k else 0; w2 = tmp.textlength(txt, font=F44)
