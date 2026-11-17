@@ -39,9 +39,38 @@ def pause(a=2.0, b=5.0):
 import re as _re
 _BAN = _re.compile(r'(шапк[еиу]\s+профил|полное\s+видео|монтаж\s+делал|ссылк\w*[^\n]{0,30}\s+в\s+(шапке|описании|профиле)|https?://|www\.|t\.me/|youtu\.be)', _re.I)
 
-def clean_pack(text):
-    """Убирает из упаковки строки со ссылками и отсылками «ссылка в шапке / полное видео на YouTube»."""
+# 18.11.2026: СЛУЖЕБНЫЙ БЛОК УПАКОВКИ. 17.11 «Звонят из банка и просят код» ушёл во все сети с хвостом
+# «Обложка:» + 5 вариантов заголовков «(топ)», «— стоит на обложке». Всё от строки «Обложка:» (и похожих
+# заголовков служебных блоков) до конца — служебное, в подписи не уходит НИКОГДА, ни в одну сеть, YouTube тоже.
+# Плюс отдельные служебные строки и снятые призывы («подберу варианты» — подбором Евгений не занимается, 09.11).
+_SERVICE_HEAD = _re.compile(r'^\s*(обложк[аи]|варианты\s+(обложк|заголов)\w*|заголовк[иа]\s+(для\s+)?обложк\w*|плейлист|для\s+claude|служебн\w*)\s*[:—-]', _re.I)
+_SERVICE_LINE = _re.compile(r'\((топ|top)\)|стоит\s+на\s+обложке|на\s+обложк[еу]\s*:|подбер[уё]\w*\s+вариант|подбираю\s+вариант', _re.I)
+
+def strip_service(text):
+    """Убирает служебный блок упаковки (от «Обложка:» до конца) и служебные строки. Для всех сетей."""
     src = (text or '').splitlines()
+    out = []
+    for i, l in enumerate(src):
+        if i and _SERVICE_HEAD.match(l):
+            break
+        if i and _SERVICE_LINE.search(l):
+            continue
+        out.append(l)
+    while out and out[-1].strip() in ('', '\u2800'):
+        out.pop()
+    return '\n'.join(out)
+
+def caption_problems(text):
+    """Последняя проверка перед публикацией: служебные слова в подписи. Пустой список — можно."""
+    bad = []
+    for l in (text or '').splitlines():
+        if _SERVICE_HEAD.match(l) or _SERVICE_LINE.search(l):
+            bad.append(l.strip()[:60])
+    return bad
+
+def clean_pack(text):
+    """Убирает из упаковки служебный блок и строки со ссылками и отсылками «ссылка в шапке / полное видео на YouTube»."""
+    src = strip_service(text).splitlines()
     lines = src[:1] + [l for l in src[1:] if not _BAN.search(l)]   # название (1-я строка) не трогаем
     out = []
     for l in lines:                      # не оставлять две строки-разделителя ⠀ подряд
@@ -51,12 +80,56 @@ def clean_pack(text):
     return '\n'.join(out).strip()
 
 def read_pack(folder: Path, raw=False):
-    """raw=True — упаковка как есть (только для YouTube), иначе без строк про ссылки."""
+    """raw=True — упаковка со ссылками (только для YouTube), но без служебного блока; иначе ещё и без строк про ссылки."""
     p = folder / 'упаковка.txt'
     if not p.exists():
         return ''
     t = p.read_text(encoding='utf-8-sig').rstrip()
-    return t if raw else clean_pack(t)
+    return strip_service(t).strip() if raw else clean_pack(t)
+
+# 18.11.2026: ПОДПИСЬ FACEBOOK КОРОТКАЯ. Facebook советует 100–200 знаков (максимум 400) и не больше
+# 3 хэштегов. 17.11 лонг «Одна страна, два климата» вышел с подписью ~1300 знаков и таймкодами.
+# Таймкоды — только YouTube. Для Facebook: без таймкодов и служебного, длинное — до первого абзаца.
+FB_MAX = 400
+FB_TAGS = 3
+_TIMECODE = _re.compile(r'^\s*\(?\d{1,2}:\d{2}(:\d{2})?\)?\s')
+
+def fb_short(text):
+    lines = [l for l in strip_service(text).splitlines() if not _TIMECODE.match(l)]
+    tags = []
+    body = []
+    for l in lines:
+        w = l.split()
+        if w and all(x.startswith('#') for x in w):
+            tags += [x for x in w if x.lower() not in [t.lower() for t in tags]]
+        else:
+            body.append(l.rstrip())
+    while body and body[-1].strip() in ('', '\u2800'):
+        body.pop()
+    t = _re.sub(r'\n{3,}', '\n\n', '\n'.join(body)).strip()
+    tail = ' '.join(tags[:FB_TAGS])
+    sep = '\n\u2800\n' if '\u2800' in t else '\n\n'
+    room = FB_MAX - len(tail) - len(sep)
+    if len(t) > room:
+        paras = [p.strip() for p in _re.split(r'\n\s*\n|\n\u2800\n', t) if p.strip().strip('\u2800')]
+        keep = ''
+        for p in paras:
+            nxt = (keep + '\n\n' + p) if keep else p
+            if len(nxt) <= room:
+                keep = nxt; continue
+            left = room - len(keep) - (2 if keep else 0)
+            if left > 80:                              # не влез абзац — берём из него целые предложения
+                cut = p[:left]
+                m = max(cut.rfind('. '), cut.rfind('? '), cut.rfind('! '), cut.rfind('.\n'))
+                part = cut[:m + 1] if m > 40 else ''
+                if part:
+                    keep = (keep + '\n\n' + part) if keep else part
+            break
+        if not keep:
+            keep = t[:room - 1].rsplit(' ', 1)[0] + '…'
+        t = keep
+        sep = '\n\n'
+    return (t + (sep + tail if tail else '')).strip()
 
 def human_click(page, loc):
     """Подвести мышь к элементу кривой траекторией, чуть подождать, кликнуть не в центр."""

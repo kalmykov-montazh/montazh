@@ -1,7 +1,7 @@
 # Facebook, личный профиль: отложенный Reels (видео + обложка + текст + время)
 import datetime, re
 import random, time
-from common import pause, read_pack, human_click, human_type, warm_up, log, fb_clean, fb_note_comment
+from common import pause, read_pack, human_click, human_type, warm_up, log, fb_clean, fb_note_comment, fb_short, caption_problems
 
 MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 
@@ -23,6 +23,12 @@ def _publish(page, j, folder):
     text = j.get('text') or read_pack(folder)
     # 14.11.2026 (Евгений): ссылок в тексте FB нет — Telegram-канал строкой «…ссылка в первом комментарии»
     text, cut = fb_clean(text)
+    # 18.11.2026: без служебного блока и таймкодов, коротко (FB советует 100–200, максимум 400, до 3 хэштегов).
+    # Текст из задания (лонги) раньше шёл как есть — теперь тоже через эту чистку.
+    text = fb_short(text)
+    bad = caption_problems(text)
+    if bad:
+        raise RuntimeError('в подписи служебные строки, не публикую: ' + ' | '.join(bad))
     if cut and not j.get('dry'):
         fb_note_comment(text.split('\n')[0], cut, f"рилс {folder.name}")
     # 07.11.2026 (решение Евгения): каждый раз по-разному, как человек — то быстро за пару минут,

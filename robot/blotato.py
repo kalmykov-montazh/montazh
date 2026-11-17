@@ -21,7 +21,7 @@
 # Компьютер забирает записи из _blotato_облако.json (_adopt_cloud) и дальше проверяет, X/Bluesky/LinkedIn, архив. Копия до правки — blotato.py.bak1111.
 # С 23.10.2026 опубликованные папки — по месяцам: «!!!ШОРТЫ ОПУБЛИКОВАННЫЕ\Октябрь 2026», список роликов — один, в корне.
 import json, re, os, struct, time, random, datetime, shutil, subprocess, tempfile, glob, urllib.request, urllib.error, urllib.parse
-from common import HERE, PUB, QUEUE, ROOT, log, read_pack, pack_guard
+from common import HERE, PUB, QUEUE, ROOT, log, read_pack, pack_guard, caption_problems
 
 API = 'https://backend.blotato.com/v2'
 KEYS = [HERE / 'blotato_ключ.txt', HERE / 'blotato_ключ.txt.txt']
@@ -380,6 +380,10 @@ def schedule(key, s):
                 ptext = _threads_clean(ptext)
             if p == 'threads' and len(ptext) > 500:            # у Threads лимит 500 знаков
                 ptext = ptext[:497].rsplit(' ', 1)[0] + '…'
+            if caption_problems(ptext):                # 18.11.2026: служебные строки в подписи — не ставим
+                log(f"ОШИБКА в подписи {p} служебные строки ({' | '.join(caption_problems(ptext))}) — {name}, не ставлю")
+                e['posts'][p] = {'status': 'ошибка', 'error': 'служебные строки в подписи'}
+                continue
             body = {'post': {'accountId': acc[p],
                              'content': {'text': ptext, 'mediaUrls': [tturl if p == 'tiktok' else vurl], 'platform': p},
                              'target': _target(p, title, curl, acc, name)},
@@ -1025,6 +1029,9 @@ def schedule_text(key, s):
                 x['tries'] = TEXT_TRIES; x['status'] = 'ошибка'; x['error'] = 'Instagram без картинки не принимает'
                 log(f"ОШИБКА текст-пост instagram — {f.stem}: нет картинки"); continue
             at = datetime.datetime.now() + datetime.timedelta(minutes=2)
+            if caption_problems(text):                 # 18.11.2026: служебные строки в тексте — не ставим
+                x['tries'] = TEXT_TRIES; x['status'] = 'ошибка'; x['error'] = 'служебные строки в тексте'
+                log(f"ОШИБКА текст-пост {p} — {f.stem}: служебные строки ({' | '.join(caption_problems(text))}), не ставлю"); continue
             body = {'post': {'accountId': acc[p], 'content': {'text': text, 'mediaUrls': media, 'platform': p},
                              'target': _text_target(p)},
                     'scheduledTime': at.astimezone().isoformat(timespec='seconds')}
@@ -1165,6 +1172,10 @@ def _retry_full(key, s):
                 ptext = _threads_clean(ptext)
                 if len(ptext) > 500:
                     ptext = ptext[:497].rsplit(' ', 1)[0] + '…'
+            if caption_problems(ptext):                # 18.11.2026: служебные строки в подписи — не ставим
+                log(f"ОШИБКА в подписи {p} служебные строки ({' | '.join(caption_problems(ptext))}) — {name}, не ставлю")
+                e['posts'][p] = {'status': 'ошибка', 'error': 'служебные строки в подписи'}
+                continue
             body = {'post': {'accountId': acc[p],
                              'content': {'text': ptext, 'mediaUrls': [e.get('video_tt') or e['video'] if p == 'tiktok' else e['video']], 'platform': p},
                              'target': _target(p, title, curl, acc, name)},

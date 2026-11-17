@@ -306,6 +306,8 @@ def run_jobs():
                         except fb.DryRun:
                             job.rename(job.with_suffix('.done')); log(f"ПРОВЕРКА {what} закончена — {j['folder']}"); continue
                         job.rename(job.with_suffix('.done'))   # в _план.json не пишем: Blotato его второй раз не выложит
+                        if j.get('kind') == 'long':
+                            fb_playlists.remember_long(j)       # 18.11.2026: лонг тоже в плейлист, через 40 мин
                         log(f"ГОТОВО {what} {j['date']} {j.get('time_set', j['time'])}, групп {len(j.get('groups_done', []))} — {j['folder']}")
                     else:
                         PLATFORMS[j['platform']](page, j, PUB / j['folder'])

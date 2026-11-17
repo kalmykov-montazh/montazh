@@ -70,7 +70,7 @@ RULES = [
     ('СОБСТВ',  r'сдава|сдаю|сдать|посуточ|туристическ\w* (аренд|лиценз)|\bvut\b|airbnb|управлен|собственник|по комнатам'),
     ('ПОКУПКА', r'купить|покупк|купил|продаж|прода(ть|л)|nota simple|задат|новостройк|недвижимост|ипотек|флиппинг|инвест|пусту|пустых|первой линии|квартир\w* дешевле'),
     ('ВАЛЕНСИЯ', r'фальяс|fallas|район\w* валенси|русс?афа|кампанар|кармен|альбуфер|сагунто|праздник|паэль'),
-    ('ГОРОД',   r'какой город|где (лучше )?жить|город\w* испании|выбрать город'),
+    ('ГОРОД',   r'какой город|где (лучше |в испании )?жить|город\w* испании|выбрать город|климат'),
     ('ЯЗЫК',    r'испанск\w* (язык|курс)|учу испанский|выучить испанский|язык в испании|\bdele\b'),
     ('АДАПТ',   r'адаптац|менталитет|испанц|через год|несколько лет|ритм|уезжают обратно|возвращаются|привыка'),
     ('ПЕРЕЕЗД', r'переезд|переех|до переезда|empadronamiento|прописк|первые шаги|после переезда|бюрократ'),
@@ -132,6 +132,19 @@ def _from_file(folder):
             return k
     return None
 
+SOON_MIN = 40      # 18.11.2026: после выхода ролика заходим через 40 мин, а не ждём общий круг 3 часа
+WAIT_H = 6         # сколько часов после выхода продолжаем заходить «по-быстрому» (лонг FB обрабатывает до 1,5 ч)
+
+def _wait(s, text, key, name):
+    k = _norm(text)
+    s.setdefault('wait', {})[k] = key
+    s['wait'] = dict(list(s['wait'].items())[-60:])
+    s.setdefault('wait_t', {})[k] = time.time()
+    s['wait_t'] = {a: b for a, b in s['wait_t'].items() if a in s['wait']}
+    s['soon'] = time.time() + SOON_MIN * 60
+    _save(s)
+    log(f"плейлист FB: запомнил {key} — {name}")
+
 def remember(folder):
     """Вызывается из publish.py сразу после того, как ролик встал в Facebook.
     Запоминает плейлист по первой строке упаковки — когда ролик выйдет, run() положит его туда."""
@@ -139,13 +152,25 @@ def remember(folder):
         from common import read_pack
         text = read_pack(folder)
         key = _from_file(folder) or pick(folder.name + '\n' + text, folder.name)
-        s = _state()
-        s.setdefault('wait', {})[_norm(text)] = key
-        s['wait'] = dict(list(s['wait'].items())[-60:])
-        _save(s)
-        log(f"плейлист FB: запомнил {key} — {folder.name}")
+        _wait(_state(), text, key, folder.name)
     except Exception as e:
         log(f"плейлист FB: не запомнил {folder.name}: {str(e)[:120]}")
+
+def remember_long(j):
+    """18.11.2026: лонг в ленту FB (задание kind=long). Раньше не запоминался вовсе — плейлист решался по всей
+    длинной подписи (климат ушёл в «Пенсию») и только через общий круг раз в 3 часа.
+    Ключ: поле "playlist" задания (ключ из PL или название плейлиста), иначе по названию."""
+    try:
+        from common import fb_short, fb_clean
+        text = fb_short(fb_clean(j.get('text') or '')[0])
+        v = (j.get('playlist') or '').strip().upper()
+        key = next((k for k in sorted(PL, key=len, reverse=True) if v.startswith(k)), None) if v else None
+        if not key:
+            first = (text.splitlines() or [''])[0]
+            key = pick(first + '\n' + j.get('folder', ''))
+        _wait(_state(), text, key, j.get('folder', 'лонг'))
+    except Exception as e:
+        log(f"плейлист FB: не запомнил лонг {j.get('folder')}: {str(e)[:120]}")
 
 # GraphQL-запросы «Панели автора» (doc_id сняты 25.10.2026; если Facebook их поменяет — придёт сбой)
 Q_LIST = ('ProdashCometV2AddToPlaylistDialogPaginationQuery', '28403664409243547')
@@ -186,12 +211,16 @@ def _save(s):
 def due():
     s = _state()
     h = datetime.datetime.now().hour
-    return 9 <= h <= 23 and time.time() - s.get('last', 0) > EVERY_H * 3600
+    if not 9 <= h <= 23:
+        return False
+    if s.get('soon') and time.time() >= s['soon']:       # 18.11.2026: недавно вышел ролик — зайти раньше
+        return True
+    return time.time() - s.get('last', 0) > EVERY_H * 3600
 
 def run(page):
     """page — открытая страница Chrome робота (Facebook уже залогинен)."""
     s = _state()
-    s['last'] = time.time(); _save(s)
+    s['last'] = time.time(); s['soon'] = 0; _save(s)
     try:
         page.goto('https://www.facebook.com/professional_dashboard/content/playlists', wait_until='domcontentloaded')
         time.sleep(8)
@@ -216,6 +245,10 @@ def run(page):
             log(f"плейлист FB: {key if ok else 'НЕ ВСТАЛ ' + key} — {title.splitlines()[0][:70] if title else vid}")
             put += 1
             time.sleep(6)
+        # 18.11.2026: что запомнено недавно, но ещё не вышло (лонг обрабатывается) — заглянуть снова через 40 мин
+        wt = s.get('wait_t', {})
+        if any(k in s.get('wait', {}) and time.time() - t < WAIT_H * 3600 for k, t in wt.items()):
+            s['soon'] = time.time() + SOON_MIN * 60
         _save(s)
     except RateLimit as e:                                # временный лимит запросов — не сбой, повтор через час
         s['last'] = time.time() - (EVERY_H - 1) * 3600; _save(s)
