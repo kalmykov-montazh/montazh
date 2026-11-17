@@ -23,6 +23,15 @@ export async function onRequestGet({ env }) {
   const day = new Date(now + 3600e3).toISOString().slice(0, 10); // день по Испании (зима)
   let done = parseInt(await env.BOT_KV.get('newsday:' + day) || '0', 10);
   // Перевыложить вручную: в Cloudflare KV (kalmykov-bot) ключ «redo» = слаги через запятую. Выкладывает их сейчас, ключ стирает (17.11.2026)
+  // Сменить аватар канала: ключ KV «setphoto» = адрес картинки на сайте (17.11.2026)
+  const ph = await env.BOT_KV.get('setphoto');
+  if (ph) {
+    await env.BOT_KV.delete('setphoto');
+    const blob = await (await fetch(ph)).blob();
+    const fd = new FormData(); fd.append('chat_id', env.NEWS_CHANNEL); fd.append('photo', blob, 'logo.jpg');
+    const rr = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/setChatPhoto`, { method: 'POST', body: fd })).json();
+    await env.BOT_KV.put('setphoto-result', JSON.stringify(rr), { expirationTtl: 86400 });
+  }
   const redo = ((await env.BOT_KV.get('redo')) || '').split(',').map(x => x.trim()).filter(Boolean);
   if (redo.length) { await env.BOT_KV.delete('redo'); for (const sl of redo) await env.BOT_KV.delete('news:' + sl); }
   const items = Object.values(data)
