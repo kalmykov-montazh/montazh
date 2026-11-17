@@ -400,8 +400,11 @@ def main():
                     add('ФАЛЬСТАРТ', gw[i]['s'], f"«{' '.join(w['w'] for w in gw[i:i + n_])}» звучит дважды за {gw[j]['s'] - gw[i]['s']:.1f} с (между ними {between} сл.) — неудачный дубль? {ctx(gw, gw[i]['s'], 3)}", strong)
                     break
     # лишняя речь: окно слышит заметно больше слов, чем общая расшифровка в том же месте
+    GALL = re.compile(r'субтитр|редактор|dimatorzok|семкин|симон|продолжение следует|спасибо за просмотр|подпишись|корректор', re.I)
     for c0, w0, w1, lw, gl in WIN:
         a0, a1 = w0 + 0.4, w1 - 0.4
+        if GALL.search(' '.join(w['w'] for w in lw)): lw = []   # выдумки Whisper на тишине и музыке
+        if GALL.search(' '.join(w['w'] for w in gl)): gl = []
         nb = max(sum(1 for w in ww if a0 <= (w['s'] + w['e']) / 2 <= a1), sum(1 for w in gw if a0 <= (w['s'] + w['e']) / 2 <= a1))
         ng = sum(1 for w in gl if a0 <= (w['s'] + w['e']) / 2 <= a1)
         nl = sum(1 for w in lw if a0 <= (w['s'] + w['e']) / 2 <= a1)

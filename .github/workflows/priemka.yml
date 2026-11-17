@@ -64,7 +64,7 @@ jobs:
           IFS=';' read -ra P <<< "$PAPKI"
           for p in "${P[@]}"; do
             p="$(echo "$p" | sed 's/^ *//;s/ *$//')"; [ -z "$p" ] && continue
-            rclone lsf -R --files-only --include '!!! *.mp4' "montazh:$p" | grep -v '(основа)' | sed "s#^#$p/#" >> spisok.txt
+            rclone lsf -R --files-only --include '!!! *.mp4' "montazh:$p" | grep -v '(основа)' | grep -v 'без слов' | sed "s#^#$p/#" >> spisok.txt
           done
           echo "::notice::Роликов всего: $(wc -l < spisok.txt)"
           export SVODKA="$PWD/svodka.txt"; : > "$SVODKA"
