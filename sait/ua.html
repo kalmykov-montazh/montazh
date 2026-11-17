@@ -689,6 +689,7 @@ const ICON={
 };
 const socials=[
   ["main","#229ed9","tg","Telegram","І знову все спочатку","https://t.me/tretiy_raz_s_nulya"],
+  ["","#229ed9","tg","Новини Іспанії","Закони і головне за день","https://t.me/ispaniya_zakony"],
   ["","#d9342b","yt","YouTube","Життя в Іспанії","https://www.youtube.com/@StartSpainLife/videos"],
   ["","#c13584","ig","Instagram","Валенсія щодня","https://www.instagram.com/kalmykov.rieltor.valencia"],
   ["","#1877f2","fb","Facebook","Пости й ролики","https://www.facebook.com/kalmykov.rieltor.valencia/"],
@@ -877,7 +878,7 @@ document.body.classList.add('fest2-on');var t=T[k],h='<div class="fcard"><i>'+t[
 <script>
 /* 13.11.2026: откуда пришёл человек (короткие ссылки /ig /fb /tt…) — дописывается в сообщение WhatsApp */
 (function(){
-var N={ig:'Instagram',fb:'Facebook',tt:'TikTok',yt:'YouTube',tg:'Telegram',th:'Threads',ob:'Telegram «Объекты»',kr:'Telegram «Кружочки»',x:'X',bs:'Bluesky',wa:'WhatsApp',gm:'Google Карты',li:'LinkedIn',cx:'Cylex',hf:'Hotfrog'};
+var N={ig:'Instagram',fb:'Facebook',tt:'TikTok',yt:'YouTube',tg:'Telegram',th:'Threads',ob:'Telegram «Объекты»',kr:'Telegram «Кружочки»',nz:'Telegram «Новости»',x:'X',bs:'Bluesky',wa:'WhatsApp',gm:'Google Карты',li:'LinkedIn',cx:'Cylex',hf:'Hotfrog'};
 var k=(location.pathname.match(/^\/(ig|fb|tt|yt|tg|th|ob|kr|x|bs|wa|gm)(-ua)?\/?$/)||[])[1]||(location.search.match(/[?&]src=(\w+)/)||[])[1];
 try{if(k&&N[k])sessionStorage.setItem('src',k);else k=sessionStorage.getItem('src')}catch(e){}
 if(!k||!N[k])return;
