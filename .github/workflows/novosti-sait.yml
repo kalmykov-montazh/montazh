@@ -39,6 +39,8 @@ jobs:
           rclone mkdir "montazh:Брокер/Посты/Новости сайт" || true
           rclone copy "montazh:Брокер/Посты/Новости сайт" e --include "*.txt" --max-depth 1 --max-age 12d || true
           rclone lsf -R "montazh:Брокер/На удаление" --include "*000 *.txt" > udal.txt 2>/dev/null || true
+          # 17.11.2026: хвост журнала робота — какое фото ушло с каждой новостью в Facebook (то же фото — на сайт и в Telegram)
+          rclone cat "montazh:Брокер/К публикации/_задания/журнал.txt" 2>/dev/null | grep "ТЕКСТ " | tail -400 > zhurnal.txt || true
           ls n | tail -20
       - name: Собрать страницы
         run: python3 tools/novosti_build.py n udal.txt e

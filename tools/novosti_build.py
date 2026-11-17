@@ -186,7 +186,13 @@ def article_html(it):
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
 <p class="note"><a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
 {YT_JS}"""
-    return page(it['title'] + ' — новости Испании', it['desc'], f"{BASE}/novosti/{it['slug']}", body, extra)
+    if it.get('img'):   # 17.11.2026: фото из Facebook — вверху статьи и в превью соцсетей и Telegram
+        body = body.replace(f"<article class=\"card\"><h1>", f"<article class=\"card\"><img src=\"{it['img']}\" alt=\"\" style=\"width:100%;border-radius:12px;margin:0 0 14px;display:block\" loading=\"lazy\"><h1>", 1)
+    html_ = page(it['title'] + ' — новости Испании', it['desc'], f"{BASE}/novosti/{it['slug']}", body, extra)
+    if it.get('img'):
+        html_ = html_.replace(f'content="{BASE}/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">', f'content="{BASE}{it["img"]}">')
+        html_ = html_.replace(f"\"image\": [\"{BASE}/og.jpg\"]", f"\"image\": [\"{BASE}{it['img']}\"]")
+    return html_
 
 def index_html(items):
     rows = ''.join(f'<a href="/novosti/{it["slug"]}"><b>{esc(it["title"])}</b><span>{human_date(it["published"])}</span></a>' for it in items)
@@ -220,6 +226,36 @@ def update_sitemap(items):
     add += ''.join(f'\n  <url><loc>{BASE}/novosti/{it["slug"]}</loc><lastmod>{it["published"][:10]}</lastmod></url>' for it in items)
     s = s.replace('\n</urlset>', add + '\n</urlset>')
     p.write_text(s, encoding='utf-8')
+
+# 17.11.2026: фото новости — то же, что робот поставил в Facebook. Робот пишет в журнал строку
+# «ТЕКСТ … «<первые 50 знаков заголовка>» | фото: <имя>», фото после выхода лежит в «Брокер/Посты/Фото/использованные».
+# Workflow кладёт хвост журнала в zhurnal.txt; здесь находим имя фото и копируем его (rclone) в sait/novosti/img/<slug>.jpg.
+import subprocess
+LOG_RE = re.compile(r'ТЕКСТ \S+ \S+ «(.+)» \| фото: (.+?) →')
+def _norm(s): return re.sub(r'[^0-9a-zа-яё]+', '', clean_title(s).lower())
+def attach_photos(data, zhurnal='zhurnal.txt'):
+    if not Path(zhurnal).exists(): return False
+    pairs = []
+    for line in Path(zhurnal).read_text(encoding='utf-8', errors='replace').splitlines():
+        m = LOG_RE.search(line)
+        if m: pairs.append((_norm(m.group(1)), m.group(2).strip()))
+    changed = False
+    (NEWS / 'img').mkdir(exist_ok=True)
+    for it in data.values():
+        if it.get('img'): continue
+        t = _norm(it['title'])
+        name = next((ph for head, ph in reversed(pairs) if len(head) >= 15 and t.startswith(head[:40])), None)
+        if not name: continue
+        out = NEWS / 'img' / f"{it['slug']}.jpg"
+        try:
+            subprocess.run(['rclone', 'copyto', f'montazh:Брокер/Посты/Фото/использованные/{name}', '/tmp/ph_src'], check=True, timeout=120)
+            r = subprocess.run(['convert', '/tmp/ph_src', '-auto-orient', '-resize', '1200x1200>', '-strip', '-quality', '82', str(out)], timeout=120)
+            if r.returncode != 0 or not out.exists(): subprocess.run(['cp', '/tmp/ph_src', str(out)], check=True)
+            it['img'] = f"/novosti/img/{it['slug']}.jpg"; it['photo'] = name; changed = True
+            print('фото', it['slug'], '←', name)
+        except Exception as e:
+            print('фото не взял', it['slug'], name, str(e)[:120])
+    return changed
 
 def main(src_dir, removed_list, extra_dir=None):
     now = datetime.datetime.now(TZ)
@@ -272,6 +308,7 @@ def main(src_dir, removed_list, extra_dir=None):
             k = m.group(1).strip()
             if ex and data[k].get('extra') != ex:
                 data[k]['extra'] = ex; changed = True; print('дополнено', k)
+    if attach_photos(data): changed = True
     items = sorted(data.values(), key=lambda x: x['published'], reverse=True)
     for it in items:
         (NEWS / f"{it['slug']}.html").write_text(article_html(it), encoding='utf-8')

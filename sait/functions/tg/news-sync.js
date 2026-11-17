@@ -29,12 +29,25 @@ export async function onRequestGet({ env }) {
   for (const it of items) {
     if (done >= PER_DAY) break;
     if (await env.BOT_KV.get('news:' + it.slug)) continue;
+    // 17.11.2026: ждём фото из Facebook (робот публикует в окно слота) — до 4 часов, потом без фото
+    if (!it.img && now - Date.parse(it.published) < 4 * 3600e3) continue;
     const url = `${SITE}/novosti/${it.slug}`;
-    const text = `<b>${esc(it.title)}</b>\n\n${esc(short(it.paras || []))}\n\n<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
-    const r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { url, prefer_large_media: true, show_above_text: false } }),
-    })).json();
+    const link = `<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
+    let r;
+    if (it.img) {
+      const head = `<b>${esc(it.title)}</b>\n\n`;
+      const caption = head + esc(short(it.paras || [], 1000 - head.length - 70)) + '\n\n' + link;
+      r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendPhoto`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, photo: SITE + it.img, caption, parse_mode: 'HTML' }),
+      })).json();
+    } else {
+      const text = `<b>${esc(it.title)}</b>\n\n${esc(short(it.paras || []))}\n\n${link}`;
+      r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
+      })).json();
+    }
     if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
     else posted.push('ошибка: ' + r.description);
   }
