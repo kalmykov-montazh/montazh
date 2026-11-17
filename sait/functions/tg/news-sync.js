@@ -21,10 +21,12 @@ export async function onRequestGet({ env }) {
   const data = await (await fetch(`${SITE}/novosti/_data.json`, { cf: { cacheTtl: 0 } })).json();
   const now = Date.now();
   const day = new Date(now + 3600e3).toISOString().slice(0, 10); // день по Испании (зима)
-  let done = parseInt(await env.BOT_KV.get('newsday:' + day) || '0', 10);
+  let done = parseInt(await env.BOT_KV.get('nday:' + day) || '0', 10);
   // Перевыложить вручную: в Cloudflare KV (kalmykov-bot) ключ «redo» = слаги через запятую. Выкладывает их сейчас, ключ стирает (17.11.2026)
   // Сменить аватар канала: ключ KV «setphoto» = адрес картинки на сайте (17.11.2026)
-  const ph = await env.BOT_KV.get('setphoto');
+  // Логотип ES (17.11.2026): ставится один раз, флаг logo:v2
+  const ph = (await env.BOT_KV.get('setphoto')) || ((await env.BOT_KV.get('logo:v2')) ? null : SITE + '/tg-kanal-logo-full.jpg?v=' + now);
+  if (ph && !(await env.BOT_KV.get('setphoto'))) await env.BOT_KV.put('logo:v2', '1');
   if (ph) {
     await env.BOT_KV.delete('setphoto');
     const blob = await (await fetch(ph)).blob();
@@ -61,7 +63,7 @@ export async function onRequestGet({ env }) {
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
       })).json();
     }
-    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); if (!isRedo) done++; await env.BOT_KV.put('newsday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
+    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); if (!isRedo) done++; await env.BOT_KV.put('nday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
     else posted.push('ошибка: ' + r.description);
   }
   // Воскресенье после 19:00 по Испании — итог недели (один раз)
