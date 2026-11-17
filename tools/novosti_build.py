@@ -112,6 +112,19 @@ VIDEOS = [
 ]
 VIDEO_DEFAULT = ('sMPqoMeQARg', 'Год жизни в Испании с нуля: язык, документы, работа, школа')
 
+# 17.11.2026: под видео — строка «Подробно — в гайде» (бесплатные гайды с PDF, kalmykovgroup.com/gaidy/)
+GUIDES = {
+    'C5Y5ka8njw8': ('vnzh-posle-vremennoy-zashchity', 'ВНЖ после временной защиты'),
+    'aDXC1UsvBhI': ('lovushki-arendy-v-ispanii', 'Ловушки аренды в Испании'),
+    'GFh4QCWANTo': ('shtrafy-v-ispanii', 'Штрафы в Испании'),
+    'G_K6PE4DJ90': ('gde-zhit-v-ispanii-klimat-i-arenda', 'Где жить в Испании: климат и аренда'),
+}
+
+def guide_html(vid):
+    g = GUIDES.get(vid)
+    if not g: return ''
+    return f'<p class="note" style="margin-top:12px">Подробно и с PDF — в бесплатном гайде <a href="/gaidy/{g[0]}">«{esc(g[1])}»</a></p>'
+
 def pick_video(it):
     text = (it['title'] + ' ' + ' '.join(' '.join(p) for p in it['paras'])).lower()
     title = it['title'].lower()
@@ -168,7 +181,7 @@ def article_html(it):
     body = f"""<a class="back" href="/novosti/">← Все новости Испании</a>
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
 {paras}</article>
-<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button></div>
+<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
 <p class="note"><a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
