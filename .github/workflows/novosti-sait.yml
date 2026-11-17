@@ -43,7 +43,9 @@ jobs:
           rclone cat "montazh:Брокер/К публикации/_задания/журнал.txt" 2>/dev/null | grep "ТЕКСТ " | tail -400 > zhurnal.txt || true
           ls n | tail -20
       - name: Собрать страницы
-        run: python3 tools/novosti_build.py n udal.txt e
+        run: |
+          pip install -q pillow 2>/dev/null || true
+          python3 tools/novosti_build.py n udal.txt e
       - name: Отправить на сайт
         run: |
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf

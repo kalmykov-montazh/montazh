@@ -4,6 +4,7 @@
 # Запуск: novosti_build.py <папка со скачанными .txt> <файл со списком имён из «На удаление»>
 # Делает: sait/novosti/<slug>.html, sait/novosti/index.html, блок «Свежие новости» на главной, sitemap.xml,
 # и _ссылки_новостей.txt (имя файла → адрес статьи) на Диск + копия sait/novosti/ssylki.txt на сайте (её читает задача комментариев).
+import shutil
 import json, re, sys, html, datetime, zoneinfo, urllib.parse
 from pathlib import Path
 
@@ -250,8 +251,14 @@ def attach_photos(data, zhurnal='zhurnal.txt'):
         out = NEWS / 'img' / f"{it['slug']}.jpg"
         try:
             subprocess.run(['rclone', 'copyto', f'montazh:Брокер/Посты/Фото/использованные/{name}', '/tmp/ph_src'], check=True, timeout=120)
-            r = subprocess.run(['convert', '/tmp/ph_src', '-auto-orient', '-resize', '1200x1200>', '-strip', '-quality', '82', str(out)], timeout=120)
-            if r.returncode != 0 or not out.exists(): subprocess.run(['cp', '/tmp/ph_src', str(out)], check=True)
+            try:
+                from PIL import Image, ImageOps
+                im = ImageOps.exif_transpose(Image.open('/tmp/ph_src')).convert('RGB')
+                im.thumbnail((1200, 1200))
+                im.save(str(out), 'JPEG', quality=82, optimize=True)
+            except Exception as e2:
+                print('сжать не вышло, кладу как есть:', str(e2)[:80])
+                shutil.copyfile('/tmp/ph_src', str(out))
             it['img'] = f"/novosti/img/{it['slug']}.jpg"; it['photo'] = name; changed = True
             print('фото', it['slug'], '←', name)
         except Exception as e:
