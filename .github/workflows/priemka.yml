@@ -70,7 +70,7 @@ jobs:
           export SVODKA="$PWD/svodka.txt"; : > "$SVODKA"
           TAG=$(date -u +%Y%m%d_%H%M)
           i=0
-          while IFS= read -r f; do
+          while IFS= read -r -u 3 f; do
             if [ $((i % N)) -eq "$SH" ]; then
               rm -f v.mp4; rclone copyto "montazh:$f" v.mp4 || { echo "::error::не скачался: $f"; i=$((i+1)); continue; }
               d=$(dirname "$f"); key="priemka/$(printf '%s' "$f" | md5sum | cut -c1-12)"
@@ -79,4 +79,4 @@ jobs:
               rclone copyto "$SVODKA" "montazh:Брокер/работа/_приёмка/${{ github.run_id }}_$SH.txt" 2>/dev/null
             fi
             i=$((i+1))
-          done < spisok.txt
+          done 3< spisok.txt
