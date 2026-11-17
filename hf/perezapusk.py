@@ -178,6 +178,8 @@ for it in L:
        "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.15,areverse,atempo=1.2,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000",
        "-ac", "2", f"{w}/hook.wav")
     D = dur(f"{w}/hook.wav") + 0.3
+    if it.get("cut_auto"):   # 17.11.2026: тело — сам готовый ролик, без старого хука (замена только хука)
+        it["cut"] = round(D, 3); it.pop("segs", None)
     hook_card(it, w, D)
     VF = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p"
     if it.get("segs"):  # несколько кусков старого ролика (вырезать устаревшее), границы — в тишину
