@@ -25,6 +25,18 @@ PY
 if [ -s sty/otchet.txt ]; then
   echo "::error::Стыки — есть замечания ($(wc -l < sty/otchet.txt)): $(head -5 sty/otchet.txt | tr '\n' ' ' | cut -c1-900)"
   rclone copyto sty/otchet.txt "montazh:$DEST/СТЫКИ — проверить.txt"
+  # 17.11.2026 (Евгений: «чтобы такого никогда не могло быть»): ролик с замечаниями НЕ остаётся там, где его смотрит
+  # Евгений. Папка целиком уезжает в карантин «Брокер/работа/_не прошли проверку», чинить там, проверять заново,
+  # и только чистый — обратно. STRICT=0 — оставить на месте (для ручных разборов).
+  case "$DEST" in
+    *"На проверке"*|*"Готовые"*|*"К публикации"*)
+      if [ "${STRICT:-1}" = "1" ]; then
+        Q="Брокер/работа/_не прошли проверку/$(basename "$DEST")"
+        printf '%s\n' "$DEST" > sty/otkuda.txt
+        rclone copyto sty/otkuda.txt "montazh:$DEST/откуда.txt"
+        rclone moveto "montazh:$DEST" "montazh:$Q" && echo "::error::КАРАНТИН: «$DEST» → «$Q» (в «На проверке» не попал)"
+      fi;;
+  esac
 else
   echo "::notice::Стыки чистые: каждое слово слышно, резы не по словам"
   rclone deletefile "montazh:$DEST/СТЫКИ — проверить.txt" 2>/dev/null

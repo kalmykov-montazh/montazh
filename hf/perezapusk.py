@@ -218,3 +218,8 @@ for it in L:
     sh("ffmpeg", "-v", "error", "-y", "-i", out, "-t", f"{D + 6:.1f}", "-vf", "fps=2,scale=180:-2,tile=8x2", "-frames:v", "1", f"pr/{n}.jpg")
     sh("ffmpeg", "-v", "error", "-y", "-ss", f"{max(0, D - 2.5):.2f}", "-i", out, "-t", "5", "-vn", "-ac", "1", "-ar", "16000", f"pr/{n}_styk.wav")
     print(f"{name}: хук {D:.1f} с, старый с {it['cut']} с, итого {dur(out):.1f} с")
+    # 17.11.2026: полная проверка готового ролика на слух (две программы, каждое слово, дубли, фальстарты, «заново»).
+    # Есть замечания — папка уезжает в «Брокер/работа/_не прошли проверку» и до Евгения не доходит
+    if os.environ.get("NO_CHECK") != "1":
+        subprocess.run(["bash", os.path.join(os.environ.get("GITHUB_WORKSPACE", "."), "scripts/proverka_stykov_shag.sh"),
+                        out, dest.split("montazh:", 1)[1], f"perezapusk_{n}", ""])

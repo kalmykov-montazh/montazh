@@ -5,7 +5,7 @@
 # слоем на первом кадре (текст 270–1640 px). Размытие в движении, тёплый цвет (lut в задаче), субтитры «микс» — subs.json.
 # Плашки только над головой: высота считается по face.json (как в montage.py) и всё лишнее ужимается.
 # Запуск: python hf/build_auto.py <папка проекта> <novyj.json> <osnova_words.json> <face.json> [vstavki.json]
-import json, html, re, os, sys, shutil
+import sys, json, html, re, os, sys, shutil
 from PIL import ImageFont
 
 B = os.path.dirname(os.path.abspath(__file__))
@@ -305,6 +305,11 @@ for n, (gi, built, te) in enumerate(clean):
 KART = []
 PICB = []
 SAIT = spec.get("sait"); SAIT_T = []
+# 17.11.2026 (Евгений: «мы же договаривались, что ты ставишь сайт наш»): без окошка сайта ролик НЕ собирается.
+# Тема про услугу — её карточка (налоги/ВНЖ/суды → usl_yuristy, ипотека → usl_ipoteka …), иначе общий призыв на сайт.
+# Выключить можно только явно: "no_sait": true с причиной в "no_sait_why"
+if not SAIT and not spec.get("no_sait"):
+    sys.exit("СТОП: нет окошка сайта (поле \"sait\"). Правило «Монтаж — окошко сайта…»: в КАЖДОМ ролике. Добавьте sait или no_sait + no_sait_why")
 if SAIT:
     SD = float(SAIT.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
     ws = sorted({w["s"] for w in W if max(start_min, 6.0) <= w["s"] <= CTA_T - 0.3 - SD})
