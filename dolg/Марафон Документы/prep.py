@@ -18,7 +18,9 @@ def pcm(src):
 A = {s: pcm(s) for s in KEYS}
 
 def quiet(src, a, b):
-    x = A[src]; i0 = int(max(0, a - 0.12) * SR); i1 = int((b + 0.12) * SR)
+    x = A[src]; L = len(x)
+    i1 = min(int((b + 0.12) * SR), L); i0 = min(int(max(0, a - 0.12) * SR), max(0, i1 - int(0.2 * SR)))
+    if i1 - i0 < int(0.2 * SR): return min(a, L / SR - 0.05), 0.0   # окно за концом файла — берём конец
     m = np.abs(x[i0:i1].astype(np.float32)).mean(1)
     w = int(0.04 * SR); c = np.convolve(m, np.ones(w) / w, 'same')
     j = int(np.argmin(c[w:-w])) + w
