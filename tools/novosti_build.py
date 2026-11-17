@@ -317,7 +317,7 @@ def main(src_dir, removed_list, extra_dir=None):
         while slug in used: slug = f'{base}-{n}'; n += 1
         used.add(slug)
         data[k] = {'slug': slug, 'title': title, 'desc': desc, 'published': pub.isoformat(), 'paras': paras,
-                   'source': f.name}
+                   'source': f.name, 'emo': meta.get('значок', '').strip()}
         changed = True
         print('новая', k, '→', slug)
     if extra_dir and Path(extra_dir).exists():

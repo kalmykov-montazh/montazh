@@ -14,6 +14,17 @@ function short(paras, max = 650) {
   }
   return out;
 }
+// 17.11.2026: значок рубрики перед заголовком в канале (легенда Евгения). Из файла новости (@значок:) или по словам
+const RUBRICS = [
+  ['🚨', /срочн|сегодня|с завтра|вступ(ил|ает|ит)|последний день/],
+  ['⚠️', /штраф|мошен|провер|предупрежд|непогод|ливн|alerta|наводн|осторожн/],
+  ['🏠', /аренд|квартир|жиль|окупас|ипотек|хозяин|жилец|недвижим/],
+  ['📜', /внж|\bnie\b|\btie\b|закон|документ|миграц|легализ|паспорт|декрет|указ|прописк|empadron/],
+  ['✈️', /рейс|самол[её]т|аэропорт|авиа/],
+  ['🚆', /поезд|железн|электрич|автобус|забаст|транспорт|renfe|метро|трамва/],
+  ['💶', /цен[аыу]|налог|пособ|зарплат|подорож|деньг|пенси|€|евро\b|ипц|инфляц/],
+];
+const rubric = it => it.emo || (RUBRICS.find(([, re]) => re.test((it.title + ' ' + (it.desc || '')).toLowerCase())) || ['🇪🇸'])[0];
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export async function onRequestGet({ env }) {
@@ -36,8 +47,8 @@ export async function onRequestGet({ env }) {
   }
   const redo = ((await env.BOT_KV.get('redo')) || '').split(',').map(x => x.trim()).filter(Boolean);
   // 17.11.2026: v2 — фото сверху, под ним заголовок (Евгений 14:23). Переход на «богатые» сообщения с крупным заголовком — один раз перевыложить всё, что уже вышло
-  if (!(await env.BOT_KV.get('rich:v4'))) {
-    await env.BOT_KV.put('rich:v4', '1');
+  if (!(await env.BOT_KV.get('rich:v5'))) {
+    await env.BOT_KV.put('rich:v5', '1');
     for (const k of (await env.BOT_KV.list({ prefix: 'msg:' })).keys) redo.push(k.name.slice(4));
   }
   if (redo.length) {
@@ -68,8 +79,8 @@ export async function onRequestGet({ env }) {
     // 17.11.2026 (Евгений выбрал вариант 1): фото 16:9 на всю ширину, крупный заголовок, пустая строка, текст
     let pic = it.img ? SITE + it.img : '';
     if (pic) { const wide = pic.replace('/novosti/img/', '/novosti/img-wide/'); if ((await fetch(wide, { method: 'HEAD' })).ok) pic = wide; }
-    const html = (pic ? `<img src="${pic}"/>` : '') + `<h2>${esc(it.title)}</h2><p>\u00a0</p>` +
-      `<p>${paras.map(esc).join('<br/><br/>')}<br/><br/><b>${link}</b></p>`;
+    const html = (pic ? `<img src="${pic}"/>` : '') + `<h2>${rubric(it)} ${esc(it.title)}</h2><p>\u00a0</p>` +
+      `<p>${paras.map(esc).join('<br/><br/>')}<br/><br/><b>${link}</b><br/><br/>🔹 <a href="https://t.me/ispaniya_zakony">Подписаться на канал</a></p>`;
     r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendRichMessage`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, rich_message: { html } }),
