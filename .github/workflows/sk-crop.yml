@@ -1,0 +1,79 @@
+name: 6К. Вертикаль → широкоформат увеличением (СК Сагунто)
+
+# 17.11.2026, решение Евгения: лонг «Сергей и Кристина — дом в Сагунто» из вертикальных сырых —
+# увеличением на всю ширину, без полей по бокам, окно по лицам (головы не срезать). Результат —
+# K.mov в «работа/Подборка <name>/src», его берёт podborka.yml (prep/build). Листы кадров — зашифрованно в ветку tmp-sk.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dir: {description: "Папка в dolg/", default: "СК Сагунто"}
+      name: {description: "Имя ролика (как в podborka.yml)", default: "Сергей и Кристина — дом в Сагунто"}
+      keys: {description: "Источники через пробел", default: "A B C D E F G H I J K L M N O P Q R"}
+      key: {description: "Ключ шифрования листов кадров", required: true}
+
+permissions:
+  contents: write
+
+env:
+  WD: "Брокер/работа/Подборка ${{ inputs.name }}"
+
+jobs:
+  keys:
+    runs-on: ubuntu-24.04
+    outputs:
+      k: ${{ steps.k.outputs.k }}
+    steps:
+      - id: k
+        run: echo "k=$(echo '${{ inputs.keys }}' | jq -Rc 'split(" ")|map(select(length>0))')" >> "$GITHUB_OUTPUT"
+
+  crop:
+    needs: keys
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 18
+      matrix:
+        k: ${{ fromJson(needs.keys.outputs.k) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Кадрирование ${{ matrix.k }}
+        run: |
+          D="dolg/${{ inputs.dir }}"; K=${{ matrix.k }}
+          curl -fsSL -m 120 -o "$D/yunet.onnx" https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx || echo "::warning::YuNet не скачался — только haar"
+          rclone copyto "montazh:$(jq -r .$K "$D/src.json")" $K.src.mp4
+          python "$D/crop.py" $K 2>&1 | grep -v '^\[' | sed 's/^/::notice::/'
+          rclone copyto $K.mov "montazh:$WD/src/$K.mov"
+          mkdir -p crop; cp $K.crop.json $K.sheet*.jpg crop/
+          rclone copy crop "montazh:$WD/crop"
+
+  sheets:
+    needs: crop
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rclone
+        with:
+          token: ${{ secrets.RCLONE_TOKEN }}
+          client_id: ${{ secrets.RCLONE_CLIENT_ID }}
+          client_secret: ${{ secrets.RCLONE_CLIENT_SECRET }}
+      - name: Листы кадров в ветку (зашифровано)
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          echo "::add-mask::$KEY"
+          rclone copy "montazh:$WD/crop" crop
+          for f in crop/*.json; do echo "::notice::$(basename $f): $(jq -c '{mode,dur,faces}' $f)"; done
+          tar czf p.tgz crop
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out /tmp/p.enc -pass env:KEY
+          mkdir o && cd o && cp /tmp/p.enc . && git init -q && git checkout -q -b tmp-sk
+          git config user.name bot; git config user.email bot@x
+          git add -A; git commit -qm "sk $GITHUB_RUN_ID"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-sk
