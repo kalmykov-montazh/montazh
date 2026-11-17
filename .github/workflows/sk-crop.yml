@@ -47,7 +47,7 @@ jobs:
         run: |
           D="dolg/${{ inputs.dir }}"; K=${{ matrix.k }}
           curl -fsSL -m 120 -o "$D/yunet.onnx" https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx || echo "::warning::YuNet не скачался — только haar"
-          rclone copyto "montazh:$(jq -r .$K "$D/src.json")" $K.src.mp4
+          bash dolg/_get.sh "$(jq -r .$K "$D/src.json")" $K.src.mp4
           python "$D/crop.py" $K 2>&1 | grep -v '^\[' | sed 's/^/::notice::/'
           rclone copyto $K.mov "montazh:$WD/src/$K.mov"
           mkdir -p crop; cp $K.crop.json $K.sheet*.jpg crop/

@@ -43,7 +43,7 @@ jobs:
       - name: Распознать ${{ matrix.k }}
         run: |
           D="dolg/${{ inputs.dir }}"; K=${{ matrix.k }}
-          rclone copyto "montazh:$(jq -r .$K "$D/src.json")" s.mp4
+          bash dolg/_get.sh "$(jq -r .$K "$D/src.json")" s.mp4
           ffmpeg -v error -y -i s.mp4 -vn -ac 1 -ar 16000 a.wav
           python "$D/asr.py" $K
           rclone copyto $K.words.json "montazh:$WD/asr/$K.words.json"
@@ -71,7 +71,7 @@ jobs:
           D="dolg/${{ inputs.dir }}"
           for K in $(jq -r 'keys[]' "$D/src.json"); do
             if rclone lsf "montazh:$WD/src/$K.mov" | grep -q .; then rclone copyto "montazh:$WD/src/$K.mov" $K.mov & continue; fi
-            rclone copyto "montazh:$(jq -r .$K "$D/src.json")" $K.src.mp4
+            bash dolg/_get.sh "$(jq -r .$K "$D/src.json")" $K.src.mp4
             ffmpeg -v error -y -i $K.src.mp4 -vf "scale=1920:1080:flags=lanczos,fps=30" -c:v libx264 -preset veryfast -crf 17 -g 30 -c:a pcm_s16le -ar 48000 -ac 2 $K.mov && rm $K.src.mp4 &
           done; wait
           rclone copy "montazh:$WD/asr" . --include "*.words.json"
