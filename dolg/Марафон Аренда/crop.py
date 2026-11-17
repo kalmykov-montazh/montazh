@@ -109,10 +109,12 @@ else:
                     top, bot = S[j, 1], S[j, 2]
                     upper = top - 0.03 * WH                   # верх окна не ниже макушки
                     lower = bot - 0.97 * WH                   # низ окна не выше подбородка
-                    Y[j] = min(Y[j], upper) if lower > upper else min(max(Y[j], lower), upper)
+                    if lower > upper:                         # крупное селфи: голова не влезает — подбородок и глаза в кадре
+                        Y[j] = min(max(Y[j], lower), max(lower, want(top, bot) + 0.02 * WH))
+                    else: Y[j] = min(max(Y[j], lower), upper)
             Y = gauss(Y, 0.8)
         for j in range(n):
-            if ok[j]: Y[j] = min(Y[j], S[j, 1] - 0.02 * WH)
+            if ok[j] and S[j, 2] - S[j, 1] < 0.94 * WH: Y[j] = min(Y[j], S[j, 1] - 0.02 * WH)
         mode = f'с рук — следит за головами ({spread:.1f})'
 Y = np.clip(Y, lo, hi)
 print(K, mode, flush=True)
