@@ -2,3 +2,6 @@
   X-Robots-Tag: noindex
   Content-Type: text/plain; charset=utf-8
   Cache-Control: no-cache
+
+/tg-*.jpg
+  Access-Control-Allow-Origin: *
