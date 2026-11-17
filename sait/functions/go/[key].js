@@ -1,5 +1,7 @@
 // /go/<ключ> — «скачать без Telegram»: считаем и отдаём PDF.
 const GUIDES = {
+  chek:     { slug: 'chek-list-arenda' },
+  chekua:   { slug: 'chek-list-arenda-ua' },
   shtrafy:  { slug: 'shtrafy-v-ispanii', title: 'Штрафы в Испании: 15 самых частых для приезжих', rent: false },
   vnzh:     { slug: 'vnzh-posle-vremennoy-zashchity', title: 'Временная защита → ВНЖ на 4 года', rent: false },
   lovushki: { slug: 'lovushki-arendy-v-ispanii', title: 'Аренда в Испании: 17 ловушек и мошенничеств', rent: true },
