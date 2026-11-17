@@ -35,7 +35,19 @@ export async function onRequestGet({ env }) {
     await env.BOT_KV.put('setphoto-result', JSON.stringify(rr), { expirationTtl: 86400 });
   }
   const redo = ((await env.BOT_KV.get('redo')) || '').split(',').map(x => x.trim()).filter(Boolean);
-  if (redo.length) { await env.BOT_KV.delete('redo'); for (const sl of redo) await env.BOT_KV.delete('news:' + sl); }
+  // 17.11.2026: переход на «богатые» сообщения с крупным заголовком — один раз перевыложить всё, что уже вышло
+  if (!(await env.BOT_KV.get('rich:v1'))) {
+    await env.BOT_KV.put('rich:v1', '1');
+    for (const k of (await env.BOT_KV.list({ prefix: 'msg:' })).keys) redo.push(k.name.slice(4));
+  }
+  if (redo.length) {
+    await env.BOT_KV.delete('redo');
+    for (const sl of redo) {
+      await env.BOT_KV.delete('news:' + sl);
+      const old = await env.BOT_KV.get('msg:' + sl);
+      if (old) await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, message_id: Number(old) }) });
+    }
+  }
   const items = Object.values(data)
     .filter(it => redo.includes(it.slug) || (it.published && now - Date.parse(it.published) < 20 * 3600e3 && Date.parse(it.published) <= now))
     .sort((a, b) => Date.parse(a.published) - Date.parse(b.published));
@@ -49,7 +61,18 @@ export async function onRequestGet({ env }) {
     const url = `${SITE}/novosti/${it.slug}`;
     const link = `<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
     let r;
-    if (it.img) {
+    // 17.11.2026 (Евгений: «красивое название, как у Нестеренко»): rich-сообщение — крупный заголовок, фото, текст, ссылка
+    const paras = [];
+    let len = 0;
+    for (const p of (it.paras || [])) { const t = p.join(' ').trim(); if (!t) continue; if (len + t.length > 1400 && paras.length) break; paras.push(t); len += t.length; }
+    const html = `<h2>${esc(it.title)}</h2>` + (it.img ? `<img src="${SITE + it.img}"/>` : '') +
+      paras.map(t => `<p>${esc(t)}</p>`).join('') + `<p><b>${link}</b></p>`;
+    r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendRichMessage`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, rich_message: { html } }),
+    })).json();
+    if (!r.ok) posted.push('rich не вышел: ' + r.description);
+    if (r.ok) {} else if (it.img) {
       const head = `<b>${esc(it.title)}</b>\n\n`;
       const caption = head + esc(short(it.paras || [], 1000 - head.length - 70)) + '\n\n' + link;
       r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendPhoto`, {
@@ -73,11 +96,11 @@ export async function onRequestGet({ env }) {
       .filter(it => it.published && now - Date.parse(it.published) < 7 * 86400e3)
       .sort((a, b) => Date.parse(a.published) - Date.parse(b.published));
     if (week.length >= 3) {
-      const lines = week.map(it => `• <a href="${SITE}/novosti/${it.slug}">${esc(it.title.replace(/^\d+ [а-я]+: /i, ''))}</a>`).join('\n');
-      const text = `<b>🗓 Испания за неделю: главное</b>\n\n${lines}\n\nВсе новости с подробностями — ${SITE}/novosti/`;
-      const r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
+      const items2 = week.map(it => `<li><a href="${SITE}/novosti/${it.slug}">${esc(it.title.replace(/^\d+ [а-я]+: /i, ''))}</a></li>`).join('');
+      const html = `<h2>🗓 Испания за неделю: главное</h2><ul>${items2}</ul><p>Все новости с подробностями — <a href="${SITE}/novosti/">на сайте</a></p>`;
+      const r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendRichMessage`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
+        body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, rich_message: { html } }),
       })).json();
       if (r.ok) { await env.BOT_KV.put('week:' + day, '1', { expirationTtl: 8 * 86400 }); posted.push('итог недели'); }
     }
