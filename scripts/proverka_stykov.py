@@ -289,6 +289,7 @@ def main():
             if c: rec.update({k_: c[k_] for k_ in ('end_db', 'after_db', 'before_db', 'start_db', 'bad')})
             CUTS.append(rec)
 
+    WIN = []
     # ---- КАЖДОЕ СЛОВО: распознаём ролик окнами 3,2 с (шаг 1,6 с) без общего контекста — так срезанное слово
     # не «дорисовывается» по смыслу. Каждое слово (по плану, а если плана нет — по Whisper целиком) проверяем
     # в окне, где оно ближе к середине. Не услышали ни Whisper, ни GigaAM — замечание.
@@ -346,6 +347,55 @@ def main():
             part = any(norm(x) and norm(x) in norm(ra) and norm(x) != norm(ra) for x in fa.split())
             add('ИСХОДНИК', t, f"в готовом «{fa}», в сыром «{ra}»", part)
 
+    # ---- НЕУДАЧНЫЕ ДУБЛИ (17.11.2026, перезапуск 64: «Подаёте на ВНЖ в Испании… заново со слов, подаёте…» на 0–3 с;
+    # Whisper целиком склеил дубль с чистой фразой, проверка сказала «чисто»). Ищем по ВСЕМУ ролику, четырьмя способами:
+    # служебные слова, фальстарт (та же фраза снова через несколько секунд), лишняя речь (в отдельных окнах слышно
+    # больше слов, чем в общей расшифровке) и «резиновое» слово (Whisper растянул одно слово на проглоченный кусок).
+    SLUZH = re.compile(r'^(перезапис\w*|дубль|переснима\w*)$')   # всегда команда
+    SLUZH2 = re.compile(r'^(заново|стоп)$')   # бывает и в речи («подаваться заново») — сильное только рядом с «со слов»/«давай»
+    def stream_words():
+        yield from gw
+        for c0, w0, w1, lw, gl in WIN:
+            yield from gl; yield from lw
+    seen_sl = []
+    for w in stream_words():
+        n_ = norm(w['w'])
+        if (SLUZH.match(n_) or SLUZH2.match(n_)) and not any(abs(w['s'] - t) < 1.0 for t in seen_sl):
+            seen_sl.append(w['s'])
+            near = norm(ctx(gw, w['s'], 1.5))
+            strong = bool(SLUZH.match(n_)) or 'сослов' in near or 'давай' in near or 'ещераз' in near
+            add('СЛУЖЕБНОЕ', w['s'], f"слышно «{w['w']}» — команда при записи? {ctx(gw, w['s'])}", strong)
+    for i in range(len(gw) - 1):
+        if norm(gw[i]['w']) == 'со' and norm(gw[i + 1]['w']).startswith('слов') and not any(abs(gw[i]['s'] - t) < 1.0 for t in seen_sl):
+            seen_sl.append(gw[i]['s']); add('СЛУЖЕБНОЕ', gw[i]['s'], f"слышно «со слов» — дубль не вырезан: {ctx(gw, gw[i]['s'])}", True)
+    # фальстарт: та же фраза из 2+ слов повторяется вскоре (не обязательно подряд)
+    done_fs = []
+    for n_, lim in ((4, 12), (3, 9), (2, 5)):
+        for i in range(len(A) - n_):
+            g = A[i:i + n_]
+            if any(len(x) < 2 for x in g) or sum(len(x) for x in g) < (9 if n_ == 2 else 8): continue
+            for j in range(i + n_, len(A) - n_ + 1):
+                if gw[j]['s'] - gw[i]['s'] > lim: break
+                if A[j:j + n_] == g and not any(abs(gw[i]['s'] - t) < 3 for t in done_fs):
+                    done_fs.append(gw[i]['s'])
+                    add('ФАЛЬСТАРТ', gw[i]['s'], f"«{' '.join(w['w'] for w in gw[i:i + n_])}» звучит дважды за {gw[j]['s'] - gw[i]['s']:.1f} с — неудачный дубль? {ctx(gw, gw[i]['s'], 3)}", True)
+                    break
+    # лишняя речь: окно слышит заметно больше слов, чем общая расшифровка в том же месте
+    for c0, w0, w1, lw, gl in WIN:
+        a0, a1 = w0 + 0.4, w1 - 0.4
+        nb = sum(1 for w in ww if a0 <= (w['s'] + w['e']) / 2 <= a1)
+        ng = sum(1 for w in gl if a0 <= (w['s'] + w['e']) / 2 <= a1)
+        nl = sum(1 for w in lw if a0 <= (w['s'] + w['e']) / 2 <= a1)
+        nx = max(ng, nl)
+        if nx - nb >= 3 and nx >= 1.5 * max(nb, 1):
+            add('ЛИШНЯЯ РЕЧЬ', c0, f"в отдельном прослушивании {nx} слов, в общей расшифровке {nb}: «{' '.join(w['w'] for w in (gl if ng >= nl else lw))}» — дубль или проглоченный кусок", True)
+    # «резиновое» слово: одно слово длиннее 1,3 с — под ним почти всегда проглоченная речь или пауза-дубль
+    for w in ww:
+        if w['e'] - w['s'] > 1.3 and len(norm(w['w'])) >= 2:
+            seg = a[int(w['s'] * SR):int(w['e'] * SR)]
+            if len(seg) and np.mean(np.abs(seg) > 0.02) > 0.35:
+                add('РЕЗИНОВОЕ СЛОВО', w['s'], f"«{w['w']}» растянуто на {w['e'] - w['s']:.1f} с, внутри звучит речь — проверить, нет ли там дубля", True)
+
     # повтор фразы
     toks = A
     for n in (4, 3, 2):
@@ -373,7 +423,7 @@ def main():
             w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes()); w.close()
         clip(0, 1.5, 'nachalo'); clip(D - 1.5, D, 'konec')
         for f_ in flags:
-            if f_['strong'] or f_['kind'] in ('КОНЕЦ', 'НАЧАЛО', 'ПОВТОР', 'РЕЗ ПО СЛОВУ'):
+            if f_['strong'] or f_['kind'] in ('КОНЕЦ', 'НАЧАЛО', 'ПОВТОР', 'РЕЗ ПО СЛОВУ', 'ФАЛЬСТАРТ', 'СЛУЖЕБНОЕ'):
                 clip(f_['t'] - 1.5, f_['t'] + 1.5, f"t{f_['t']:07.2f}")
     print(json.dumps({'file': V, 'dur': round(D, 2), 'joints': J, 'cuts': CUTS, 'flags': flags,
                       'giga': ' '.join(w['w'] for w in gw), 'whisper': ' '.join(w['w'] for w in ww),
