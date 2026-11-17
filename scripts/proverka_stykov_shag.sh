@@ -19,12 +19,11 @@ python3 "$GITHUB_WORKSPACE/scripts/proverka_stykov.py" "$V" "$RAW" > sty/otchet.
 python3 - <<'PY' > sty/otchet.txt
 import json
 d = json.load(open('sty/otchet.json'))
-# 17.11.2026: в карантин — только виды, где ложных почти нет (дубли, повторы, срезы на стыке, начало, конец).
-# СЛОВО / РАЗНОЧТЕНИЕ / ИСХОДНИК часто срабатывают на испанские слова и числа — их Claude разбирает по сводке.
-HARD = {'СЛУЖЕБНОЕ', 'ФАЛЬСТАРТ', 'ЛИШНЯЯ РЕЧЬ', 'РЕЗИНОВОЕ СЛОВО', 'ПОВТОР', 'СТЫК', 'НАЧАЛО', 'КОНЕЦ', 'СТЫК-В-РЕЧИ', 'ОБРЫВ', 'РЕЗ ПО СЛОВУ'}
-s = [x for x in d['flags'] if x['strong'] and x['kind'] in HARD]
+import sys, os
+sys.path.insert(0, os.path.join(os.environ.get('GITHUB_WORKSPACE', '.'), 'scripts'))
+from priemka_rules import classify   # правила брака — одно место для приёмки и монтажа
+s, soft = classify(d['flags'])
 for x in s: print(f"{x['kind']} {x['t']} с: {x['why']}")
-soft = [x for x in d['flags'] if x['strong'] and x['kind'] not in HARD]
 with open('sty/myagkie.txt', 'w') as f:
     for x in soft: f.write(f"{x['kind']} {x['t']} с: {x['why']}\n")
 PY
