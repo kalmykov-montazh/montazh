@@ -2,6 +2,8 @@
 // Переменные в Cloudflare Pages: TG_TOKEN (секрет, вносит Евгений), ADMIN_USERNAME (Kalmykov_broker). Секрет вебхука выводится из токена.
 // Хранилище KV с привязкой BOT_KV.
 const GUIDES = {
+  chek:     { slug: 'chek-list-arenda', title: 'Чек-лист: 10 пунктов проверить до подписи договора аренды', rent: true, nopage: true, btn: '✅ Чек-лист: 10 пунктов до подписи договора' },
+  chekua:   { slug: 'chek-list-arenda-ua', title: 'Чек-лист: 10 пунктів перевірити до підпису договору оренди', rent: true, nopage: true, ua: true, hidden: true },
   shtrafy:  { slug: 'shtrafy-v-ispanii', title: 'Штрафы в Испании: 15 самых частых для приезжих', rent: false },
   vnzh:     { slug: 'vnzh-posle-vremennoy-zashchity', title: 'Временная защита → ВНЖ на 4 года', rent: false },
   lovushki: { slug: 'lovushki-arendy-v-ispanii', title: 'Аренда в Испании: 17 ловушек и мошенничеств', rent: true },
@@ -10,7 +12,7 @@ const GUIDES = {
 };
 const SITE = 'https://kalmykovgroup.com';
 
-const MENU = Object.entries(GUIDES).map(([k, g]) => [{ text: g.title, callback_data: 'g:' + k }]).concat([[{ text: '📰 Новости и законы Испании — каждый день', url: 'https://t.me/+DF-daga43CM5MzVk' }]]);
+const MENU = Object.entries(GUIDES).filter(([k, g]) => !g.hidden).map(([k, g]) => [{ text: g.btn || g.title, callback_data: 'g:' + k }]).concat([[{ text: '📰 Новости и законы Испании — каждый день', url: 'https://t.me/+DF-daga43CM5MzVk' }]]);
 
 async function hookSecret(env) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kalmykov-bot:' + env.TG_TOKEN));
@@ -30,9 +32,9 @@ async function sendGuide(env, chat, key) {
   await tg(env, 'sendDocument', {
     chat_id: chat,
     document: `${SITE}/gaidy/${g.slug}.pdf`,
-    caption: `${g.title}\n\nСохраните, чтобы была под рукой. Подробнее на сайте: ${SITE}/gaidy/${g.slug}`,
+    caption: g.ua ? `${g.title}\n\nЗбережіть, щоб був під рукою` : g.nopage ? `${g.title}\n\nСохраните, чтобы был под рукой` : `${g.title}\n\nСохраните, чтобы была под рукой. Подробнее на сайте: ${SITE}/gaidy/${g.slug}`,
   });
-  const extra = g.rent
+  const extra = g.ua ? 'Шукаєте житло? Свіжі варіанти оренди та продажу — в моєму каналі @kalmykov_realty' : g.rent
     ? 'Ищете квартиру? Свежие варианты аренды и продажи — в моём канале @kalmykov_realty'
     : 'Если будут вопросы по Испании, пишите сюда, отвечу';
   await tg(env, 'sendMessage', {
@@ -49,19 +51,20 @@ async function sendMenu(env, chat) {
   });
 }
 
-async function remember(env, from, key) {
+async function remember(env, from, key, src) {
   if (!env.BOT_KV || !from) return;
   const id = String(from.id);
   const old = await env.BOT_KV.get('u:' + id, 'json');
   const now = new Date().toISOString();
   const u = old || { id, first: now, name: [from.first_name, from.last_name].filter(Boolean).join(' '), username: from.username || '', lang: from.language_code || '', guides: [] };
   if (key && !u.guides.includes(key)) u.guides.push(key);
+  if (src && !u.src) u.src = src; // откуда пришёл впервые: site, ig, fb, tt, yt…
   u.last = now;
   await env.BOT_KV.put('u:' + id, JSON.stringify(u));
   // Евгению — уведомление о каждом новом человеке
   if (!old && env.ADMIN_USERNAME && from.username !== env.ADMIN_USERNAME) {
     const admin = await env.BOT_KV.get('admin');
-    if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `🆕 Новый в боте: ${u.name}${u.username ? ' @' + u.username : ''}, взял: ${key || 'меню'}` });
+    if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `🆕 Новый в боте: ${u.name}${u.username ? ' @' + u.username : ''}, взял: ${key || 'меню'}${src ? ', откуда: ' + src : ''}` });
   }
 }
 
@@ -73,16 +76,17 @@ export async function onRequestPost({ request, env }) {
       const m = up.message, chat = m.chat.id, text = (m.text || '').trim();
       if (m.from && env.ADMIN_USERNAME && m.from.username === env.ADMIN_USERNAME && env.BOT_KV) await env.BOT_KV.put('admin', String(chat));
       if (text.startsWith('/start')) {
-        const key = text.split(' ')[1] || '';
-        await remember(env, m.from, key);
+        // ?start=<ключ>_<метка источника>, например chek_site, shtrafy_ig
+        const [key = '', src = ''] = (text.split(' ')[1] || '').split('_');
+        await remember(env, m.from, key, src);
         if (GUIDES[key]) await sendGuide(env, chat, key); else await sendMenu(env, chat);
       } else if (text === '/stat' && m.from && m.from.username === env.ADMIN_USERNAME) {
         const list = await env.BOT_KV.list({ prefix: 'u:' });
-        const cnt = {};
-        for (const k of list.keys) { const u = await env.BOT_KV.get(k.name, 'json'); (u.guides.length ? u.guides : ['меню']).forEach(g => cnt[g] = (cnt[g] || 0) + 1); }
+        const cnt = {}, srcs = {};
+        for (const k of list.keys) { const u = await env.BOT_KV.get(k.name, 'json'); (u.guides.length ? u.guides : ['меню']).forEach(g => cnt[g] = (cnt[g] || 0) + 1); const sr = u.src || 'без метки'; srcs[sr] = (srcs[sr] || 0) + 1; }
         const dl = {};
         for (const k of Object.keys(GUIDES)) dl[k] = (await env.BOT_KV.get('dl:' + k)) || 0;
-        await tg(env, 'sendMessage', { chat_id: chat, text: `Людей в боте: ${list.keys.length}\nПо шпаргалкам: ${JSON.stringify(cnt)}\nСкачали с сайта без бота: ${JSON.stringify(dl)}` });
+        await tg(env, 'sendMessage', { chat_id: chat, text: `Людей в боте: ${list.keys.length}\nПо шпаргалкам: ${JSON.stringify(cnt)}\nОткуда пришли: ${JSON.stringify(srcs)}\nСкачали с сайта без бота: ${JSON.stringify(dl)}` });
       } else {
         // Любое сообщение человека — Евгению, чтобы ответил сам
         const admin = env.BOT_KV && await env.BOT_KV.get('admin');
