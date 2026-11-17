@@ -301,6 +301,17 @@ def run_jobs():
                                 log(f"обложка скачана: {cp.name} ({cp.stat().st_size // 1024} КБ)")
                             except Exception as e:
                                 log(f"обложка не скачалась ({str(e)[:100]}) — ставлю без неё")
+                        # 18.11.2026: 17.11 «Одна страна, два климата» робот выложил дважды (14:30 и 17:39, второе задание).
+                        # Тот же лонг второй раз за 3 дня не выкладываем, если в задании нет "repeat": true.
+                        done_f = QUEUE / '_лонги_вышли.json'
+                        try: done_l = json.loads(done_f.read_text(encoding='utf-8'))
+                        except Exception: done_l = {}
+                        prev = done_l.get(j.get('folder', ''))
+                        if j.get('kind') == 'long' and not j.get('dry') and not j.get('repeat') and prev and \
+                                time.time() - prev < 3 * 86400:
+                            job.rename(job.with_suffix('.повтор'))
+                            log(f"ОШИБКА лонг {j['folder']} уже выходил {datetime.datetime.fromtimestamp(prev):%d.%m %H:%M} — второй раз не ставлю (нужно повторить — \"repeat\": true)")
+                            continue
                         try:
                             fb.publish(page, j, fld)
                         except fb.DryRun:
@@ -308,6 +319,10 @@ def run_jobs():
                         job.rename(job.with_suffix('.done'))   # в _план.json не пишем: Blotato его второй раз не выложит
                         if j.get('kind') == 'long':
                             fb_playlists.remember_long(j)       # 18.11.2026: лонг тоже в плейлист, через 40 мин
+                            try:
+                                done_l[j.get('folder', '')] = time.time()
+                                done_f.write_text(json.dumps(done_l, ensure_ascii=False, indent=1), encoding='utf-8')
+                            except Exception: pass
                         log(f"ГОТОВО {what} {j['date']} {j.get('time_set', j['time'])}, групп {len(j.get('groups_done', []))} — {j['folder']}")
                     else:
                         PLATFORMS[j['platform']](page, j, PUB / j['folder'])
