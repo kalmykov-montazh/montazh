@@ -67,6 +67,8 @@ jobs:
             rclone lsf -R --files-only --include '!!! *.mp4' "montazh:$p" | grep -v '(основа)' | sed "s#^#$p/#" >> spisok.txt
           done
           echo "::notice::Роликов всего: $(wc -l < spisok.txt)"
+          export SVODKA="$PWD/svodka.txt"; : > "$SVODKA"
+          TAG=$(date -u +%Y%m%d_%H%M)
           i=0
           while IFS= read -r f; do
             if [ $((i % N)) -eq "$SH" ]; then
@@ -74,6 +76,7 @@ jobs:
               d=$(dirname "$f"); key="priemka/$(printf '%s' "$f" | md5sum | cut -c1-12)"
               bash scripts/proverka_stykov_shag.sh v.mp4 "$d" "$key" ""
               echo "::notice::проверен: $f"
+              rclone copyto "$SVODKA" "montazh:Брокер/работа/_приёмка/${{ github.run_id }}_$SH.txt" 2>/dev/null
             fi
             i=$((i+1))
           done < spisok.txt

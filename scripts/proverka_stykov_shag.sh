@@ -19,12 +19,23 @@ python3 "$GITHUB_WORKSPACE/scripts/proverka_stykov.py" "$V" "$RAW" > sty/otchet.
 python3 - <<'PY' > sty/otchet.txt
 import json
 d = json.load(open('sty/otchet.json'))
-s = [x for x in d['flags'] if x['strong']]
+# 17.11.2026: в карантин — только виды, где ложных почти нет (дубли, повторы, срезы на стыке, начало, конец).
+# СЛОВО / РАЗНОЧТЕНИЕ / ИСХОДНИК часто срабатывают на испанские слова и числа — их Claude разбирает по сводке.
+HARD = {'СЛУЖЕБНОЕ', 'ФАЛЬСТАРТ', 'ЛИШНЯЯ РЕЧЬ', 'РЕЗИНОВОЕ СЛОВО', 'ПОВТОР', 'СТЫК', 'НАЧАЛО', 'КОНЕЦ', 'СТЫК-В-РЕЧИ', 'ОБРЫВ', 'РЕЗ ПО СЛОВУ'}
+s = [x for x in d['flags'] if x['strong'] and x['kind'] in HARD]
 for x in s: print(f"{x['kind']} {x['t']} с: {x['why']}")
+soft = [x for x in d['flags'] if x['strong'] and x['kind'] not in HARD]
+with open('sty/myagkie.txt', 'w') as f:
+    for x in soft: f.write(f"{x['kind']} {x['t']} с: {x['why']}\n")
 PY
+if [ -s sty/myagkie.txt ]; then
+  echo "::warning::разобрать вручную ($(wc -l < sty/myagkie.txt)): $(head -3 sty/myagkie.txt | tr '\n' ' ' | cut -c1-500)"
+  rclone copyto sty/myagkie.txt "montazh:Брокер/работа/$KEY/разобрать вручную.txt" 2>/dev/null
+fi
 if [ -s sty/otchet.txt ]; then
   echo "::error::Стыки — есть замечания ($(wc -l < sty/otchet.txt)): $(head -5 sty/otchet.txt | tr '\n' ' ' | cut -c1-900)"
-  rclone copyto sty/otchet.txt "montazh:$DEST/СТЫКИ — проверить.txt"
+  if [ "${STRICT:-1}" = "1" ]; then rclone copyto sty/otchet.txt "montazh:$DEST/СТЫКИ — проверить.txt"
+  else rclone copyto sty/otchet.txt "montazh:Брокер/работа/$KEY/СТЫКИ — проверить.txt"; fi
   # 17.11.2026 (Евгений: «чтобы такого никогда не могло быть»): ролик с замечаниями НЕ остаётся там, где его смотрит
   # Евгений. Папка целиком уезжает в карантин «Брокер/работа/_не прошли проверку», чинить там, проверять заново,
   # и только чистый — обратно. STRICT=0 — оставить на месте (для ручных разборов).
@@ -42,4 +53,7 @@ else
   rclone deletefile "montazh:$DEST/СТЫКИ — проверить.txt" 2>/dev/null
 fi
 rclone copyto sty/otchet.json "montazh:Брокер/работа/$KEY/stykov_proverka.json" 2>/dev/null
+if [ -n "$SVODKA" ]; then
+  { echo "=== $DEST"; [ -s sty/otchet.txt ] && sed 's/^/  ЖЁСТКО /' sty/otchet.txt; [ -s sty/myagkie.txt ] && sed 's/^/  мягко /' sty/myagkie.txt; [ -s sty/otchet.txt ] || [ -s sty/myagkie.txt ] || echo "  чисто"; } >> "$SVODKA"
+fi
 exit 0

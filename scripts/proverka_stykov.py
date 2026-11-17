@@ -378,7 +378,10 @@ def main():
                 if gw[j]['s'] - gw[i]['s'] > lim: break
                 if A[j:j + n_] == g and not any(abs(gw[i]['s'] - t) < 3 for t in done_fs):
                     done_fs.append(gw[i]['s'])
-                    add('ФАЛЬСТАРТ', gw[i]['s'], f"«{' '.join(w['w'] for w in gw[i:i + n_])}» звучит дважды за {gw[j]['s'] - gw[i]['s']:.1f} с — неудачный дубль? {ctx(gw, gw[i]['s'], 3)}", True)
+                    between = j - (i + n_)
+                    sl = any(abs(gw[i]['s'] - t) < 4 for t in seen_sl)
+                    strong = n_ >= 4 or between <= 3 or sl
+                    add('ФАЛЬСТАРТ', gw[i]['s'], f"«{' '.join(w['w'] for w in gw[i:i + n_])}» звучит дважды за {gw[j]['s'] - gw[i]['s']:.1f} с (между ними {between} сл.) — неудачный дубль? {ctx(gw, gw[i]['s'], 3)}", strong)
                     break
     # лишняя речь: окно слышит заметно больше слов, чем общая расшифровка в том же месте
     for c0, w0, w1, lw, gl in WIN:
@@ -387,7 +390,9 @@ def main():
         ng = sum(1 for w in gl if a0 <= (w['s'] + w['e']) / 2 <= a1)
         nl = sum(1 for w in lw if a0 <= (w['s'] + w['e']) / 2 <= a1)
         nx = max(ng, nl)
-        if nx - nb >= 3 and nx >= 1.5 * max(nb, 1):
+        dig = any(re.search(r'\d', w['w']) for w in ww if a0 - 0.5 <= (w['s'] + w['e']) / 2 <= a1 + 0.5)
+        need = 7 if dig else 3   # числа Whisper пишет цифрой (1221 = «тысяча двести двадцать один»)
+        if nx - nb >= need and nx >= 1.5 * max(nb, 1):
             add('ЛИШНЯЯ РЕЧЬ', c0, f"в отдельном прослушивании {nx} слов, в общей расшифровке {nb}: «{' '.join(w['w'] for w in (gl if ng >= nl else lw))}» — дубль или проглоченный кусок", True)
     # «резиновое» слово: одно слово длиннее 1,3 с — под ним почти всегда проглоченная речь или пауза-дубль
     for w in ww:
