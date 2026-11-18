@@ -15,8 +15,13 @@ FIX = {"клютанциям":"квитанциям","клютанциям,":"к
 for w in W:
     k = w["w"].lower()
     if k in FIX: w["w"] = FIX[k]
+cut = next((w["s"]-0.05 for w in W if w["w"].lower().startswith("поставьте")), None)
+if cut:
+    W = [w for w in W if w["e"] <= cut]
+    sh("ffmpeg","-nostdin","-v","error","-y","-i","voice.wav","-t",f"{cut+0.25:.3f}","-af","afade=t=out:st=%.3f:d=0.2"%(cut+0.05),"voice2.wav")
+    import os; os.replace("voice2.wav","voice.wav")
 json.dump(W, open("words66.json","w"), ensure_ascii=False)
-D = A1 - A0
+D = (cut+0.25) if cut else (A1 - A0)
 print("слов", len(W), "длина", round(D,2)); print(" ".join(w["w"] for w in W))
 def at(word, after=0):
     for w in W:
