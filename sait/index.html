@@ -742,7 +742,7 @@ const socSO=[
   ["tt","#111","TikTok","Короткие видео","https://tiktok.com/@kalmykov_evgeniy"]
 ];
 (function(){
-  const v=(location.search.match(/[?&]soc=([abc])/)||[])[1]||"a";document.body.classList.add("soc-"+v);
+  const v=(location.search.match(/[?&]soc=([abc])/)||[])[1]||"b";document.body.classList.add("soc-"+v);
   const box=document.getElementById("soc2");
   const mk=(h,items)=>{const g=document.createElement("div");g.innerHTML="<h3>"+h+"</h3>";const r=document.createElement("div");r.className="row";items.forEach(x=>r.appendChild(x));g.appendChild(r);box.appendChild(g)};
   const a=(k,c,av,t,s,href)=>{const e=document.createElement("a");e.href=href;e.target="_blank";e.rel="noopener";e.dataset.k=k;e.style.setProperty("--c",c);e.innerHTML='<i class="av">'+av+'</i><span><b>'+t+'</b><small>'+s+'</small></span>';return e};
