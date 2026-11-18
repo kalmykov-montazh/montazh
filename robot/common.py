@@ -171,49 +171,85 @@ def ensure_search(text, folder=None):
     ph = search_phrase(lines[0], folder)
     return '\n'.join(lines[:i] + [ph] + lines[i:])
 
-# 18.11.2026: ПОДПИСЬ FACEBOOK КОРОТКАЯ. Facebook советует 100–200 знаков (максимум 400) и не больше
-# 3 хэштегов. 17.11 лонг «Одна страна, два климата» вышел с подписью ~1300 знаков и таймкодами.
-# Таймкоды — только YouTube. Для Facebook: без таймкодов и служебного, длинное — до первого абзаца.
-FB_MAX = 400
+# 19.11.2026 (решение Евгения 18.11, файл «FB — качество рилсов…»): ПОДПИСЬ РИЛСА FACEBOOK 100–200 ЗНАКОВ.
+# Было: резали до 400 (FB_MAX = 400), «⠀» и пункты строками без точек оставались (18.11 — в 3 из 5 свежих),
+# а ensure_search дописывал строку-поиск «жизнь в Испании» под названием. Теперь для Facebook:
+#   — название (1-я строка) + живой абзац из описания (строки склеиваются в предложения с точкой) + до 3 хэштегов;
+#   — «⠀», пустые строки, таймкоды, служебное и голая поисковая фраза (строка с маленькой буквы без точки,
+#     «… в Испании / в Валенсии») — убираются (поисковая фраза нужна TikTok/YouTube, не Facebook);
+#   — длинное режем по целым предложениям до 200; призыв («пишите», «перешлите», «сохраните»…) держим в конце;
+#   — короче 100 — не выдумываем, только запись в журнал «FB подпись короткая».
+FB_MAX = 200
+FB_MIN = 100
 FB_TAGS = 3
 _TIMECODE = _re.compile(r'^\s*\(?\d{1,2}:\d{2}(:\d{2})?\)?\s')
+_CTA = _re.compile(r'(пишите|напишите|перешлите|сохраните|ссылк|в личку|в комментари|telegram|телеграм|сайт)', _re.I)
+_END = '.!?…:»)'
+
+def _is_search_line(l):
+    s = l.strip()
+    return bool(s) and s[0].islower() and s[-1] not in _END and len(s) <= 60 and bool(_SEARCH_HAS.search(s))
+
+def _sentences(p):
+    parts = _re.split(r'(?<=[.!?…])\s+', p.strip())
+    return [x.strip() for x in parts if x.strip()]
 
 def fb_short(text):
     lines = [l for l in strip_service(text).splitlines() if not _TIMECODE.match(l)]
-    tags = []
-    body = []
+    tags, body = [], []
     for l in lines:
         w = l.split()
         if w and all(x.startswith('#') for x in w):
             tags += [x for x in w if x.lower() not in [t.lower() for t in tags]]
         else:
-            body.append(l.rstrip())
-    while body and body[-1].strip() in ('', '\u2800'):
-        body.pop()
-    t = _re.sub(r'\n{3,}', '\n\n', '\n'.join(body)).strip()
+            s = l.replace('⠀', ' ').strip()
+            if s:
+                body.append(s)
+    if not body:
+        return ' '.join(tags[:FB_TAGS])
+    title = body[0].rstrip('.')
+    desc = [l for l in body[1:] if not _is_search_line(l)]
+    # пункты строками → предложения: с большой буквы, точка в конце, если её нет
+    sents = []
+    for l in desc:
+        l = l.lstrip('-•—–* ').strip()
+        if not l:
+            continue
+        l = l[0].upper() + l[1:]
+        if l[-1] not in _END:
+            l += '.'
+        sents += _sentences(l)
     tail = ' '.join(tags[:FB_TAGS])
-    sep = '\n\u2800\n' if '\u2800' in t else '\n\n'
-    room = FB_MAX - len(tail) - len(sep)
-    if len(t) > room:
-        paras = [p.strip() for p in _re.split(r'\n\s*\n|\n\u2800\n', t) if p.strip().strip('\u2800')]
-        keep = ''
-        for p in paras:
-            nxt = (keep + '\n\n' + p) if keep else p
-            if len(nxt) <= room:
-                keep = nxt; continue
-            left = room - len(keep) - (2 if keep else 0)
-            if left > 80:                              # не влез абзац — берём из него целые предложения
-                cut = p[:left]
-                m = max(cut.rfind('. '), cut.rfind('? '), cut.rfind('! '), cut.rfind('.\n'))
-                part = cut[:m + 1] if m > 40 else ''
-                if part:
-                    keep = (keep + '\n\n' + part) if keep else part
+
+    def build(ss):
+        parts = [title]
+        if ss:
+            parts.append(' '.join(ss).rstrip('.'))      # без точки в конце последней строки текста
+        if tail:
+            parts.append(tail)
+        return '\n\n'.join(parts)
+
+    cta = [s for s in sents if _CTA.search(s)][-1:] if sents else []
+    rest = [s for s in sents if s not in cta]
+    keep = []
+    for s in rest:                                     # набираем предложения, пока влезает вместе с призывом
+        if len(build(keep + [s] + cta)) <= FB_MAX:
+            keep.append(s)
+        else:
             break
-        if not keep:
-            keep = t[:room - 1].rsplit(' ', 1)[0] + '…'
-        t = keep
-        sep = '\n\n'
-    return (t + (sep + tail if tail else '')).strip()
+    out = build(keep + cta)
+    if len(out) > FB_MAX and cta:                      # призыв не влез — без него (его ставят комментарием)
+        out = build(keep)
+    while len(out) > FB_MAX and keep:
+        keep.pop(); out = build(keep)
+    if len(out) > FB_MAX and tail:                     # одно длинное название — режем хэштеги
+        t2 = tags[:FB_TAGS]
+        while t2 and len(out) > FB_MAX:
+            t2.pop(); tail = ' '.join(t2); out = build(keep)
+    if len(out) < FB_MIN:
+        try: log(f"FB подпись короткая: {len(out)} знаков — {title[:50]}")
+        except Exception: pass
+    return out.strip()
 
 def human_click(page, loc):
     """Подвести мышь к элементу кривой траекторией, чуть подождать, кликнуть не в центр."""
