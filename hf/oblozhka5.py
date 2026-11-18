@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 
 W, H = 1080, 1920
-Y0, Y1 = 300, 1500   # 13.11.2026: низ 1450 → 1500 (в сетке 3:4 видно до 1680, счётчик просмотров ниже 1560)
+Y0, Y1 = 300, 1400   # 18.11.2026: 1500 → 1400 — нижняя строка уезжала к счётчику просмотров (TikTok: «Коммуналка», «План», «Растаможка»). Было: 13.11.2026: низ 1450 → 1500 (в сетке 3:4 видно до 1680, счётчик просмотров ниже 1560)
 YN = 1500   # низ полосы новости: выше счётчика просмотров в сетке
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FD = os.path.join(ROOT, "fonts")
@@ -127,8 +127,9 @@ g = cv2.cvtColor(np.array(src), cv2.COLOR_RGB2GRAY)
 fs = cv2.CascadeClassifier(hx).detectMultiScale(g, 1.1, 5, minSize=(120, 120))
 if len(fs):
     fx, fy, fw, fh = max(fs, key=lambda r: r[2] * r[3])
-    HEAD_TOP = int(fy - 0.20 * fh); CHIN = int(fy + 0.93 * fh)
+    HEAD_TOP = int(fy - 0.20 * fh); CHIN = int(fy + 0.93 * fh); FACE_TOP = int(fy + 0.12 * fh)
 else:
+    FACE_TOP = None
     fx, fw = 300, 480; HEAD_TOP, CHIN = 560, 1170
 HEAD_TOP = max(HEAD_TOP, 200)
 # 13.11.2026 (Евгений 20:23): ролик на две камеры — лицо маленьким окошком сверху (top_px в novyj), на весь кадр улица.
@@ -353,42 +354,40 @@ elif S5 == "hormozi":
             y += hh + 34
 
 elif S5 == "novost":
-    # 13.11.2026: крупно. Метка «НОВОСТЬ · <top>», bot — жёлтым во всю ширину, полоса сразу под подбородком
-    lab = up(cov.get("label")) or "ВАЖНО"
+    # 18.11.2026 (TikTok-разбор 17.11): новость выходила БЕЗ заголовка — сверху одна красная метка, строка мелко внизу
+    # у счётчика («В блэкаут карта — просто пластик» — 114 просмотров, «Сколько воды на 3 дня», «Брюссель — 72 часа»).
+    # Теперь как у живых обложек: тёмная шапка сверху до макушки, в ней красная метка «НОВОСТЬ» и КРУПНЫЙ заголовок
+    # 1–2 строки жёлтым. Ниже головы — ничего. Голова высоко — шрифт меньше (не ниже 84), потом шапка опускается.
+    lab = up(cov.get("label")) or "НОВОСТЬ"
     lines = BOTL or ([TOP] if TOP else [])
     if TOP and BOTL: lab = f"{lab} · {TOP}"
-    tf = fit(d, lab, OSW, 66, W - 230, 44); w, h, b = tsize(d, lab, tf)
-    lab_in_band = not above_ok
-    if not lab_in_band:
-        ly = Y0 + 40
-        d.rectangle([40, ly, 40 + w + 104, ly + h + 36], fill="#e3191c")
-        d.ellipse([64, ly + (h + 36) // 2 - 13, 90, ly + (h + 36) // 2 + 13], fill="white")
-        d.text((112 - b[0], ly + 18 - b[1]), lab, font=tf, fill="white")
+    tf = fit(d, lab, OSW, 66, W - 200, 40); lw, lhh, lb = tsize(d, lab, tf)
     one = " ".join(lines)
-    f1 = fit(d, one, OSW, 230, W - 90, 60)
-    if f1.size >= 150 or len(lines) == 1 and " " not in one:
-        rows = [one]; f = f1
-    else:
-        rows = lines if len(lines) > 1 else split2(one, d, OSW, 200, W - 90)
-        f = fit(d, max(rows, key=len), OSW, 200, W - 90, 60)
-    def band(fnt):
+    rows = lines[:2] if 1 < len(lines) <= 2 else split2(one, d, OSW, 170, W - 100)
+    if len(rows) > 2: rows = [" ".join(rows[:len(rows) // 2]), " ".join(rows[len(rows) // 2:])]
+    btop = (Y0 - 20) if WIN else 0
+    def need_for(fnt):
         hh_ = tsize(d, "ЁЙ", fnt)[1]
-        lh = (tsize(d, "ЁЙ", tf)[1] + 26) if lab_in_band else 0
-        return hh_, lh, 48 + lh + hh_ * len(rows) + 22 * (len(rows) - 1)
-    hh, lh, bh = band(f)
-    top = max(CHIN + 10, 820)
-    while top + bh > YN and f.size > 110:
-        f = OSW(f.size - 6); hh, lh, bh = band(f)
-    if top + bh > YN: top = max(700, YN - bh)
-    bot = top + bh
-    ov = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(ov).rectangle([0, top, W, bot], fill=(10, 12, 16, 235))
+        return hh_, 36 + lhh + 36 + 28 + hh_ * len(rows) + 20 * (len(rows) - 1) + 44
+    # шапка может закрыть волосы, но не лоб и глаза: предел — верх лица; сверху можно подняться до 240 (сетка 3:4)
+    hard = (FACE_TOP if FACE_TOP else HEAD_TOP + 80) - 10
+    f = fit(d, max(rows, key=len), OSW, 170, W - 100, 90)
+    hh, need = need_for(f)
+    while Y0 + need > max(HEAD_TOP - 20, hard) and f.size > 90:
+        f = OSW(f.size - 6); hh, need = need_for(f)
+    y_start = Y0 if Y0 + need <= hard or WIN else max(240, hard - need)
+    bot = max(HEAD_TOP - 20, y_start + need) if not WIN else y_start + need
+    ov = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(ov).rectangle([0, btop, W, bot], fill=(10, 12, 16, 235))
     im.alpha_composite(ov); d = ImageDraw.Draw(im)
-    d.rectangle([0, top, 24, bot], fill="#e3191c")
-    y = top + 24
-    if lab_in_band:
-        _, _, bb = tsize(d, lab, tf); d.text((60 - bb[0], y - bb[1]), lab, font=tf, fill="white"); y += lh
+    d.rectangle([0, max(btop, y_start - 30), 24, bot], fill="#e3191c")
+    y = bot - need + 36 if not WIN else y_start + 36
+    d.rectangle([56, y, 56 + lw + 104, y + lhh + 36], fill="#e3191c")
+    d.ellipse([80, y + (lhh + 36) // 2 - 13, 106, y + (lhh + 36) // 2 + 13], fill="white")
+    d.text((128 - lb[0], y + 18 - lb[1]), lab, font=tf, fill="white")
+    y += lhh + 36 + 28
     for t in rows:
-        _, _, bb = tsize(d, t, f); d.text((56 - bb[0], y - bb[1]), t, font=f, fill="#ffd400"); y += hh + 22
+        ctext(d, y, t, f, "#ffd400"); y += hh + 20
+    print(f"oblozhka5: новость — шапка до {bot}, заголовок {len(rows)} стр., шрифт {f.size}")
 
 elif S5 == "chb":
     gimg = ImageEnhance.Contrast(ImageOps.grayscale(src)).enhance(1.35).convert("RGBA")
