@@ -63,3 +63,5 @@ jobs:
         run: |
           sleep 90
           curl -s --max-time 60 https://kalmykovgroup.com/tg/news-sync || echo "::warning::канал не ответил"
+          # 18.11.2026: прогрев людей в боте (через 7 дней после шпаргалки про аренду), sait/functions/tg/drip.js
+          curl -s --max-time 60 https://kalmykovgroup.com/tg/drip || echo "::warning::прогрев не ответил"

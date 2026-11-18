@@ -11,6 +11,8 @@ const GUIDES = {
   klimat:   { slug: 'gde-zhit-v-ispanii-klimat-i-arenda', title: 'Где жить в Испании: климат и аренда по регионам', rent: true },
 };
 const SITE = 'https://kalmykovgroup.com';
+// Прогрев (решение Евгения 18.11.2026): сразу после PDF — следующая шпаргалка по теме первой кнопкой
+const NEXT = { chek: 'lovushki', lovushki: 'chek', otkazy: 'chek', klimat: 'otkazy', shtrafy: 'vnzh', vnzh: 'shtrafy' };
 
 const MENU = Object.entries(GUIDES).filter(([k, g]) => !g.hidden).map(([k, g]) => [{ text: g.btn || g.title, callback_data: 'g:' + k }]).concat([[{ text: '📰 Новости и законы Испании — каждый день', url: 'https://t.me/+DF-daga43CM5MzVk' }]]);
 
@@ -38,8 +40,8 @@ async function sendGuide(env, chat, key) {
     ? 'Ищете квартиру? Свежие варианты аренды и продажи — в моём канале @kalmykov_realty'
     : 'Если будут вопросы по Испании, пишите сюда, отвечу';
   await tg(env, 'sendMessage', {
-    chat_id: chat, text: extra + '\n\nДругие шпаргалки — по кнопкам ниже',
-    reply_markup: { inline_keyboard: MENU },
+    chat_id: chat, text: extra + (NEXT[key] ? `\n\nСледом пригодится: «${GUIDES[NEXT[key]].btn || GUIDES[NEXT[key]].title}»` : '') + '\n\nДругие шпаргалки — по кнопкам ниже',
+    reply_markup: { inline_keyboard: NEXT[key] ? [[{ text: '👉 ' + (GUIDES[NEXT[key]].btn || GUIDES[NEXT[key]].title), callback_data: 'g:' + NEXT[key] }]].concat(MENU) : MENU },
   });
 }
 
@@ -59,6 +61,8 @@ async function remember(env, from, key, src) {
   const u = old || { id, first: now, name: [from.first_name, from.last_name].filter(Boolean).join(' '), username: from.username || '', lang: from.language_code || '', guides: [] };
   if (key && !u.guides.includes(key)) u.guides.push(key);
   if (src && !u.src) u.src = src; // откуда пришёл впервые: site, ig, fb, tt, yt…
+  // Прогрев: через 7 дней после первой шпаргалки про аренду — одно сообщение (отправляет /tg/drip)
+  if (key && GUIDES[key] && GUIDES[key].rent && !GUIDES[key].ua && !u.d7) u.d7 = Date.now() + 7 * 864e5;
   u.last = now;
   await env.BOT_KV.put('u:' + id, JSON.stringify(u));
   // Евгению — уведомление о каждом новом человеке
