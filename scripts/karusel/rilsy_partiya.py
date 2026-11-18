@@ -132,7 +132,7 @@ for it in cfg['items']:
             res.append(r); print(json.dumps(r, ensure_ascii=False)); continue
         job = {'platform': 'fb', 'kind': 'arenda', 'mode': 'live', 'folder': f'../Посты/Карусели/{name}',
                'video': 'reel.mp4', 'cover_file': 'reel/01.jpg' if (D / 'reel' / '01.jpg').exists() else '01.jpg', 'date': f'{at:%Y-%m-%d}', 'time': f'{at:%H:%M}',
-               'text': fbt, 'groups': it.get('groups', [])}
+               'text': fbt}   # 18.11.2026, Евгений: рилсы в группы не отправляем (за неделю 41 рилс в группах дал 0,05 $)
         jn = f'{at:%Y-%m-%d_%H%M}_fb_РИЛС {name}.json'
         (OUT / jn).write_text(json.dumps(job, ensure_ascii=False, indent=1), encoding='utf-8')
         cp = sh('rclone', 'copyto', str(OUT / jn), f'montazh:Брокер/К публикации/_задания/{jn}')
