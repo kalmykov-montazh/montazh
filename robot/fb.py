@@ -263,6 +263,11 @@ def _publish_now(page, j, folder, text):
     """Рилс выходит сразу кнопкой «Опубликовать» (тест «сразу против отложки», 04.11.2026).
     После клика повторов нет — чтобы не задвоить ролик. Проверка мягкая: не нашли — только запись в журнал."""
     _debug(page, f"перед публикацией сразу {folder.name[:30]}")
+    # 18.11.2026: 17.11 Facebook показал красное «Длина статуса не должна превышать 2 500 символов», кнопка
+    # «Отправить» была серой, а робот всё равно записал «ГОТОВО». Теперь красная ошибка в окне = ОШИБКА в журнал.
+    err = _dialog_error(page)
+    if err:
+        raise RuntimeError(f'Facebook не даёт опубликовать: «{err}» — ролик НЕ вышел')
     btn = None
     # 07.11.2026: в окне Reels кнопка выхода имеет aria-label «Отправить» (над ней «Настройки планирования —
     # Опубликовать сейчас»). Первая такая кнопка скрытая и неактивная (aria-hidden, aria-disabled) — её не берём.
@@ -286,6 +291,9 @@ def _publish_now(page, j, folder, text):
     log(f"FB СРАЗУ: нажал «Опубликовать» в {j['time_set']} (по плану {j['time']}) — {folder.name}")
     pause(20, 30)
     _debug(page, f"после публикации сразу {folder.name[:30]}")
+    err = _dialog_error(page)
+    if err:
+        raise RuntimeError(f'после нажатия Facebook пишет: «{err}» — ролик НЕ вышел, окно не закрылось')
     key = text.split('\n')[0][:25].strip()
     url = ('https://www.facebook.com/professional_dashboard/content/content_library/'
            '?filter=PUBLISHED&post_types[0]=REELS&sort_by=DATE')
@@ -299,6 +307,26 @@ def _publish_now(page, j, folder, text):
             pass
         pause(40, 70)
     log(f"FB СРАЗУ: в опубликованных пока не вижу (обработка?) — проверить — {key}")
+
+ERR_MARKS = ('Длина статуса', 'Сократите его', 'Произошла ошибка', 'Что-то пошло не так')
+
+def _dialog_error(page):
+    """Красная ошибка в открытом окне Reels («Длина статуса…», «Не удалось…»). Пустая строка — ошибок нет."""
+    try:
+        d = page.locator('[role="dialog"]')
+        if not d.count():
+            return ''
+        t = d.last.inner_text(timeout=3000)
+        own = d.last.locator('[contenteditable="true"][role="textbox"]')
+        own = own.last.inner_text(timeout=3000) if own.count() else ''
+    except Exception:
+        return ''
+    for ln in t.split('\n'):
+        if ln.strip() and ln.strip() in own:      # строки нашей же подписи не считаем
+            continue
+        if any(m in ln for m in ERR_MARKS):
+            return ln.strip()[:150]
+    return ''
 
 def _upload_video(page, video):
     """Видео в окно «Создание видео Reels». Сначала прямо в поле файла (надёжно),

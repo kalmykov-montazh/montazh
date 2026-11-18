@@ -63,9 +63,18 @@ NEWS_WINDOWS = [('news', '11:10', '12:10'), ('photo', '14:50', '15:40'), ('long'
 # с 12.11: номера слотов 0/1/2 прежние (чтобы не задвоить уже созданные), вечерняя новость — слот 3
 NEWS4_WINDOWS = [('news', '11:10', '12:10'), ('news_day', '14:50', '15:40'), ('long', '22:30', '25:30'),
                  ('news_evening', '17:50', '19:40')]
+# ВАРИАНТ Б (решение Евгения 18.11.2026 00:31, файл «FB — сильные ночные посты…»): с 18.11 два сильных поста
+# уходят из дня в вечер и ночь. Слот 1 «news_day» (папка «Новости день», посты «С-…») — 21:30–22:30,
+# слот 2 «long» (папка «Длинные», «002-…») — 01:30–02:45. Новости остаются утром и вечером. Через неделю (~25.11) — разбор.
+# Уже созданные задания на новые дни переносятся сами (_move_strong_jobs). Копия до правки — textposts.py.bak-1811b
+STRONG_FROM = datetime.date(2026, 11, 18)
+STRONG_WINDOWS = [('news', '11:10', '12:10'), ('news_day', '21:30', '22:30'), ('long', '25:30', '26:45'),
+                  ('news_evening', '17:50', '19:40')]
 TEXT_GAP = 120                            # минут минимум между двумя текстами
 
 def _windows(day):
+    if day >= STRONG_FROM:
+        return STRONG_WINDOWS
     if day >= NEWS4_FROM:
         return NEWS4_WINDOWS
     return NEWS_WINDOWS if day >= NEWS_FROM else WINDOWS
@@ -173,6 +182,31 @@ def _replace_photo_jobs(days, now):
         days[f'{ds} 1'] = {'вид': 'news_day', 'время': f'{at:%H:%M}', 'статус': 'задание'}
         log(f"РАСКЛАДКА текст news_day {at:%Y-%m-%d %H:%M} (вместо фото-поста {e.get('время', '')})")
 
+def _move_strong_jobs(days, now):
+    """18.11.2026, вариант Б: уже созданные задания слотов 1 и 2 с 18.11, стоящие вне новых окон, — снять,
+    plan() сразу поставит их заново в новое окно."""
+    for f in list(QUEUE.glob('*_fbtext_*.json')):
+        try: j = json.loads(f.read_text(encoding='utf-8-sig'))
+        except Exception: continue
+        if j.get('retry') or j.get('slot') not in (1, 2):
+            continue
+        try: day = datetime.date.fromisoformat(j['day'])
+        except Exception: continue
+        if day < STRONG_FROM:
+            continue
+        key = f"{j['day']} {j['slot']}"
+        if days.get(key, {}).get('статус') not in (None, 'задание'):
+            continue
+        kind, a, b = STRONG_WINDOWS[j['slot']]
+        start = datetime.datetime.combine(day, datetime.time(0)) + _td(a)
+        end = datetime.datetime.combine(day, datetime.time(0)) + _td(b)
+        at = datetime.datetime.strptime(j['at'], '%Y-%m-%d %H:%M')
+        if start <= at <= end and j.get('kind') == kind:
+            continue
+        f.unlink(missing_ok=True)
+        days.pop(key, None)
+        log(f"ВАРИАНТ Б: снял {j.get('kind')} {j['at']} (слот {j['slot']}, день {j['day']}) — поставлю в {a}–{b}")
+
 LATE_MIN = 90                       # опоздали больше чем на 90 минут (компьютер был выключен) — пропускаем
 COOLDOWN = {'испания': 3, 'общая': 1}   # через сколько дней группу можно взять снова
 PROVEN, MEDIUM, TESTS = 5, 1, 3   # решение Евгения 25.10.2026: 5 сильных + 1 средняя + 3 на тест
@@ -207,6 +241,8 @@ def plan():
     except Exception as e: log(f"ОШИБКА утренняя новость: раскладка ({str(e)[:150]})")
     try: _replace_photo_jobs(days, now)         # 11.11.2026: с 12.11 фото-пост → дневная новость
     except Exception as e: log(f"ОШИБКА дневная новость: раскладка ({str(e)[:150]})")
+    try: _move_strong_jobs(days, now)           # 18.11.2026: вариант Б — сильные посты вечером и ночью
+    except Exception as e: log(f"ОШИБКА вариант Б: перенос ({str(e)[:150]})")
     for add in (0, 1):
         day = now.date() + datetime.timedelta(days=add)
         ds = day.isoformat()
@@ -519,6 +555,11 @@ SPECIFIC = {'еда': 'еда', 'кухня': 'еда', 'кафе': 'кафе', 
             'здоровье': 'здоровье', 'аптека': 'здоровье', 'цветы': 'цветы', 'документы': 'документы',
             'парикмахерская': 'парикмахерская', 'мусор': 'мусор', 'стройка': 'работа',
             'хэллоуин': 'хэллоуин', 'балиса': 'балиса', 'обменка': 'обменка', 'я': 'я'}   # 09.11.2026
+# 18.11.2026: фото из старого архива (Египет, Турция, Харьков, Украина и др.) — только если пост про это
+# (@фото-тема: египет / харьков / архив …). Разбитые дома — только к постам про войну.
+for _t in ('архив', 'египет', 'турция', 'греция', 'чехия', 'франция', 'украина', 'харьков', 'дьяковцы'):
+    SPECIFIC[_t] = 'архив'
+SPECIFIC['война'] = 'война'
 # Фото с этим тегом робот не берёт никогда (дети, чеки, чужие лица крупно, дубли) — 09.11.2026
 SKIP_TAG = 'не публиковать'
 MIN_SCORE = 2.0   # слабое совпадение — не тема, берём нейтральный город/море
@@ -526,7 +567,8 @@ MIN_SCORE = 2.0   # слабое совпадение — не тема, бер�
 def _score(wanted, tags):
     hit = sorted((v for k, v in wanted.items() if k in tags), reverse=True)
     sc = (hit[0] + 0.25 * sum(hit[1:])) if hit else 0.0
-    foreign = {SPECIFIC[t] for t in tags if t in SPECIFIC and SPECIFIC[t] not in wanted}
+    wanted_cats = set(wanted) | {SPECIFIC[k] for k in wanted if k in SPECIFIC}   # 18.11.2026
+    foreign = {SPECIFIC[t] for t in tags if t in SPECIFIC and SPECIFIC[t] not in wanted_cats}
     return sc - 3.0 * len(foreign)
 
 def _pick_photo(meta, text=''):

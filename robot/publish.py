@@ -288,6 +288,13 @@ def run_jobs():
                         job.rename(job.with_suffix('.done'))
                         textposts.mark(j, 'готово')
                         log(f"ГОТОВО текст {j['kind']} {j['at']}")
+                        # 18.11.2026: история к вышедшей новости / сильному посту / ночному длинному — сам робот
+                        if j.get('kind') in textposts.NEWS_KINDS + ('long',) and not j.get('dry'):
+                            try:
+                                import stories
+                                stories.after_text(page, j)
+                            except Exception as e:
+                                log(f"ОШИБКА история: {str(e).splitlines()[0][:150] if str(e) else type(e).__name__}")
                     elif j.get('kind') in ('arenda', 'long'):   # 10.11.2026: рилс-объявление аренды; 13.11.2026: лонг в ленту FB
                         # "long": видео и обложка лежат в своей папке лонга — "folder_abs" (полный путь), "video", "cover_file", "text"
                         what = 'лонг' if j.get('kind') == 'long' else 'рилс аренды'
