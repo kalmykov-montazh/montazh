@@ -39,8 +39,9 @@ async function sendGuide(env, chat, key) {
   const extra = g.ua ? 'Шукаєте житло? Свіжі варіанти оренди та продажу — в моєму каналі @kalmykov_realty' : g.rent
     ? 'Ищете квартиру? Свежие варианты аренды и продажи — в моём канале @kalmykov_realty'
     : 'Если будут вопросы по Испании, пишите сюда, отвечу';
+  const news = g.ua ? '\n\nНовини та закони Іспанії щодня — в каналі https://t.me/+DF-daga43CM5MzVk' : '\n\nНовости и законы Испании каждый день — в канале https://t.me/+DF-daga43CM5MzVk';
   await tg(env, 'sendMessage', {
-    chat_id: chat, text: extra + (NEXT[key] ? `\n\nСледом пригодится: «${GUIDES[NEXT[key]].btn || GUIDES[NEXT[key]].title}»` : '') + '\n\nДругие шпаргалки — по кнопкам ниже',
+    chat_id: chat, text: extra + news + (NEXT[key] ? `\n\nСледом пригодится: «${GUIDES[NEXT[key]].btn || GUIDES[NEXT[key]].title}»` : '') + '\n\nДругие шпаргалки — по кнопкам ниже',
     reply_markup: { inline_keyboard: NEXT[key] ? [[{ text: '👉 ' + (GUIDES[NEXT[key]].btn || GUIDES[NEXT[key]].title), callback_data: 'g:' + NEXT[key] }]].concat(MENU) : MENU },
   });
 }

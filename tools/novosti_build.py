@@ -181,6 +181,7 @@ def article_html(it):
     vid, vname = pick_video(it)
     body = f"""<a class="back" href="/novosti/">← Все новости Испании</a>
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
+<p style="margin:0 0 14px"><a class="go" href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="background:#2aa1da">📰 Новости Испании каждый день — в Telegram</a></p>
 {paras}</article>
 <div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
