@@ -53,6 +53,8 @@ def main(tg):
             except Exception as ex:
                 print(name, p, 'не ясно', str(ex)[:120]); continue
             status, err = st.get('status'), (st.get('errorMessage') or '')[:300]
+            if status == 'failed' and 'invalid_publish_id' in err:   # 20.11.2026: TikTok вышел, Blotato потерял id — не повторяем
+                status = 'вышел?'
             print(name, p, status, err[:150])
             if r is not None and r.get('status') != status:
                 r['status'] = status; changed = True

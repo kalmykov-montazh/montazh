@@ -26,7 +26,12 @@ def status(pid):
     r = urllib.request.Request(f'{API}/posts/{pid}', headers={'blotato-api-key': KEY})
     try:
         with urllib.request.urlopen(r, timeout=60) as resp:
-            return json.loads(resp.read() or b'{}')
+            d = json.loads(resp.read() or b'{}')
+        # 20.11.2026 (дубль «98 Дубай» в TikTok): Blotato пишет failed «Error checking Tiktok post status:
+        # invalid_publish_id», а пост на самом деле вышел. Это не падение — не перевыкладываем.
+        if d.get('status') == 'failed' and 'invalid_publish_id' in (d.get('errorMessage') or ''):
+            d['status'] = 'вышел?'
+        return d
     except Exception as e:
         return {'status': 'не ясно', 'errorMessage': str(e)[:200]}
 
