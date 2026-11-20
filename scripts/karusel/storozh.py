@@ -86,7 +86,8 @@ def reels(name, F):
     if not (datetime.timedelta(0) < now - at < datetime.timedelta(hours=48)):
         return
     changed = False; vurl = None
-    for p, x in cfg['posts'].items():
+    # 20.11.2026: рилс ещё не поставлен (в _рилс.json нет posts) — пропускаем, а не падаем
+    for p, x in (cfg.get('posts') or {}).items():
         if x.get('status') in ('published', 'сдался'):
             continue
         if x.get('id'):
@@ -128,7 +129,10 @@ def reels(name, F):
 now = datetime.datetime.now(datetime.timezone.utc)
 for name in [x.rstrip('/') for x in rc('lsf', '--dirs-only', ROOT, check=False).splitlines()]:
     F = f'{ROOT}/{name}'
-    reels(name, F)
+    try:
+        reels(name, F)
+    except Exception as ex:                                 # 20.11.2026: одна кривая папка не ломает весь обход
+        print(name, 'рилс: пропускаю из-за ошибки', str(ex)[:200])
     try:
         cfg = json.loads(rc('cat', f'{F}/karusel.json').lstrip('﻿'))
         res = json.loads(rc('cat', f'{F}/_отправлено.json'))
