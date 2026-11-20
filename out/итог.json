@@ -1,0 +1,35 @@
+[
+ {
+  "folder": "Защита и ВНЖ на 4 года",
+  "sborka": "готово: k/Защита и ВНЖ на 4 года/reel.mp4  27.4 с, слайдов 8, ВО ВЕСЬ ЭКРАН 9:16, музыка — трек 1",
+  "zvuk": "mean_volume: -17.9 dB max_volume: -5.0 dB",
+  "dlit": 27.4,
+  "blotato": {
+   "instagram": {
+    "id": "a0c743a0-2230-4bbb-bda2-51153fe0696a",
+    "account": "80093",
+    "target": {
+     "targetType": "instagram",
+     "mediaType": "reel"
+    }
+   },
+   "tiktok": {
+    "id": "7f8e821b-34c1-4b28-b563-cbef4d59ec9e",
+    "account": "65164",
+    "target": {
+     "targetType": "tiktok",
+     "privacyLevel": "PUBLIC_TO_EVERYONE",
+     "disabledComments": false,
+     "disabledDuet": false,
+     "disabledStitch": false,
+     "isBrandedContent": false,
+     "isYourBrand": false,
+     "isAiGenerated": false,
+     "isDraft": false,
+     "autoAddMusic": false
+    }
+   }
+  },
+  "fb_zadanie": "2026-11-24_2000_fb_РИЛС Защита и ВНЖ на 4 года.json"
+ }
+]
