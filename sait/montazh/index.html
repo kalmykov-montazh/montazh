@@ -3,7 +3,7 @@
 <meta name="description" content="Telegram-бот сам монтирует ваши рилсы: паузы, лучшие дубли, субтитры, плашки, звук. По ссылке и коду — 200 бесплатных кредитов, это 2–3 ролика">
 <link rel="canonical" href="https://kalmykovgroup.com/montazh/"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:title" content="Монтаж роликов за минуты — 200 кредитов в подарок"><meta property="og:image" content="https://kalmykovgroup.com/og.jpg">
-<style>*{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#16233a;font:17px/1.6 Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+<style>.gift{background:#16294a;color:#fff;border-radius:16px;padding:16px;margin:4px 0 8px;font-weight:700}.gift .code{background:#fff8db}*{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#16233a;font:17px/1.6 Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .w{max-width:620px;margin:0 auto;padding:20px 16px 60px}a{color:#2f6fd6}.back{display:inline-block;margin-bottom:14px;font-weight:700;text-decoration:none}
 .card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 2px 10px rgba(22,41,74,.07);margin-bottom:16px}
 h1{font-size:26px;line-height:1.25;color:#16294a;margin:0 0 10px}.lead{margin:0 0 6px}
@@ -22,12 +22,13 @@ h1{font-size:26px;line-height:1.25;color:#16294a;margin:0 0 10px}.lead{margin:0 
 <div class="card"><h1>Приложение, в котором монтирую ролики</h1>
 <p class="lead">Telegram-бот сам делает рилс из видео, где вы говорите в камеру: убирает паузы, берёт лучшие дубли, ставит субтитры, плашки, обложку и звук</p>
 
-<div class="step"><i class="num">1</i><div><b>Откройте бота и нажмите «Запустить»</b>
-<a class="go" id="go" href="/montazh/start" target="_blank" rel="noopener">Открыть бота в Telegram →</a></div></div>
+<div class="gift">🎁 Ваш код на 200 бесплатных кредитов (2–3 ролика):
+<div class="code"><span>SYVWJSSP</span><button class="cp" data-copy="SYVWJSSP">Скопировать</button></div></div>
 
-<div class="step"><i class="num">2</i><div style="flex:1"><b>Введите код в приложении — получите 200 кредитов</b>
-<span class="muted">Это 2–3 ролика бесплатно</span>
-<div class="code"><span>SYVWJSSP</span><button class="cp" data-copy="SYVWJSSP">Скопировать</button></div></div></div>
+<div class="step"><i class="num">1</i><div style="flex:1"><b>Нажмите кнопку — код скопируется сам, откроется бот</b>
+<a class="go" id="go" href="/montazh/start" target="_blank" rel="noopener">Скопировать код и открыть бота →</a></div></div>
+
+<div class="step"><i class="num">2</i><div><b>В боте нажмите «Запустить», затем вставьте код SYVWJSSP</b><span class="muted">Без кода кредиты не начислятся — вставьте его сразу, это одно нажатие</span></div></div>
 
 <div class="step"><i class="num">3</i><div><b>Закиньте своё видео</b>Субтитры, плашки и обложку бот сделает сам. Попробуйте на любом своём ролике</div></div>
 </div>
@@ -36,5 +37,6 @@ h1{font-size:26px;line-height:1.25;color:#16294a;margin:0 0 10px}.lead{margin:0 
 </div>
 <script>
 document.querySelectorAll('.cp').forEach(b=>b.onclick=()=>{const t=b.dataset.copy,o=b.textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(()=>{const i=document.createElement('textarea');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy')}catch(e){}i.remove()}).finally(()=>{b.textContent='Скопировано ✓';setTimeout(()=>b.textContent=o,1800)})});
+document.getElementById('go').addEventListener('click',()=>{try{navigator.clipboard&&navigator.clipboard.writeText('SYVWJSSP')}catch(e){}});
 if(/TikTok|musical_ly|Bytedance|trill/i.test(navigator.userAgent))document.getElementById('tt').classList.add('on');
 </script></body></html>
