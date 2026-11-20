@@ -93,7 +93,7 @@ h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
 .soon div{padding:16px 18px;border:1px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;gap:4px}
 .soon small{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .soon span{color:var(--muted);font-size:14px}
-/* Моя консультация — сразу под соцсетями */
+/* Мой разбор — сразу под соцсетями */
 .consult{display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:18px;
   background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
 .consult .kick{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
@@ -534,7 +534,7 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
 
 
   <section class="consult" aria-labelledby="h-consult">
-    <span class="kick">Моя консультация</span>
+    <span class="kick">Мой разбор</span>
     <h2 id="h-consult">Проблема с квартирой? Разберу ваш договор</h2>
     <ul>
       <li>Съезжаете досрочно или жильцы уходят раньше срока — разберу договор и подскажу, как расстаться без суда и без потери залога</li>
@@ -548,10 +548,10 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
     </ol>
     <div class="prices">
       <p><b>Разбор договора письменно — 50&nbsp;€</b><span>Мои рекомендации: что по закону, что нет, что поправить</span></p>
-      <p><b>Помощь в переписке с хозяином — от&nbsp;100&nbsp;€</b><span>Подскажу, как спокойно и по делу написать хозяину или агентству и что ответить, чтобы договориться без суда</span></p>
+      <p><b>Сопровождение переписки по договору — 50&nbsp;€</b><span>С арендатором или арендодателем — в зависимости от вашей ситуации. Готовлю сообщения в WhatsApp или на почту со ссылкой на закон, вы отправляете от себя</span></p>
     </div>
-    <p class="note">Моя задача — помочь разрулить ситуацию и не довести до суда. Это в интересах всех. Если дело всё же дойдёт до суда — дальше нужен профессиональный юрист, контакты дам</p>
-    <div class="gorow"><a class="go" id="consultgo" target="_blank" rel="noopener">Записаться на консультацию</a><a class="tgalt" href="https://t.me/Kalmykov_broker" target="_blank" rel="noopener">или написать в Telegram</a></div>
+    <p class="note">Моя задача — помочь договориться и не довести до суда. Это в интересах всех. Я не юрист: если дело дошло до бурофакса или суда — тут уже нужен профессиональный юрист, контакты проверенных дам</p>
+    <div class="gorow"><a class="go" id="consultgo" target="_blank" rel="noopener">Записаться на разбор</a><a class="tgalt" href="https://t.me/Kalmykov_broker" target="_blank" rel="noopener">или написать в Telegram</a></div>
   </section>
 
   <section class="head" aria-labelledby="h-help">
@@ -591,10 +591,10 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
   <section class="head" aria-labelledby="h-faq"><h2 id="h-faq">Частые вопросы</h2></section>
   <div class="faq reveal">
     <details><summary>Вы юрист?</summary><p>Нет. Я разбираю договор и помогаю решить ситуацию без суда. Если дело всё же идёт в суд — даю контакты проверенных юристов</p></details>
-    <details><summary>Работаете только в Валенсии?</summary><p>Консультации — онлайн, по всей Испании. Присылаете договор в WhatsApp, я отвечаю письменно</p></details>
+    <details><summary>Работаете только в Валенсии?</summary><p>Разбор и переписка — онлайн, по всей Испании. Присылаете договор в WhatsApp, я отвечаю письменно</p></details>
     <details><summary>Договор на испанском — разберёте?</summary><p>Да. Почти все договоры здесь на испанском — объясню по-русски, что в нём написано и на что смотреть</p></details>
     <details><summary>Как быстро отвечаете?</summary><p>В максимально короткие сроки, как только смогу. Если срочно — так и напишите</p></details>
-    <details><summary>Сколько стоит?</summary><p>Разбор договора письменно — 50 €. Помощь в переписке с хозяином — от 100 €. Чек-лист — бесплатно</p></details>
+    <details><summary>Сколько стоит?</summary><p>Разбор договора письменно — 50 €. Сопровождение переписки по договору — 50 €. Чек-лист — бесплатно</p></details>
   </div>
 
   <section class="bonus reveal" aria-labelledby="h-bonus">
@@ -821,7 +821,7 @@ const pb=document.getElementById("pbtns");
 });
 
 const cg=document.getElementById("consultgo");
-cg.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Консультация.\nМой вопрос: ");
+cg.href="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Разбор договора.\nМой вопрос: ");
 cg.insertAdjacentHTML("afterbegin",ICON.wa);
 document.querySelectorAll(".consult,.grid,.soon,.partners").forEach(e=>e.classList.add("reveal"));
 try{const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add("on");io.unobserve(x.target)}}),{threshold:.08});
