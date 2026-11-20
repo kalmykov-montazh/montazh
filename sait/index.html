@@ -112,6 +112,7 @@ h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
 
 /* Для партнёров */
 .partners{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.psteps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;line-height:1.45}.psteps b{color:var(--fg)}.psteps .gold{color:#b8860b;font-weight:800}
 .pbtns{display:flex;flex-wrap:wrap;gap:10px}
 .pbtns a{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;text-decoration:none;border-radius:12px;padding:12px 18px;border:1px solid var(--line);color:var(--fg);background:var(--bg)}
 .pbtns a.pmain{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -391,6 +392,23 @@ dialog.sheet .x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-inde
 .card .pts li{font-size:13px;padding:5px 10px;border-radius:999px;background:color-mix(in srgb,var(--t) 10%,#fff);color:#16294a}
 @media (max-width:700px){.card.wide>span{-webkit-line-clamp:unset;display:block}.card .pts li{font-size:12px;padding:4px 8px}}
 .grid:not(.all) .card:nth-child(n+10){display:none}
+.secs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px}
+.sec{position:relative;display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:#fff;cursor:pointer;border:0;border-radius:16px;overflow:hidden;min-height:170px;padding:14px 16px;justify-content:flex-end;background:#16294a}
+.sec i{position:absolute;inset:0;background:center/cover no-repeat}
+.sec i::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,44,.1) 20%,rgba(10,22,44,.88))}
+.sec b,.sec small,.sec em{position:relative}
+.sec b{font-size:21px;font-family:var(--display)}
+.sec small{font-size:12.5px;opacity:.9;line-height:1.3}
+.sec em{font-style:normal;font-size:12px;font-weight:700;color:#f5c518;margin-top:2px}
+.sec:hover,.sec:focus-visible{outline:3px solid var(--t);outline-offset:2px}
+.secback{display:flex;align-items:center;gap:12px;margin:4px 0 10px}
+.secback button{font:inherit;font-weight:700;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 14px;cursor:pointer}
+.secback b{font-family:var(--display);font-size:20px}
+.card.soon{opacity:.78}
+.card .soonb{align-self:flex-start;font-style:normal;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:#f5c518;color:#16294a;border-radius:6px;padding:2px 8px}
+.grid:not(.all) .card:nth-child(n+10){display:flex}
+.grid .card[hidden]{display:none!important}
+@media (max-width:700px){.secs{grid-template-columns:1fr 1fr;gap:8px}.sec{min-height:140px;padding:10px 12px}.sec b{font-size:17px}.sec small{font-size:11px}}
 .allsvc{display:block;margin:12px auto 28px;background:#fff;border:1.5px solid #16294a;color:#16294a;font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;cursor:pointer}
 .grid.all+.allsvc{display:none}
 .vgrid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px}
@@ -555,13 +573,14 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
   </section>
 
   <section class="head" aria-labelledby="h-help">
-    <h2 id="h-help">Переезжаете в Испанию? Есть проверенные люди</h2>
-    <p class="lead">Свои квартиры сдаю и продаю сам. По остальному есть люди, которых я проверил: юристы, ипотека, агенты, мастера. Выберите, что нужно, — откроется WhatsApp, напишите коротко свою ситуацию</p>
+    <h2 id="h-help">Всё для жизни в Испании — в одном месте</h2>
+    <p class="lead">Свои квартиры сдаю и продаю сам. По остальному — люди, которых я проверил. Выберите раздел, потом услугу — откроется WhatsApp, напишите коротко свою ситуацию</p>
     <a class="myobj" href="https://t.me/kalmykov_realty" target="_blank" rel="noopener">🏠 Мои объекты <small>(аренда и продажа)</small> →</a>
-    <div class="filters" id="filters"></div>
+    <div class="secs" id="filters"></div>
   </section>
-  <div class="grid" id="grid"></div>
-  <button type="button" class="allsvc" id="allsvc">Ещё 6 услуг</button>
+  <div class="secback" id="secback" hidden><button type="button" id="secbackbtn">← Все разделы</button><b id="secname"></b></div>
+  <div class="grid" id="grid" hidden></div>
+  <button type="button" class="allsvc" id="allsvc" hidden>Ещё</button>
 
 
 
@@ -618,8 +637,14 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
   </div>
 
   <section class="partners" aria-labelledby="h-partners">
-    <h2 id="h-partners">Для партнёров</h2>
-    <p class="lead">Есть услуга, полезная тем, кто переезжает или живёт в Испании? Напишите коротко: что делаете, в каком городе и как с вами связаться</p>
+    <h2 id="h-partners">Делаете своё дело в Испании хорошо? Давайте работать вместе</h2>
+    <p class="lead">Ко мне каждый день приходят люди, которые переезжают или уже живут в Испании, — и не только в Валенсии. Им нужны проверенные специалисты</p>
+    <ol class="psteps">
+      <li><b>Знакомимся</b> — созваниваемся, вы рассказываете о себе и своей работе</li>
+      <li><b>Размещаю информацию о вас</b> и ваших услугах на нашем сайте <span class="gold">kalmykovgroup.com</span> и рассказываю о вас в соцсетях</li>
+      <li><b>Клиенты приходят</b> к вам с пометкой <span class="gold">«от Kalmykov Group»</span> — сразу видно, откуда человек</li>
+      <li><b>Платите только за результат</b> — процент с закрытой сделки, условия обсуждаем лично</li>
+    </ol>
     <div class="pbtns" id="pbtns"></div>
   </section>
 
@@ -750,22 +775,36 @@ const socSO=[
   mk("Видео и соцсети",socSO.map(([k,c,t,s,h])=>a(k,c,ICON[k],t,s,h)));
 })();
 
-const G={doc:["Документы","#2f6fd6"],money:["Деньги","#1f9a5a"],home:["Жильё","#d9691a"],house:["Дом и быт","#0f8f8f"],more:["Ещё","#7a52c7"]};
+const G={home:["Жильё","#d9691a","1714919286244-6f3f6cce6e65"],doc:["Документы","#2f6fd6","1758518731462-d091b0b4ed0d"],money:["Деньги","#1f9a5a","1501167786227-4cba60f6d58f"],car:["Транспорт","#b5452f","1662577629898-484e7eb1d0d2"],house:["Дом","#0f8f8f","1704040686428-7534b262d0d8"],trip:["Путешествия","#2a7fb8","1436491865332-7a61a109cc05"],life:["Жизнь","#c2410c","1503676260728-1c00da094a0b"],more:["Ещё","#7a52c7","1763571294142-54993a594420"]};
 const services=[
-  ["doc","Юристы: ВНЖ, налоги, бизнес","Переезжаете с бизнесом или своей компанией? Важно с самого начала выбрать правильный ВНЖ: от него зависит налоговое резидентство — когда, как и сколько вы будете платить. Ошибка на въезде потом годами вылазит. Юристы, с которыми я работаю, разберут вашу ситуацию целиком",null,["Какой ВНЖ подходит именно вам","Digital Nomad, стартап, no lucrativa","Переход с временной защиты на ВНЖ","Продление и модификация ВНЖ","Налоги и резидентство, режим Бекхема","Компания, ФОП или ЧП в Испании","Административные и уголовные дела"]],
-  ["home","Купить или продать квартиру в Испании","Свои квартиры продаю сам. Ищете другое — подключу проверенных агентов. Нужна ипотека — есть специалист"],
-  ["home","Купить недвижимость в ОАЭ","Хотите купить в Эмиратах — подключу партнёра, он 6 лет работает брокером в агентстве ОАЭ"],
-  ["money","Ипотека в Испании","Ипотечный брокер подберёт банк. Помогает и тем, кому уже отказали в других банках"],
   ["home","Снять квартиру в аренду","Свои квартиры сдаю сам, свежие — в Telegram-канале. Нужен подбор под ваш бюджет и район — передам агенту, с которым работаю"],
-  ["money","Легализация денег в Испании","Юристы помогут законно завести ваши деньги на испанский счёт и подтвердить, откуда они"],
-  ["more","Монтаж роликов через бота","Telegram-бот сам монтирует видео: субтитры, обложки. По моему коду SYVWJSSP — 200 кредитов","https://t.me/accio_pro_bot?start=seed_ac_nova"],
+  ["home","Купить или продать квартиру в Испании","Свои квартиры продаю сам. Ищете другое — подключу проверенных агентов. Нужна ипотека — есть специалист"],
   ["home","Управление вашей квартирой","Хотите сдавать квартиру, но не заниматься жильцами и поломками сами — возьмут на себя"],
-  ["doc","Растаможка авто с украинскими номерами","Перевести машину на испанские номера: документы и все шаги"],
-  ["house","Мебель на заказ","Кухни и шкафы под ваши размеры: проект и изготовление"],
-  ["house","Шторы, ролеты, всё для окон","Подберут, сошьют и установят"],
-  ["house","Кондиционеры: установка и чистка","По всей провинции Валенсия и на Коста-Бланке"],
+  ["home","Квартиры с жильцами и с торгов — для инвесторов","Покупка квартир с жильцами, после торгов и под перепродажу. Работаю с партнёром, который ведёт такие сделки"],
+  ["home","Купить недвижимость в ОАЭ","Хотите купить в Эмиратах — подключу партнёра, он 6 лет работает брокером в агентстве ОАЭ"],
+  ["doc","Юристы: ВНЖ, налоги, бизнес","Переезжаете с бизнесом или своей компанией? Важно с самого начала выбрать правильный ВНЖ: от него зависит налоговое резидентство — когда, как и сколько вы будете платить. Ошибка на въезде потом годами вылазит. Юристы, с которыми я работаю, разберут вашу ситуацию целиком",null,["Какой ВНЖ подходит именно вам","Digital Nomad, стартап, no lucrativa","Переход с временной защиты на ВНЖ","Продление и модификация ВНЖ","Налоги и резидентство, режим Бекхема","Компания, ФОП или ЧП в Испании","Административные и уголовные дела"]],
   ["doc","Запись на приём в госорганы (ситу)","Помощь с записью: ВНЖ, отпечатки, NIE и другие учреждения"],
+  ["doc","Гестория и автономо","Открыть автономо, вести отчётность и налоги",null,null,1],
+  ["doc","Переводы документов","Присяжный перевод для госорганов и банков",null,null,1],
+  ["money","Ипотека в Испании","Ипотечный брокер подберёт банк. Помогает и тем, кому уже отказали в других банках"],
+  ["money","Страховка: жильё, здоровье, жизнь","Страховой агент подберёт полис: квартира, медицина, жизнь, ответственность"],
+  ["money","Легализация денег в Испании","Юристы помогут законно завести ваши деньги на испанский счёт и подтвердить, откуда они"],
+  ["money","Банк: бонус до 450 € в BBVA","Открыть счёт по моему коду приглашения — условия и код ниже на странице","#h-bonus"],
+  ["car","Растаможка авто с украинскими номерами","Перевести машину на испанские номера: документы и все шаги"],
+  ["car","Купить машину","Подбор и проверка авто перед покупкой",null,null,1],
+  ["car","Аренда авто","Машина на время — в Испании и не только",null,null,1],
   ["house","Ремонт под ключ","Мастера, которым доверяю. Ремонт квартир и домов в Валенсии"],
+  ["house","Мебель на заказ","Кухни и шкафы под ваши размеры: проект и изготовление"],
+  ["house","Кондиционеры: установка и чистка","По всей провинции Валенсия и на Коста-Бланке"],
+  ["house","Шторы, ролеты, всё для окон","Подберут, сошьют и установят"],
+  ["house","Переезд и грузчики","Перевезти вещи по городу и между городами",null,null,1],
+  ["trip","Автобусы в Украину и по Европе","Билеты на автобусы — скоро прямо с сайта",null,null,1],
+  ["trip","Отели и перелёты дешевле","Как экономить на поездках — скоро",null,null,1],
+  ["life","Школы и садики","Как устроить ребёнка в школу",null,null,1],
+  ["life","Испанский и репетиторы","Языковые курсы и репетиторы для детей и взрослых",null,null,1],
+  ["life","Врачи и медицина","Частные клиники и страховая медицина",null,null,1],
+  ["life","Связь и интернет","Мобильный, домашний интернет, электричество",null,null,1],
+  ["more","Монтаж роликов через бота","Telegram-бот сам монтирует видео: субтитры, обложки. По моему коду SYVWJSSP — 200 кредитов","https://t.me/accio_pro_bot?start=seed_ac_nova"],
   ["more","Другой вопрос","Не нашли нужное? Напишите, что нужно, — подскажу, к кому обратиться"]
 ];
 const GI={
@@ -795,24 +834,26 @@ const pickIcon=t=>/Купить/.test(t)?SI.sale:/Юрист/.test(t)?SI.law:/О
 const IMGS=[[/Юрист/,"1758518731462-d091b0b4ed0d"],[/ОА[ЭЕ]/,"1512453979798-5ea266f8880c"],[/Купит/,"1629199159634-28a88785cee5"],[/Ипотек|Іпотек/,"1501167786227-4cba60f6d58f"],[/аренд|оренд/i,"1714919286244-6f3f6cce6e65"],[/Легализ|Легаліз/,"1621280336935-ed7cae618aac"],[/Растамож|Розмитн/,"1662577629898-484e7eb1d0d2"],[/Ремонт/,"1704040686428-7534b262d0d8"],[/Управл/,"1758840742715-e477247b7248"],[/Мебел|Меблі/,"1786053538161-501fbdd89629"],[/Штор/,"1631510390389-c1e4fb20ff31"],[/Кондиц|Кондиці/,"1762341123870-d706f257a12e"],[/ситу/i,"1581553673739-c4906b5d0de8"],[/Монтаж/,"1492619375914-88005aa9e8fb"],[/./,"1763571294142-54993a594420"]];
 const pickImg=t=>"https://images.unsplash.com/photo-"+IMGS.find(x=>x[0].test(t))[1]+"?auto=format&fit=crop&w=800&q=70";
 const grid=document.getElementById("grid");
-services.forEach(([g,t,h,link,pts])=>{
+services.forEach(([g,t,h,link,pts,soon])=>{
   const el=document.createElement("a");
-  el.className=pts?"card wide":"card";el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
-  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Интересует: "+t+".\nМоя ситуация: ");
-  el.href=link||wa;el.target="_blank";el.rel="noopener";
-  el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}<em>${link?"Открыть бота →":'<i class="l">Написать в </i>WhatsApp →'}</em>`;
+  el.className=(pts?"card wide":"card")+(soon?" soon":"");el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
+  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта Kalmykov Group. Интересует: "+t+".\nМоя ситуация: ");
+  el.href=link||wa;if(!(link&&link[0]==="#")){el.target="_blank";el.rel="noopener"}
+  el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}${soon?'<i class="soonb">Скоро</i>':""}<em>${soon?"Спросить в WhatsApp →":link?(link[0]==="#"?"Подробнее ↓":"Открыть бота →"):'<i class="l">Написать в </i>WhatsApp →'}</em>`;
   grid.appendChild(el);
 });
-const fl=document.getElementById("filters");
-[["all","Все"],...Object.entries(G).map(([k,v])=>[k,v[0]])].forEach(([k,n])=>{
-  const b=document.createElement("button");b.type="button";b.textContent=n;b.setAttribute("aria-pressed",k==="all");
-  b.onclick=()=>{fl.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-    grid.querySelectorAll(".card").forEach(c=>c.hidden=!(k==="all"||c.dataset.g===k))};
-  fl.appendChild(b);
+const fl=document.getElementById("filters"),sb=document.getElementById("secback"),sn=document.getElementById("secname");
+const showSec=k=>{fl.hidden=!!k;sb.hidden=!k;grid.hidden=!k;if(k){sn.textContent=G[k][0];grid.querySelectorAll(".card").forEach(c=>c.hidden=c.dataset.g!==k&&c.dataset.g!=="more");sb.scrollIntoView({behavior:"smooth",block:"start"})}};
+Object.entries(G).filter(([k])=>k!=="more").forEach(([k,v])=>{
+  const list=services.filter(x=>x[0]===k);
+  const b=document.createElement("button");b.type="button";b.className="sec";b.style.setProperty("--t",v[1]);
+  b.innerHTML=`<i style="background-image:url(https://images.unsplash.com/photo-${v[2]}?auto=format&fit=crop&w=700&q=70)"></i><b>${v[0]}</b><small>${list.map(x=>x[1].split(/[:(—]/)[0].trim()).slice(0,4).join(" · ")}</small><em>${list.filter(x=>!x[5]).length} услуг${list.some(x=>x[5])?" · скоро ещё":""}</em>`;
+  b.onclick=()=>showSec(k);fl.appendChild(b);
 });
+document.getElementById("secbackbtn").onclick=()=>{showSec(null);document.getElementById("h-help").scrollIntoView({behavior:"smooth"})};
 
 const pb=document.getElementById("pbtns");
-[["pmain","Предложить свою услугу","Сотрудничество.\nУслуга: \nГород: \nКонтакт: "],
+[["pmain","Обсудить сотрудничество","Сотрудничество с Kalmykov Group.\nЧем занимаюсь: \nГород: \nКонтакт: "],
  ["","Реклама","Реклама.\nЧто рекламируете: \nГде хотите (сайт, YouTube, Instagram, Telegram): "]
 ].forEach(([cls,t,msg])=>{
   const a=document.createElement("a");if(cls)a.className=cls;
