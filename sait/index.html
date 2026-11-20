@@ -843,11 +843,11 @@ services.forEach(([g,t,h,link,pts,soon])=>{
   grid.appendChild(el);
 });
 const fl=document.getElementById("filters"),sb=document.getElementById("secback"),sn=document.getElementById("secname");
-const showSec=k=>{fl.hidden=!!k;sb.hidden=!k;grid.hidden=!k;if(k){sn.textContent=G[k][0];grid.querySelectorAll(".card").forEach(c=>c.hidden=c.dataset.g!==k&&c.dataset.g!=="more");sb.scrollIntoView({behavior:"smooth",block:"start"})}};
+const showSec=k=>{fl.hidden=!!k;sb.hidden=!k;grid.hidden=!k;if(k){sn.textContent=G[k][0];grid.querySelectorAll(".card").forEach(c=>c.hidden=!(c.dataset.g===k||c.textContent.indexOf("Другой вопрос")===0));sb.scrollIntoView({behavior:"smooth",block:"start"})}};
 Object.entries(G).filter(([k])=>k!=="more").forEach(([k,v])=>{
   const list=services.filter(x=>x[0]===k);
   const b=document.createElement("button");b.type="button";b.className="sec";b.style.setProperty("--t",v[1]);
-  b.innerHTML=`<i style="background-image:url(https://images.unsplash.com/photo-${v[2]}?auto=format&fit=crop&w=700&q=70)"></i><b>${v[0]}</b><small>${list.map(x=>x[1].split(/[:(—]/)[0].trim()).slice(0,4).join(" · ")}</small><em>${list.filter(x=>!x[5]).length} услуг${list.some(x=>x[5])?" · скоро ещё":""}</em>`;
+  b.innerHTML=`<i style="background-image:url(https://images.unsplash.com/photo-${v[2]}?auto=format&fit=crop&w=700&q=70)"></i><b>${v[0]}</b><small>${list.map(x=>x[1].split(/[:(—]/)[0].replace(/ в Испании| с украинскими номерами| вашей квартирой| и с торгов/g,"").trim()).slice(0,4).join(" · ")}</small><em>${(n=>n?n+" "+(n%10==1&&n%100!=11?"услуга":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"услуги":"услуг")+(list.some(x=>x[5])?" · скоро ещё":""):"скоро")(list.filter(x=>!x[5]).length)}</em>`;
   b.onclick=()=>showSec(k);fl.appendChild(b);
 });
 document.getElementById("secbackbtn").onclick=()=>{showSec(null);document.getElementById("h-help").scrollIntoView({behavior:"smooth"})};
