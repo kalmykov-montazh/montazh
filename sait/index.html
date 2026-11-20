@@ -837,7 +837,7 @@ const grid=document.getElementById("grid");
 services.forEach(([g,t,h,link,pts,soon])=>{
   const el=document.createElement("a");
   el.className=(pts?"card wide":"card")+(soon?" soon":"");el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
-  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта Kalmykov Group. Интересует: "+t+".\nМоя ситуация: ");
+  const wa="https://wa.me/34624916605?text="+encodeURIComponent("Здравствуйте! Пишу с сайта. Интересует: "+t+".\nМоя ситуация: ");
   el.href=link||wa;if(!(link&&link[0]==="#")){el.target="_blank";el.rel="noopener"}
   el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}${soon?'<i class="soonb">Скоро</i>':""}<em>${soon?"Спросить в WhatsApp →":link?(link[0]==="#"?"Подробнее ↓":"Открыть бота →"):'<i class="l">Написать в </i>WhatsApp →'}</em>`;
   grid.appendChild(el);
