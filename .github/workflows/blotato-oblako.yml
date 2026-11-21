@@ -3,6 +3,7 @@ name: Blotato — постановка роликов из облака
 # Для Claude (11.11.2026): ставит новые ролики из _план.json в Blotato (Instagram, TikTok, YouTube, Threads),
 # только когда включён рубильник «_задания/_blotato_облако_вкл.txt» и компьютер его подтвердил.
 # Facebook не трогает. Скрипт scripts/blotato_oblako/oblako.py
+# 21.11.2026: второй шаг — X, Bluesky, LinkedIn (scripts/blotato_oblako/oblako_bok.py), свой рубильник «_blotato_облако_бок_вкл.txt».
 on:
   schedule:
     - cron: "13,33,53 * * * *"
@@ -36,3 +37,8 @@ jobs:
         run: |
           rclone copyto "montazh:Общее/Робот/blotato_ключ.txt" key.txt
           python3 scripts/blotato_oblako/oblako.py "$M"
+      - name: X, Bluesky, LinkedIn
+        if: always()
+        env:
+          M: ${{ inputs.mode }}
+        run: python3 scripts/blotato_oblako/oblako_bok.py "$M"
