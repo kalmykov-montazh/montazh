@@ -57,6 +57,8 @@ def main():
     common = importlib.import_module('common')
     b = importlib.import_module('blotato')
 
+    if dry:                                                   # проверка заглядывает на день дальше обычного
+        b.SIDE_AHEAD += 1
     plan = rc_json(f'{Q}/_план.json', {})
     pc = rc_json(f'{Q}/_blotato.json', {})
     cloud = rc_json(f'{Q}/_blotato_облако.json', {})
@@ -132,6 +134,8 @@ def main():
         b._req = fake
         b.time.sleep = lambda *_: None
 
+    for k in DAYK:
+        print('уже разобрано', k, {d: v for d, v in (s.get(k) or {}).items() if d >= today.isoformat()})
     for f in (b.schedule_x, b.schedule_bs, b.schedule_li):
         try:
             f(key, s)
