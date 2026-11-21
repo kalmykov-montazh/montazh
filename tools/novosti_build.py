@@ -227,7 +227,8 @@ def update_sitemap(items):
     s = re.sub(r'\s*<url><loc>https://kalmykovgroup\.com/novosti/[^<]*</loc>.*?</url>', '', s)
     add = f'\n  <url><loc>{BASE}/novosti/</loc><lastmod>{items[0]["published"][:10] if items else "2026-11-13"}</lastmod></url>'
     add += ''.join(f'\n  <url><loc>{BASE}/novosti/{it["slug"]}</loc><lastmod>{it["published"][:10]}</lastmod></url>' for it in items)
-    s = s.replace('\n</urlset>', add + '\n</urlset>')
+    s = re.sub(r'\s*</urlset>\s*$', '', s)  # 21.11.2026: строка /montazh/ шла вплотную к </urlset> — новости в карту не попадали
+    s = s + add + '\n</urlset>\n'
     p.write_text(s, encoding='utf-8')
 
 # 17.11.2026: фото новости — то же, что робот поставил в Facebook. Робот пишет в журнал строку
