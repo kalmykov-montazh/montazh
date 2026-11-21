@@ -137,6 +137,8 @@ def main():
     for k in DAYK:
         print('уже разобрано', k, {d: v for d, v in (s.get(k) or {}).items() if d >= today.isoformat()})
     for f in (b.schedule_x, b.schedule_bs, b.schedule_li):
+        if f is None:
+            continue
         try:
             f(key, s)
         except Exception as ex:
