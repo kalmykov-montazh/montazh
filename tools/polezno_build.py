@@ -118,7 +118,7 @@ def article(a, items):
             f'<body><div class="w"><a class="back" href="/polezno/">← Полезное</a>\n'
             f'<article class="card"><a class="tag" href="/polezno/#{esc(a["tema"])}">{esc(a["tema"])}</a><h1>{esc(a["title"])}</h1>'
             f'<p class="date">{date_ru(a.get("updated", a["date"]))} · Евгений Калмыков, Валенсия</p>\n{video}{render(a["body"])}\n</article>\n'
-            f'<div class="cta2"><b>Остались вопросы по своей ситуации?</b>Напишите — подскажу или дам контакт проверенного специалиста. '
+            f'<div class="cta2"><b>Остались вопросы по своей ситуации?</b>Напишите — дам контакт проверенного специалиста по вашему вопросу. '
             f'<div class="btns">{"".join(btns)}</div></div>\n'
             f'<div class="card more"><h2 style="margin-top:0">Ещё по теме</h2>{more}</div>\n'
             f'<p class="muted">Информация общая и не заменяет консультацию юриста. Законы меняются — дата проверки указана сверху. · <a href="/">kalmykovgroup.com</a></p>\n'
