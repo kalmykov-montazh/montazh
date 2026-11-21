@@ -10,6 +10,14 @@
 # Режим «проверка» — без рубильника и без постановки: только показать, что поставил бы.
 import json, sys, subprocess, pathlib, datetime, importlib, copy
 
+# 21.11.2026: ffmpeg для обрезки роликов под X (до 2:19) — на сервере GitHub его нет, ставим imageio-ffmpeg
+try:
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', '--target', '/tmp/iff', 'imageio-ffmpeg'],
+                   check=False, capture_output=True, timeout=300)
+    sys.path.insert(0, '/tmp/iff')
+except Exception as _ex:
+    print('imageio-ffmpeg не поставил:', _ex)
+
 Q = 'montazh:Брокер/К публикации/_задания'
 PUBR = 'montazh:Брокер/К публикации'
 W = pathlib.Path('work_bok').resolve()
