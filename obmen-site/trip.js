@@ -7,7 +7,7 @@
     ['yesim','https://yesim.tpk.ro/zUjs2mVk?erid=2VtzqvYUdeo','1512941937669-90a1b58e7e9c','eSIM-інтернет за кордоном','eSIM-интернет за границей','Без роумінгу у 200 країнах','Без роуминга в 200 странах'],
     ['economybookings','https://economybookings.tpk.ro/73XZkSEj','1449965408869-eaa3f722e40d','Оренда авто','Аренда авто','Порівняння всіх прокатів у Європі','Сравнение всех прокатов в Европе'],
     ['kiwitaxi','https://kiwitaxi.tpk.ro/R6gWTNIb?erid=2VtzqvZxcw9','1556122071-e404eaedb77f','Трансфер з аеропорту','Трансфер из аэропорта','Фіксована ціна, зустріч з табличкою','Фиксированная цена, встреча с табличкой'],
-    ['airalo','https://airalo.tpk.ro/hpwIoKAX?erid=2VtzqveQanB','1520038410233-7141be7e6f97','eSIM Airalo','eSIM Airalo','Пакети на тиждень чи місяць','Пакеты на неделю или месяц'],
+    ['airalo','https://airalo.tpk.ro/hpwIoKAX?erid=2VtzqveQanB','1565967511849-76a60a516170','eSIM Airalo','eSIM Airalo','Пакети на тиждень чи місяць','Пакеты на неделю или месяц'],
     ['tiqets','https://tiqets.tpk.ro/a8zFSilw?erid=2VtzqvcvbVq','1511527661048-7fe73d85e9a4','Музеї та екскурсії','Музеи и экскурсии','Квитки без черги по всьому світу','Билеты без очереди по всему миру']
   ];
   var css = '.og-trip{max-width:1100px;margin:18px auto;padding:18px 16px 12px;border-radius:20px;background:linear-gradient(135deg,#1b2740,#121a2a);border:1px solid rgba(212,175,55,.45);box-shadow:0 8px 26px rgba(0,0,0,.25);color:#f3ead2;box-sizing:border-box}'
