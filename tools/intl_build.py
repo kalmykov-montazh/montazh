@@ -176,7 +176,7 @@ ART_CSS = '''<style>
 .art h2{font-family:var(--display);font-size:21px;color:#16294a;margin:26px 0 8px}
 .art .meta{color:#5f6b7a;font-size:14px;margin:0 0 14px}.art .kind{display:inline-block;background:#0f4c5c;color:#ffd54a;font-weight:700;font-size:12px;border-radius:99px;padding:3px 10px;margin-right:8px}
 .art .box{background:#fff8e1;border-left:4px solid #f5b400;border-radius:10px;padding:12px 14px;margin:14px 0}
-.art ol.steps{display:block;padding-left:22px;margin:10px 0}.art ol.steps li{display:list-item;padding:0;background:none;border:0;border-radius:0}.art li{margin:4px 0}
+.art ol.steps{display:block;list-style:decimal;padding-left:26px;margin:10px 0}.art ol.steps li::before{display:none!important;content:none!important}.art ol.steps li{display:list-item;padding:0;background:none;border:0;border-radius:0}.art li{margin:4px 0}
 .book{margin:22px 0 4px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#0f4c5c,#13806f);border:3px solid #ffd54a}
 .book h2{margin:0 0 10px!important;color:#ffd54a!important;font-size:19px!important}
 .book a{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:12px 14px;margin:8px 0;text-decoration:none;color:#16233a}
