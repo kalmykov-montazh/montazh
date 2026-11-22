@@ -95,7 +95,7 @@ def head(title, desc, canon, ld):
             f'<title>{esc(title)}</title><meta name="description" content="{esc(desc)}">\n'
             f'<link rel="canonical" href="{canon}"><meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">\n'
             f'<meta property="og:image" content="{BASE}/og.jpg"><meta name="twitter:card" content="summary_large_image"><meta property="og:url" content="{canon}">\n'
-            '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n'
+            '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0a0a0d"><script src="/pwa.js" defer></script>\n'
             f'<style>{CSS}</style><script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>{DRIVE}</head>\n')
 
 def article(a, items):

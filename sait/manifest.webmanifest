@@ -1,0 +1,20 @@
+{
+  "name": "Kalmykov Group — всё для жизни в Испании",
+  "short_name": "Kalmykov",
+  "description": "Аренда и покупка жилья, новости и законы Испании, билеты, отели, аренда авто, eSIM и проверенные специалисты",
+  "lang": "ru",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#14191d",
+  "theme_color": "#0a0a0d",
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Поездки: билеты, отели, авто", "url": "/poezdki/", "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Новости Испании", "url": "/novosti/", "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]}
+  ]
+}
