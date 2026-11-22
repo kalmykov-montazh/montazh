@@ -560,7 +560,7 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
 .esim-pill{position:absolute;right:12px;top:12px;z-index:6;border:0;border-radius:99px;padding:8px 13px;font:700 13.5px/1 var(--display);background:#ffd54a;color:#16294a;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:pulse 2.2s infinite}
 .esim-pill b{color:#d61f1f}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,213,74,.75)}70%{box-shadow:0 0 0 12px rgba(255,213,74,0)}100%{box-shadow:0 0 0 0 rgba(255,213,74,0)}}
-.esim-pop{position:absolute;right:12px;top:54px;z-index:7;width:min(290px,80vw);display:grid;gap:7px;background:#fff;color:#16233a;border-radius:16px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.3);animation:fadeup .25s ease}
+.esim-pop[hidden]{display:none!important}.esim-pop{position:fixed;right:14px;top:64px;z-index:60;width:min(290px,80vw);display:grid;gap:7px;background:#fff;color:#16233a;border-radius:16px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.3);animation:fadeup .25s ease}
 .esim-pop .code{justify-self:start;font:800 14px/1 ui-monospace,monospace;background:#16294a;color:#ffd54a;border-radius:8px;padding:7px 10px;cursor:pointer}
 .esim-pop a{position:relative;overflow:hidden;text-align:center;border-radius:12px;padding:11px;background:#1f74e8;color:#fff;font-weight:800;text-decoration:none}
 .esim-pop small{font-size:10.5px;color:#7a8594}
@@ -615,7 +615,7 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
 <div class="wrap">
 
   <div>
-    <div class="cover"><nav class="langsw" aria-label="Язык"><a class="on" href="index.html" lang="ru">RU</a><a href="ua.html" lang="uk" hreflang="uk">UA</a></nav><button class="esim-pill" id="esimPill" aria-expanded="false">📶 eSIM <b>−25%</b></button><div class="esim-pop" id="esimPop" hidden><b>Интернет в поездке без роуминга</b><span>Airalo: скидка 25% на все пакеты до 30 ноября</span><span class="code" data-code="BLACK25">BLACK25</span><a href="https://airalo.tpk.ro/EhQQaywr?erid=2VtzqveQanB" target="_blank" rel="sponsored noopener">Выбрать eSIM →</a><small>Реклама. Партнёрская ссылка</small></div><img src="cover.jpg" alt="Побережье Коста-Бланки"></div>
+    <div class="cover"><nav class="langsw" aria-label="Язык"><a class="on" href="index.html" lang="ru">RU</a><a href="ua.html" lang="uk" hreflang="uk">UA</a></nav><button class="esim-pill" id="esimPill" aria-expanded="false">📶 eSIM <b>−25%</b></button><img src="cover.jpg" alt="Побережье Коста-Бланки"></div><div class="esim-pop" id="esimPop" hidden><b>Интернет в поездке без роуминга</b><span>Airalo: скидка 25% на все пакеты до 30 ноября</span><span class="code" data-code="BLACK25">BLACK25</span><a href="https://airalo.tpk.ro/EhQQaywr?erid=2VtzqveQanB" target="_blank" rel="sponsored noopener">Выбрать eSIM →</a><small>Реклама. Партнёрская ссылка</small></div>
     <div class="profile">
       <img class="avatar" src="photo.jpeg" alt="Евгений Калмыков">
       <div class="who">
