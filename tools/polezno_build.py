@@ -177,6 +177,13 @@ def main():
     (DIR / 'index.html').write_text(fix(index(items)), encoding='utf-8')
     update_home(items); update_sitemap(items)
     print(f'Полезное: {len(items)} статей')
+    # 22.11.2026: украинская главная — копия русской с переводом (tools/ua_build.py)
+    try:
+        import ua_build; ua_build.build()
+    except Exception as e: print('ua_build:', e)
+    try:  # 22.11.2026: /en/ и /es/ берут дизайн блока «Поездки» из index.html
+        import intl_build; intl_build.main()
+    except Exception as e: print('intl_build:', e)
 
 if __name__ == '__main__':
     main()

@@ -367,6 +367,13 @@ def main(src_dir, removed_list, extra_dir=None):
     # чтобы файл менялся только с новой статьёй и не запускал лишнюю сборку Cloudflare.
     (NEWS / 'ssylki.txt').write_text('\n'.join(links[1:]) + '\n', encoding='utf-8')
     print('изменения' if changed else 'без изменений')
+    # 22.11.2026: украинская главная — копия русской с переводом (tools/ua_build.py)
+    try:
+        import ua_build; ua_build.build()
+    except Exception as e: print('ua_build:', e)
+    try:  # 22.11.2026: /en/ и /es/ берут дизайн блока «Поездки» из index.html
+        import intl_build; intl_build.main()
+    except Exception as e: print('intl_build:', e)
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None, sys.argv[3] if len(sys.argv) > 3 else None)

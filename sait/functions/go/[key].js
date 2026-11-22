@@ -22,6 +22,13 @@ const SERVICES = {
   muzei: 'https://getyourguide.tpk.ro/uFPhTm0U?erid=2VtzqwNw26b',
   strahovka: 'https://kalmykovgroup.com/strahovka/',
   poezdki: 'https://kalmykovgroup.com/poezdki/',
+  // 22.11.2026: платные гайды — своя ссылка на каждый язык, счётчик переходов go:gaid-<язык> в KV.
+  // Пока гайды не продаются (до автономо) — ведут на страницы «скоро». Со страницей оплаты — заменить адрес здесь;
+  // в платёжке тоже держать отдельный товар/цену на каждый язык, чтобы продажи считались по языкам.
+  'gaid-ru': 'https://kalmykovgroup.com/gaidy/',
+  'gaid-ua': 'https://kalmykovgroup.com/gaidy/',
+  'gaid-es': 'https://kalmykovgroup.com/es/guias/nacionalidad-espanola-2-anos-latinoamericanos',
+  'gaid-en': 'https://kalmykovgroup.com/en/guides/',
 };
 const SITE = 'https://kalmykovgroup.com';
 export async function onRequestGet({ params, env }) {
