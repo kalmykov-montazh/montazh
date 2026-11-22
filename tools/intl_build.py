@@ -124,7 +124,7 @@ def trip_block(lang, trip):
     b, miss = translate(trip, d)
     en = lang == 'en'
     b = re.sub(r'\s*<a href="/strahovka/">.*?</a>', '', b, flags=re.S)                 # страховка — наш личный партнёр
-    b = re.sub(r'<a class="avapp".*?</a>', '', b, flags=re.S)                           # приложение Aviasales (RU)
+    # 22.11.2026: приложение Aviasales оставляем и на EN/ES (Евгений: «вечный клиент»), тексты переведены в _i18n
     b = b.replace('https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b')
     b = b.replace('href="/poezdki/"', f'href="/{UI[lang]["dir"]}/{UI[lang]["art"]}/"')
     b = b.replace('www.discovercars.com/ru/', 'www.discovercars.com/' + ('' if en else 'es/'))
