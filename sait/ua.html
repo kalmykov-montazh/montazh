@@ -786,7 +786,7 @@ const services=[
   ["doc","Гесторія та автономо","Відкрити автономо, вести звітність і податки",null,null,1],
   ["doc","Переклади документів","Присяжний переклад для держустанов і банків",null,null,1],
   ["money","Іпотека в Іспанії","Іпотечний брокер підбере банк. Допомагає і тим, кому вже відмовили в інших банках"],
-  ["money","Страховка: житло, здоров’я, життя","Страховий агент підбере поліс: квартира, медицина, життя, відповідальність"],
+  ["money","Страхування: здоров’я, житло, життя","Здоров’я (і для ВНЖ), житло й оренда, комунідад, життя, накопичення, ритуальне, тварини, подорожі. Напишіть агенту у WhatsApp чи Telegram","/strahovka/"],
   ["money","Легалізація грошей в Іспанії","Юристи допоможуть законно завести ваші гроші на іспанський рахунок і підтвердити, звідки вони"],
   ["money","Банк: бонус до 450 € у BBVA","Відкрити рахунок за моїм кодом запрошення — умови й код нижче на сторінці","#h-bonus"],
   ["car","Розмитнення авто з українськими номерами","Перевести машину на іспанські номери: документи й усі кроки"],
@@ -837,8 +837,8 @@ services.forEach(([g,t,h,link,pts,soon])=>{
   const el=document.createElement("a");
   el.className=(pts?"card wide":"card")+(soon?" soon":"");el.dataset.g=g;el.style.setProperty("--t",G[g][1]);
   const wa="https://wa.me/34624916605?text="+encodeURIComponent("Добрий день! Пишу з сайту. Цікавить: "+t+".\nМоя ситуація: ");
-  el.href=link||wa;if(!(link&&link[0]==="#")){el.target="_blank";el.rel="noopener"}
-  el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}${soon?'<i class="soonb">Скоро</i>':""}<em>${soon?"Запитати в WhatsApp →":link?(link[0]==="#"?"Детальніше ↓":"Відкрити бота →"):'<i class="l">Написати в </i>WhatsApp →'}</em>`;
+  el.href=link||wa;const own=!!link&&link[0]==="/"&&link!=="/montazh/";if(!(link&&link[0]==="#")&&!own){el.target="_blank";el.rel="noopener"}
+  el.innerHTML=`<div class="cimg" style="background-image:url(${pickImg(t)})"><b>${t}</b></div><span>${h}</span>${pts?'<ul class="pts">'+pts.map(x=>"<li>"+x+"</li>").join("")+"</ul>":""}${soon?'<i class="soonb">Скоро</i>':""}<em>${soon?"Запитати в WhatsApp →":link?(link[0]==="#"?"Детальніше ↓":own?"Написати фахівцю →":"Відкрити бота →"):'<i class="l">Написати в </i>WhatsApp →'}</em>`;
   grid.appendChild(el);
 });
 const fl=document.getElementById("filters"),sb=document.getElementById("secback"),sn=document.getElementById("secname");

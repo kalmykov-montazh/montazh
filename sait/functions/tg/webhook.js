@@ -1,3 +1,4 @@
+import { PARTNERS, nextNumber, logLead } from '../../_kg/partners.js';
 // Публичный бот: выдаёт PDF-шпаргалки с сайта и запоминает людей (лиды).
 // Переменные в Cloudflare Pages: TG_TOKEN (секрет, вносит Евгений), ADMIN_USERNAME (Kalmykov_broker). Секрет вебхука выводится из токена.
 // Хранилище KV с привязкой BOT_KV.
@@ -73,6 +74,33 @@ async function remember(env, from, key, src) {
   }
 }
 
+
+// Заявки партнёрам через бот (22.11.2026): /start p_<партнёр>_<откуда> — клиент; /start reg_<партнёр> — партнёр один раз подключается
+async function partnerLead(env, m, key, src) {
+  const p = PARTNERS[key]; const chat = m.chat.id; const f = m.from || {};
+  const num = await nextNumber(env, key);
+  const name = [f.first_name, f.last_name].filter(Boolean).join(' ');
+  const who = name + (f.username ? ' @' + f.username : '');
+  await logLead(key, num, 'Telegram', who, src);
+  await remember(env, f, '', src);
+  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}\nКлиент: ${who}\nОн сейчас напишет вам в Telegram${f.username ? '' : ' (ника нет — ждите его сообщения)'}`;
+  const btn = f.username ? { reply_markup: { inline_keyboard: [[{ text: 'Написать клиенту', url: 'https://t.me/' + f.username }]] } } : {};
+  const pchat = env.BOT_KV && await env.BOT_KV.get('pchat:' + key);
+  if (pchat) await tg(env, 'sendMessage', Object.assign({ chat_id: pchat, text: card }, btn));
+  const admin = env.BOT_KV && await env.BOT_KV.get('admin');
+  if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: card + (pchat ? '' : '\n⚠️ Партнёр ещё не подключён к боту') });
+  await tg(env, 'sendMessage', { chat_id: chat, text: `Ваша заявка ${num}. Нажмите кнопку ниже — откроется чат со специалистом (${p.who}, ${p.topic}). Напишите, что вы от Kalmykov Group, заявка ${num}, и коротко ваш вопрос`, reply_markup: { inline_keyboard: [[{ text: 'Написать специалисту', url: p.tg }]] } });
+}
+async function partnerReg(env, m, key) {
+  const chat = String(m.chat.id); const f = m.from || {};
+  const old = await env.BOT_KV.get('pchat:' + key);
+  const admin = await env.BOT_KV.get('admin');
+  if (old && old !== chat) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Этот раздел уже подключён. Если это ошибка — напишите Евгению' }); if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `⚠️ Попытка подключиться к заявкам «${key}» с другого аккаунта: ${f.first_name || ''} @${f.username || '—'}` }); return; }
+  await env.BOT_KV.put('pchat:' + key, chat);
+  await tg(env, 'sendMessage', { chat_id: chat, text: 'Готово! Сюда будут приходить заявки от Kalmykov Group с номером и контактом клиента' });
+  if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `✅ К заявкам «${key}» подключился ${f.first_name || ''} @${f.username || '—'}` });
+}
+
 export async function onRequestPost({ request, env }) {
   if (!env.TG_TOKEN || request.headers.get('x-telegram-bot-api-secret-token') !== await hookSecret(env)) return new Response('no', { status: 403 });
   const up = await request.json();
@@ -80,7 +108,11 @@ export async function onRequestPost({ request, env }) {
     if (up.message) {
       const m = up.message, chat = m.chat.id, text = (m.text || '').trim();
       if (m.from && env.ADMIN_USERNAME && m.from.username === env.ADMIN_USERNAME && env.BOT_KV) await env.BOT_KV.put('admin', String(chat));
-      if (text.startsWith('/start')) {
+      const pl = text.startsWith('/start') ? (text.split(' ')[1] || '') : '';
+      const pm = pl.match(/^p_([a-z]+)_?([a-z0-9]*)$/i), rm = pl.match(/^reg_([a-z]+)$/i);
+      if (pm && PARTNERS[pm[1]]) { await partnerLead(env, m, pm[1], pm[2] || 'site'); }
+      else if (rm && PARTNERS[rm[1]] && env.BOT_KV) { await partnerReg(env, m, rm[1]); }
+      else if (text.startsWith('/start')) {
         // ?start=<ключ>_<метка источника>, например chek_site, shtrafy_ig
         const [key = '', src = ''] = (text.split(' ')[1] || '').split('_');
         await remember(env, m.from, key, src);
