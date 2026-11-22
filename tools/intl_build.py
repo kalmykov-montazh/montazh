@@ -113,6 +113,9 @@ def home_assets():
     styles = ''.join(re.findall(r'<style\b[^>]*>.*?</style>', head, re.S))
     links = ''.join(re.findall(r'<link rel="(?:preconnect|stylesheet)"[^>]*>', head))
     trip = s[s.index('<!--trip-->'):s.index('<!--/trip-->') + len('<!--/trip-->')]
+    # скрипт сразу после блока: карта цен Aviasales (подгрузка при прокрутке), промокоды, сроки акций
+    m = re.match(r'\s*<script>.*?</script>', s[s.index('<!--/trip-->') + len('<!--/trip-->'):], re.S)
+    if m: trip += m.group(0)
     flf = re.search(r"<script>\(function\(\)\{var f=document.getElementById\('flf'\).*?</script>", s, re.S).group(0)
     return styles, links, trip, flf
 
