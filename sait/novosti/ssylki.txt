@@ -1,4 +1,5 @@
 формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+22.11 Испания за неделю | https://kalmykovgroup.com/novosti/2026-11-22-ispaniya-za-nedelyu-minimalka-pensii-svet-benzin-i-airbnb | коротко
 22.11 Залог за бутылки не начался | https://kalmykovgroup.com/novosti/2026-11-22-zalog-10-tsentov-za-butylku-dolzhen-byl-nachatsya-segodnya-n | полная
 21.11 Airbnb 20 дней хозяевам | https://kalmykovgroup.com/novosti/2026-11-21-airbnb-dal-hozyaevam-20-dney-chtoby-ubrat-lishnie-pravila | полная
 21.11 Чёрная пятница фото цен | https://kalmykovgroup.com/novosti/2026-11-21-do-chernoy-pyatnitsy-6-dney-samoe-vremya-sfotografirovat-tse | полная
