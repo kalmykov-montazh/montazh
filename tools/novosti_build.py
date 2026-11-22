@@ -7,6 +7,7 @@
 import shutil
 import json, re, sys, html, datetime, zoneinfo, urllib.parse
 from pathlib import Path
+DRIVE = '<script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">(function(){var script=document.createElement("script");script.async=1;script.setAttribute("data-cmp-ab","2");script.src=\'https://tpembars.com/NjA0ODc0.js?t=604874\';document.head.appendChild(script);})();</script>'  # 22.11.2026: Travelpayouts Drive (партнёрские ссылки на туристических страницах)
 
 SITE = Path(__file__).resolve().parent.parent / 'sait'
 NEWS = SITE / 'novosti'
@@ -151,7 +152,7 @@ def page(title, desc, canon, body, extra=''):
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<style>{CSS}</style>{extra}</head>
+<style>{CSS}</style>{extra}{DRIVE}</head>
 <body><div class="w">
 {body}
 </div></body></html>

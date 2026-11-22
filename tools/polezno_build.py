@@ -8,6 +8,7 @@
 # Запуск: python3 tools/polezno_build.py — делает страницы, список /polezno/, блок «Полезное» на главной, sitemap.xml
 import re, html, json, datetime, urllib.parse
 from pathlib import Path
+DRIVE = '<script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">(function(){var script=document.createElement("script");script.async=1;script.setAttribute("data-cmp-ab","2");script.src=\'https://tpembars.com/NjA0ODc0.js?t=604874\';document.head.appendChild(script);})();</script>'  # 22.11.2026: Travelpayouts Drive (партнёрские ссылки на туристических страницах)
 
 SITE = Path(__file__).resolve().parent.parent / 'sait'
 DIR = SITE / 'polezno'
@@ -95,7 +96,7 @@ def head(title, desc, canon, ld):
             f'<link rel="canonical" href="{canon}"><meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">\n'
             f'<meta property="og:image" content="{BASE}/og.jpg"><meta name="twitter:card" content="summary_large_image"><meta property="og:url" content="{canon}">\n'
             '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n'
-            f'<style>{CSS}</style><script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script></head>\n')
+            f'<style>{CSS}</style><script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>{DRIVE}</head>\n')
 
 def article(a, items):
     canon = f'{BASE}/polezno/{a["slug"]}'
