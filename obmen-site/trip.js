@@ -1,3 +1,4 @@
+// 22.11.2026 21:10: + плашка «Застосунок Aviasales» (вічний клієнт) перед кнопкою «Усі сервіси»
 // 22.11.2026 19:30: 6 головних (автобуси, eSIM, авіа, готелі, компенсація, авто) + кнопка «Усі сервіси» на /poyizdky + плашка eSIM до 30.11
 // Блок «Подорожі дешевше» під таблицею курсів (22.11.2026; 22.11 13:05 +готелі, автобуси, екскурсії, компенсація). Партнерські посилання Travelpayouts з міткою obmen
 (function(){
@@ -24,6 +25,11 @@
    + '.og-esim{position:fixed;right:12px;top:84px;z-index:60;display:flex;align-items:center;gap:8px;background:#121a2a;color:#fff;border:2px solid #d4af37;border-radius:999px;padding:6px 8px 6px 12px;font:700 13.5px/1.2 system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.4);animation:ogEs 2.4s ease-in-out infinite}'
    + '.og-esim b{color:#ffd54a}.og-esim button{background:none;border:0;color:#aab;font-size:16px;cursor:pointer;padding:0 4px}@keyframes ogEs{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}'
    + '@media(max-width:600px){.og-esim{top:auto;bottom:78px;right:8px;font-size:12.5px}}'
+   + '.og-trip .app{display:flex!important;flex-direction:row!important;align-items:center;gap:12px;margin:14px auto 0;max-width:620px;padding:12px 14px;border-radius:16px;background:linear-gradient(180deg,#2b2b2b,#0c0c0c)!important;border:2px solid #d4af37!important;color:#fff!important;box-shadow:0 6px 18px rgba(0,0,0,.3)}'
+   + '.og-trip .app .ai{flex:none;width:46px;height:46px;border-radius:12px;background:#1f74e8;display:grid;place-items:center;font-size:24px}'
+   + '.og-trip .app .at{flex:1;display:flex;flex-direction:column;gap:2px}.og-trip .app .at b{padding:0;color:#ffcf40;font-size:15.5px}.og-trip .app .at span{padding:0;color:#e9dcc0;font-size:12.5px}'
+   + '.og-trip .app .ab{flex:none;background:linear-gradient(135deg,#ffab40,#f57c00);color:#fff;font-weight:900;font-size:14px;padding:9px 14px;border-radius:12px;border:2px solid #d4af37}'
+   + '@media(max-width:600px){.og-trip .app{gap:9px;padding:10px}.og-trip .app .ai{width:38px;height:38px;font-size:20px}.og-trip .app .at b{font-size:13.5px}.og-trip .app .at span{font-size:11px}.og-trip .app .ab{font-size:12.5px;padding:8px 10px}}'
    + '.og-trip small{display:block;margin-top:12px;font-size:10.5px;color:#8a8170}'
    + '@media(max-width:1000px){.og-trip .g{grid-template-columns:repeat(3,1fr)}}'
    + '@media(max-width:600px){.og-trip{padding:14px 10px 10px}.og-trip h2{font-size:18px}.og-trip .ic{width:38px;height:38px}.og-trip .g{grid-template-columns:repeat(2,1fr);gap:8px}.og-trip i{height:78px}.og-trip b{font-size:13.5px;padding:8px 9px 0}.og-trip a span{font-size:11px;padding:2px 9px 0}.og-trip em{padding:6px 9px 9px;font-size:11.5px}}';
@@ -33,7 +39,8 @@
     var PL='<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
     var h = '<div class="hd"><div><h2>' + (ru ? 'Путешествия дешевле' : 'Подорожі дешевше') + '</h2><p class="s">' + (ru ? 'Билеты, отели, интернет, авто и трансфер для поездки за границу' : 'Квитки, готелі, інтернет, авто й трансфер для поїздки за кордон') + '</p></div><span class="new">' + (ru ? 'НОВОЕ' : 'НОВЕ') + '</span></div><div class="g">';
     L.forEach(function(x){ h += '<a href="'+x[1]+'" target="_blank" rel="sponsored noopener" data-trip="'+x[0]+'"><i style="background-image:url('+U+x[2]+'?auto=format&fit=crop&w=400&h=220&q=70)"></i><b>'+(ru?x[4]:x[3])+'</b><span>'+(ru?x[6]:x[5])+'</span><em>'+(ru?'Смотреть →':'Дивитись →')+'</em></a>'; });
-    h += '</div><a class="all" href="' + (ru ? '/ru/poyizdky' : '/poyizdky') + '">' + (ru ? 'Все сервисы для поездки →' : 'Усі сервіси для поїздки →') + '</a><small>' + (ru ? 'Реклама. Партнёрские ссылки — для вас цена как на сайте сервиса' : 'Реклама. Партнерські посилання — для вас ціна як на сайті сервісу') + '</small>';
+    h += '</div><a class="app" href="https://aviasales.tpk.ro/wmzTbV8k?erid=2VtzqvviSsy" target="_blank" rel="sponsored noopener" data-trip="avapp"><span class="ai">📲</span><span class="at"><b>' + (ru ? 'Приложение Aviasales' : 'Застосунок Aviasales') + '</b><span>' + (ru ? 'Следит за ценами и сообщит, когда билет подешевеет' : 'Стежить за цінами й повідомить, коли квиток подешевшає') + '</span></span><span class="ab">' + (ru ? 'Скачать' : 'Завантажити') + '</span></a>';
+    h += '<a class="all" href="' + (ru ? '/ru/poyizdky' : '/poyizdky') + '">' + (ru ? 'Все сервисы для поездки →' : 'Усі сервіси для поїздки →') + '</a><small>' + (ru ? 'Реклама. Партнёрские ссылки — для вас цена как на сайте сервиса' : 'Реклама. Партнерські посилання — для вас ціна як на сайті сервісу') + '</small>';
     var s = document.createElement('section'); s.className = 'og-trip'; s.setAttribute('data-noi18n','1'); s.innerHTML = h;
     hero.parentNode.insertBefore(s, hero.nextSibling);
     try{ if(new Date() < new Date('2026-12-01T00:00:00+02:00') && !localStorage.getItem('ogEsimX')){
