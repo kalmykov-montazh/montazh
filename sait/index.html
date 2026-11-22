@@ -639,6 +639,18 @@ html[data-t="3"] .hp h3{color:#fff}html[data-t="3"] .hp h3 small,html[data-t="3"
 html[data-t="3"] .ticks{color:#d7dcea}
 html[data-t="3"] .carf select,html[data-t="3"] .carf input{background:#1a2036;color:#fff;border-color:#3a4366}
 html[data-t="3"] .trip h2#h-trip{background:linear-gradient(90deg,#ffb74d,#ff8a00);-webkit-background-clip:text;background-clip:text}
+
+/* 22.11 v7: шапка профиля */
+.profile{background:linear-gradient(135deg,#ffffff,#fff6e8);border-radius:22px;padding:14px 18px 14px 14px;margin-top:-22px;position:relative;z-index:2;box-shadow:0 10px 30px rgba(22,41,74,.12);border:1px solid rgba(255,179,0,.35)}
+.profile .avatar{border:4px solid #fff;box-shadow:0 0 0 3px #ffb300,0 8px 18px rgba(0,0,0,.2)}
+.profile .who h1{background:linear-gradient(90deg,#16294a,#1f74e8);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;letter-spacing:.01em}
+.profile .path{color:#16294a!important;font-weight:600;font-size:15px;opacity:1}
+.profile .path .brand{display:inline-block;background:linear-gradient(135deg,#ffab40,#f57c00);color:#fff!important;border-radius:8px;padding:2px 8px;margin-right:4px;font-weight:800;box-shadow:0 3px 8px rgba(245,124,0,.35)}
+.subs{display:inline-flex;align-items:center;gap:6px;margin-top:6px!important;background:#16294a;color:#fff!important;border-radius:99px;padding:5px 12px;font-size:13px!important;font-weight:600}
+.subs::before{content:"";width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:pulseg 1.8s infinite}
+.subs b{color:#ffd54a!important;font-weight:900}
+@keyframes pulseg{0%{box-shadow:0 0 0 0 rgba(34,197,94,.7)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@media (max-width:600px){.profile{margin-top:-14px;padding:10px 12px}.profile .path{font-size:13.5px}}
 .trip-swipe{display:none;margin:6px 0 0;font-size:11.5px;opacity:.8;text-align:right}
 .trip-map{margin:14px 0 0}.trip-map h3{margin:0 0 8px;font:800 17px/1.2 var(--display);color:#fff}.trip-map .mapbox{background:#fff;border-radius:16px;overflow:hidden;min-height:300px}.trip-map iframe{width:100%!important;max-width:100%}
 
