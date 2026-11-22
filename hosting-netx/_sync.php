@@ -55,7 +55,7 @@ if ($code == 200) foreach (explode("\n", $red) as $l) {
   if (preg_match('#^/([a-z0-9-]+)\s+/(\S*)\s+200#', trim($l), $m)) $short[] = 'RewriteRule ^' . $m[1] . '/?$ _s.php?src=' . $m[1] . '&f=' . ($m[2] === 'ua' ? 'ua.html' : 'index.html') . ' [L,QSA]';
 }
 $https = is_file("$ROOT/_data/https.on");
-$ht = "# Сгенерировано _sync.php — руками не править\nOptions -Indexes\nDirectoryIndex index.html index.php\nAddDefaultCharset UTF-8\nAddCharset UTF-8 .txt .html .xml .vcf\nRewriteEngine On\n";
+$ht = "# Сгенерировано _sync.php — руками не править\nOptions -Indexes\nDirectoryIndex index.html index.php\nAddDefaultCharset UTF-8\nAddCharset UTF-8 .txt .html .xml .vcf\nAddType application/manifest+json .webmanifest\nRewriteEngine On\n";
 if ($https) $ht .= "RewriteCond %{HTTPS} !=on\nRewriteCond %{HTTP:X-Forwarded-Proto} !https\nRewriteRule ^ https://kalmykovgroup.com%{REQUEST_URI} [L,R=301]\n";
 $ht .= "RewriteCond %{HTTP_HOST} ^www\\. [NC]\nRewriteRule ^ https://kalmykovgroup.com%{REQUEST_URI} [L,R=301]\n";
 $ht .= "RewriteRule ^\\.well-known/ - [L]\nRewriteRule ^_data(/|$) - [F,L]\nRewriteRule ^(go|p|tg)/ _proxy.php [L]\nRewriteRule ^montazh/start/?$ _proxy.php [L]\n";
