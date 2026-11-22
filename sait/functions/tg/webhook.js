@@ -85,7 +85,7 @@ async function partnerLead(env, m, key, src) {
   await remember(env, f, '', src);
   const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}\nКлиент: ${who}\nОн сейчас напишет вам в Telegram${f.username ? '' : ' (ника нет — ждите его сообщения)'}`;
   const btn = f.username ? { reply_markup: { inline_keyboard: [[{ text: 'Написать клиенту', url: 'https://t.me/' + f.username }]] } } : {};
-  const pchat = env.BOT_KV && await env.BOT_KV.get('pchat:' + key);
+  const pchat = env.BOT_KV && await env.BOT_KV.get('pchat2:' + key);
   if (pchat) await tg(env, 'sendMessage', Object.assign({ chat_id: pchat, text: card }, btn));
   const admin = env.BOT_KV && await env.BOT_KV.get('admin');
   if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: card + (pchat ? '' : '\n⚠️ Партнёр ещё не подключён к боту') });
@@ -93,10 +93,11 @@ async function partnerLead(env, m, key, src) {
 }
 async function partnerReg(env, m, key) {
   const chat = String(m.chat.id); const f = m.from || {};
-  const old = await env.BOT_KV.get('pchat:' + key);
+  if (env.ADMIN_USERNAME && f.username === env.ADMIN_USERNAME) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — вас не подключаю, заявки пойдут партнёру, вам копия' }); return; }
+  const old = await env.BOT_KV.get('pchat2:' + key);
   const admin = await env.BOT_KV.get('admin');
   if (old && old !== chat) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Этот раздел уже подключён. Если это ошибка — напишите Евгению' }); if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `⚠️ Попытка подключиться к заявкам «${key}» с другого аккаунта: ${f.first_name || ''} @${f.username || '—'}` }); return; }
-  await env.BOT_KV.put('pchat:' + key, chat);
+  await env.BOT_KV.put('pchat2:' + key, chat);
   await tg(env, 'sendMessage', { chat_id: chat, text: 'Готово! Сюда будут приходить заявки от Kalmykov Group с номером и контактом клиента' });
   if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `✅ К заявкам «${key}» подключился ${f.first_name || ''} @${f.username || '—'}` });
 }
