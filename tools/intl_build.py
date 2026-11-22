@@ -58,13 +58,13 @@ CTA_ALIAS = {'esim': ['esim', 'esim2'], 'transfer': ['transfer', 'pickup'], 'car
 # ── тексты интерфейса ─────────────────────────────────────────────────────────────────────────
 UI = {
  'en': dict(
-   html_lang='en', og='en_GB', dir='en', art='guides', name='Evgeny Kalmykov',
+   html_lang='en', og='en_GB', dir='en', art='guides', name='Ievgen Kalmykov',
    title='Kalmykov Group — cheaper travel to and around Spain: flights, hotels, cars, eSIM',
    desc='Practical guides for travelling to and living in Spain from Valencia, plus the booking services we use ourselves: flights, hotels, car rental, airport transfers, eSIM and tours',
    tagline='Valencia, Spain · travel tips and tools',
    subs='<b>20,000+</b> people follow us on social media',
    arts_h='Guides for travelling to Spain', news_h='Spain news for travellers', all_arts='All guides →',
-   about_h='About', about='Kalmykov Group is a project by Evgeny Kalmykov, a blogger based in Valencia, Spain. We write practical, up-to-date guides for people travelling to Spain or moving here, and point you to booking services that work well: so you pay less and avoid surprises at the airport, the car rental desk or the hotel.',
+   about_h='About', about='Kalmykov Group is a project by Ievgen Kalmykov, a blogger based in Valencia, Spain. We write practical, up-to-date guides for people travelling to Spain or moving here, and point you to booking services that work well: so you pay less and avoid surprises at the airport, the car rental desk or the hotel.',
    ad='Some links on this site are affiliate links: if you book through them, we may earn a commission at no extra cost to you. This is how the site stays free.',
    legal='Legal notice & privacy', socials='Our social media (in Russian)',
    back='← All guides', home='← Home', updated='Updated', read_also='More guides', book_h='Book it here',
@@ -72,13 +72,13 @@ UI = {
    news_lbl='News', guide_lbl='Guide', empty='First guides are on the way',
  ),
  'es': dict(
-   html_lang='es', og='es_ES', dir='es', art='guias', name='Evgeny Kalmykov',
+   html_lang='es', og='es_ES', dir='es', art='guias', name='Eugenio Kalmykov',
    title='Kalmykov Group — viajar a España y por España más barato: vuelos, hoteles, coches, eSIM',
    desc='Guías prácticas desde Valencia para viajar a España o mudarte aquí, y los servicios de reserva que usamos nosotros mismos: vuelos, hoteles, alquiler de coches, traslados, eSIM y tours',
    tagline='Valencia, España · viajes y vida en España',
    subs='<b>20 000+</b> personas nos siguen en redes',
    arts_h='Guías para viajar y vivir en España', news_h='Noticias de España', all_arts='Todas las guías →',
-   about_h='Quiénes somos', about='Kalmykov Group es el proyecto de Evgeny Kalmykov, bloguero que vive en Valencia (España). Escribimos guías prácticas y actualizadas para quienes viajan a España o se mudan aquí, y te indicamos servicios de reserva que funcionan bien: para que pagues menos y no tengas sorpresas en el aeropuerto, en el mostrador de alquiler o en el hotel.',
+   about_h='Quiénes somos', about='Kalmykov Group es el proyecto de Eugenio Kalmykov, bloguero que vive en Valencia (España). Escribimos guías prácticas y actualizadas para quienes viajan a España o se mudan aquí, y te indicamos servicios de reserva que funcionan bien: para que pagues menos y no tengas sorpresas en el aeropuerto, en el mostrador de alquiler o en el hotel.',
    ad='Algunos enlaces de esta web son de afiliados: si reservas a través de ellos, podemos recibir una comisión sin coste adicional para ti. Así la web sigue siendo gratuita.',
    legal='Aviso legal y privacidad', socials='Nuestras redes (en ruso)',
    back='← Todas las guías', home='← Inicio', updated='Actualizado', read_also='Más guías', book_h='Resérvalo aquí',
