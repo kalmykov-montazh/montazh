@@ -1,13 +1,18 @@
-// Блок «Подорожі дешевше» під таблицею курсів (22.11.2026). Партнерські посилання Travelpayouts з міткою obmen
+// Блок «Подорожі дешевше» під таблицею курсів (22.11.2026; 22.11 13:05 +готелі, автобуси, екскурсії, компенсація). Партнерські посилання Travelpayouts з міткою obmen
 (function(){
   var ru = /^\/ru(\/|$)/.test(location.pathname) || document.documentElement.lang === 'ru';
   var U = 'https://images.unsplash.com/photo-';
   var L = [
     ['aviasales','https://aviasales.tpk.ro/kqcuiFhL?erid=2VtzqvviSsy','1436491865332-7a61a109cc05','Дешеві авіаквитки','Дешёвые авиабилеты','Усі авіакомпанії, календар цін','Все авиакомпании, календарь цен'],
+    ['trip','https://trip.tpk.ro/1DeF1SSj?erid=2Vtzqwjgr3R','1566073771259-6a8506099945','Готелі та житло','Отели и жильё','Trip.com — готелі по всьому світу','Trip.com — отели по всему миру'],
+    ['vio','https://vio.tpk.ro/Kv0gY6yp?erid=2VtzqwWLxWK','1551882547-ff40c63fe5fa','Готелі дешевше','Отели дешевле','Порівнює ціни на той самий готель','Сравнивает цены на один отель'],
+    ['unitiki','https://unitiki.tpk.ro/eDyJhUFe?erid=2VtzqvWzeNT','1544620347-c4fd4a3d5957','Автобуси','Автобусы','Квитки на міжнародні автобуси','Билеты на международные автобусы'],
     ['yesim','https://yesim.tpk.ro/zUjs2mVk?erid=2VtzqvYUdeo','1512941937669-90a1b58e7e9c','eSIM-інтернет','eSIM-интернет','Без роумінгу у 200 країнах','Без роуминга в 200 странах'],
     ['airalo','https://airalo.tpk.ro/hpwIoKAX?erid=2VtzqveQanB','1565967511849-76a60a516170','eSIM Airalo','eSIM Airalo','Пакети на тиждень чи місяць','Пакеты на неделю или месяц'],
     ['economybookings','https://economybookings.tpk.ro/73XZkSEj','1449965408869-eaa3f722e40d','Оренда авто','Аренда авто','Порівняння всіх прокатів','Сравнение всех прокатов'],
     ['kiwitaxi','https://kiwitaxi.tpk.ro/R6gWTNIb?erid=2VtzqvZxcw9','1556122071-e404eaedb77f','Трансфер з аеропорту','Трансфер из аэропорта','Фіксована ціна, з табличкою','Фиксированная цена, с табличкой'],
+    ['gyg','https://getyourguide.tpk.ro/phs4u9iX?erid=2VtzqwNw26b','1511527661048-7fe73d85e9a4','Екскурсії та квитки','Экскурсии и билеты','Тури й музеї по всьому світу','Туры и музеи по всему миру'],
+    ['compensair','https://compensair.tpk.ro/iHQIiKbQ?erid=2VtzqvygRSf','1488085061387-422e29b40080','Затримали рейс','Задержали рейс','Компенсація за правилами ЄС','Компенсация по правилам ЕС'],
     ['radical','https://radicalstorage.tpk.ro/GETely1E?erid=2VtzqvuETbd','1530521954074-e64f6810b32d','Камера схову','Камера хранения','Залишити валізу в місті','Оставить чемодан в городе']
   ];
   var css = '.og-trip{margin:16px 0 18px;padding:20px 18px 14px;border-radius:20px;background:linear-gradient(180deg,#fffaf0,#f6ecd6);border:2px solid #d4af37;box-shadow:0 0 0 4px rgba(212,175,55,.15),0 10px 30px rgba(0,0,0,.35);color:#1c2333;box-sizing:border-box;position:relative}'
@@ -26,7 +31,7 @@
     var hero = document.getElementById('share-btn') || document.querySelector('.rate-note') || document.querySelector('.rates-hero'); if(!hero || document.querySelector('.og-trip')) return;
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     var PL='<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
-    var h = '<div class="hd"><div><h2>' + (ru ? 'Путешествия дешевле' : 'Подорожі дешевше') + '</h2><p class="s">' + (ru ? 'Билеты, интернет, авто и трансфер для поездки за границу' : 'Квитки, інтернет, авто й трансфер для поїздки за кордон') + '</p></div><span class="new">' + (ru ? 'НОВОЕ' : 'НОВЕ') + '</span></div><div class="g">';
+    var h = '<div class="hd"><div><h2>' + (ru ? 'Путешествия дешевле' : 'Подорожі дешевше') + '</h2><p class="s">' + (ru ? 'Билеты, отели, интернет, авто и трансфер для поездки за границу' : 'Квитки, готелі, інтернет, авто й трансфер для поїздки за кордон') + '</p></div><span class="new">' + (ru ? 'НОВОЕ' : 'НОВЕ') + '</span></div><div class="g">';
     L.forEach(function(x){ h += '<a href="'+x[1]+'" target="_blank" rel="sponsored noopener" data-trip="'+x[0]+'"><i style="background-image:url('+U+x[2]+'?auto=format&fit=crop&w=400&h=220&q=70)"></i><b>'+(ru?x[4]:x[3])+'</b><span>'+(ru?x[6]:x[5])+'</span><em>'+(ru?'Смотреть →':'Дивитись →')+'</em></a>'; });
     h += '</div><small>' + (ru ? 'Реклама. Партнёрские ссылки — для вас цена как на сайте сервиса' : 'Реклама. Партнерські посилання — для вас ціна як на сайті сервісу') + '</small>';
     var s = document.createElement('section'); s.className = 'og-trip'; s.setAttribute('data-noi18n','1'); s.innerHTML = h;
