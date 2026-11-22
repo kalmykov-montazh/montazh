@@ -495,6 +495,28 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
 @media (max-width:600px){.fcard{position:static;transform:none;width:auto;max-width:none;margin:12px 0 0;padding:10px 14px;box-shadow:0 4px 14px rgba(22,41,74,.12)}.fcard b{font-size:21px}.fcard span{font-size:12.5px}.fcard i{font-size:24px}}
 .cover img.fest2img{animation:fin 1.2s ease-out}
 @keyframes fin{from{opacity:.4;filter:saturate(.6)}to{opacity:1;filter:none}}
+
+/* 22.11.2026: компактная шапка, блок поездок наверху */
+.profile .stats{margin:0 0 6px auto;flex:0 1 auto;justify-content:flex-end;flex-wrap:nowrap;gap:8px}
+.profile .stats div{min-width:0;padding:7px 12px}.profile .stats b{font-size:17px}.profile .stats span{font-size:11.5px;display:block;line-height:1.2}
+@media (max-width:600px){.profile{flex-wrap:wrap}.profile .stats{flex:1 1 100%;margin:8px 0 0;justify-content:space-between}.profile .stats div{flex:1;padding:6px 4px}.profile .stats b{font-size:15px}.profile .stats span{font-size:10.5px}}
+.trip{margin:16px 0 8px;padding:18px 18px 12px;border-radius:22px;background:linear-gradient(135deg,#0b5ed7,#16294a 70%);color:#fff;box-shadow:0 10px 28px rgba(11,94,215,.25)}
+.trip-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.trip h2{margin:0;font:800 22px/1.2 var(--display);color:#fff}.trip-h a{color:#ffd54a;font-weight:700;text-decoration:none;white-space:nowrap}
+.trip-g{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.trip-g a{display:flex;flex-direction:column;gap:2px;background:#fff;color:#16233a;text-decoration:none;border-radius:16px;padding:12px;transition:transform .15s}
+.trip-g a:hover{transform:translateY(-3px)}.trip-g i{font-style:normal;font-size:26px;line-height:1;margin-bottom:4px}
+.trip-g b{font-size:14.5px;line-height:1.2;color:#16294a}.trip-g span{font-size:12px;color:#5f6b7a;line-height:1.25}
+.trip-n{margin:10px 0 0;font-size:11px;opacity:.7}
+@media (max-width:900px){.trip-g{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:600px){.trip{padding:14px 12px 10px}.trip h2{font-size:18px}.trip-g{gap:7px}.trip-g a{padding:9px}.trip-g i{font-size:22px}.trip-g b{font-size:13px}.trip-g span{font-size:11px}}
+.soc2{gap:6px}.soc2 h3{margin:0 0 6px}
+.soc-b .soc2 .row{grid-template-columns:repeat(8,1fr);gap:4px}
+.soc-b .soc2 a{gap:4px;padding:2px}
+.soc-b .soc2 .av{width:48px;height:48px;border-radius:14px}.soc-b .soc2 .av img{border-radius:14px}
+.soc-b .soc2 small{display:none}.soc-b .soc2 b{font-size:11.5px;line-height:1.15}
+@media (max-width:600px){.soc-b .soc2 .row{grid-template-columns:repeat(4,1fr);gap:6px 4px}.soc-b .soc2 .av{width:44px;height:44px;border-radius:13px}.soc-b .soc2 .av img{border-radius:13px}.soc-b .soc2 b{font-size:10.5px}}
+.soc-b .soc2 .av .tgb{right:-3px;bottom:-3px;width:18px;height:18px}.soc-b .soc2 .av .tgb svg{width:10px;height:10px}
 </style>
 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -512,15 +534,16 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
         <h1>Евгений Калмыков</h1>
         <p class="path">Жизнь в Испании · Валенсия. Переезд, жильё, документы, путешествия</p>
       </div>
-    </div>
-  </div>
-
-  <div class="stats">
+      <div class="stats">
     <div><b>11 000+</b><span>подписчиков в Facebook</span></div>
     <div><b>1 000+</b><span>роликов о жизни в Испании</span></div>
     <div><b>10 лет</b><span>в банке до Испании</span></div>
   </div>
+    </div>
+  </div>
 
+
+<!--trip--><section class="trip" aria-labelledby="h-trip"><div class="trip-h"><h2 id="h-trip">Поездки дешевле: билеты, eSIM, авто</h2><a href="/poezdki/">Все сервисы →</a></div><div class="trip-g"><a href="https://aviasales.tpk.ro/Y9TqwkLa?erid=2VtzqvviSsy" target="_blank" rel="sponsored noopener"><i>✈️</i><b>Дешёвые авиабилеты</b><span>Все авиакомпании, календарь цен</span></a><a href="/poezdki/"><i>🏨</i><b>Отели и жильё</b><span>Скоро: Booking и другие</span></a><a href="https://yesim.tpk.ro/PINKVK34?erid=2VtzqvYUdeo" target="_blank" rel="sponsored noopener"><i>📱</i><b>eSIM-интернет</b><span>Без роуминга в 200 странах</span></a><a href="https://economybookings.tpk.ro/P0O35S8l" target="_blank" rel="sponsored noopener"><i>🚗</i><b>Аренда авто</b><span>Сравнение всех прокатов</span></a><a href="https://kiwitaxi.tpk.ro/MxN3zjHJ?erid=2VtzqvZxcw9" target="_blank" rel="sponsored noopener"><i>🚕</i><b>Трансфер из аэропорта</b><span>Фикс-цена, встреча с табличкой</span></a><a href="https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M" target="_blank" rel="sponsored noopener"><i>🎟</i><b>Экскурсии на русском</b><span>Валенсия, Барселона, Мадрид</span></a></div><p class="trip-n">Реклама. Партнёрские ссылки — для вас цена как на сайте сервиса</p></section><!--/trip-->
   <nav class="soc2" aria-label="Соцсети" id="soc2"></nav>
 
   <nav class="tiles" aria-label="Чем помочь">
@@ -737,7 +760,7 @@ nav.socials#socials b{color:#fff!important;font-size:13.5px!important;font-weigh
 
   <a class="savec" href="kalmykov.vcf" download="Евгений Калмыков.vcf">👤 Сохранить мой контакт в телефон</a>
   <!--novosti--><section class="newsbox" style="background:var(--surface);border-radius:20px;padding:20px 24px"><h2 style="margin:0 0 10px;font-family:var(--display);font-size:20px">Новости Испании</h2><ul style="margin:0;padding-left:20px;line-height:1.6"><li><a href="/novosti/2026-11-21-airbnb-dal-hozyaevam-20-dney-chtoby-ubrat-lishnie-pravila">21 ноября: Airbnb дал хозяевам 20 дней, чтобы убрать лишние правила</a></li><li><a href="/novosti/2026-11-21-do-chernoy-pyatnitsy-6-dney-samoe-vremya-sfotografirovat-tse">21 ноября: До Чёрной пятницы 6 дней, самое время сфотографировать цены</a></li><li><a href="/novosti/2026-11-20-hozyaeva-airbnb-bolshe-ne-mogut-zastavlyat-gostey-myt-posudu">20 ноября: Хозяева Airbnb больше не могут заставлять гостей мыть посуду</a></li><li><a href="/novosti/2026-11-20-benzin-za-7-nedel-podeshevel-na-16-a-dizel-vse-esche-kusaets">20 ноября: Бензин за 7 недель подешевел на 16%, а дизель всё ещё кусается</a></li><li><a href="/novosti/2026-11-19-schet-za-svet-za-noyabr-budet-samym-dorogim-za-4-goda">19 ноября: Счёт за свет за ноябрь будет самым дорогим за 4 года</a></li></ul><p style="margin:12px 0 0"><a href="/novosti/" style="font-weight:700">Все новости →</a> · <a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="font-weight:700">Новости каждый день в Telegram →</a></p></section><!--/novosti-->
-  <!--gaidy--><section class="newsbox" style="background:var(--surface);border-radius:20px;padding:20px 24px;margin-top:16px"><h2 style="margin:0 0 10px;font-family:var(--display);font-size:20px">Полезное о жизни в Испании</h2><ul style="margin:0;padding-left:20px;line-height:1.6"><li><a href="/polezno/zalog-i-propiska-pri-vyezde">Хозяин не отдаёт залог, пока вы не выпишетесь из квартиры. Законно ли это в Испании</a></li><li><a href="/polezno/mozhet-li-hozyain-voyti-v-kvartiru-bez-razresheniya">Может ли хозяин войти в съёмную квартиру без разрешения жильца в Испании</a></li><li><a href="/polezno/bazovyy-schet-v-banke-ispanii-3-evro">Базовый счёт в банке Испании: не дороже 3 евро в месяц, и отказать почти не могут</a></li><li><a href="/polezno/prava-na-lodku-bez-ekzamena">Права на лодку в Испании без экзамена: лицензия навигации на катер до 6 метров</a></li><li><a href="/gaidy/shtrafy-v-ispanii">Штрафы в Испании: 15 самых частых</a></li></ul><p style="margin:12px 0 0"><a href="/polezno/" style="font-weight:700">Все статьи →</a> · <a href="/gaidy/" style="font-weight:700">Гайды с PDF →</a></p></section><!--/gaidy--><!--poezdki--><section class="newsbox" style="background:var(--surface);border-radius:20px;padding:20px 24px;margin-top:16px"><h2 style="margin:0 0 10px;font-family:var(--display);font-size:20px">Сервисы для поездок</h2><p style="margin:0">Дешёвые авиабилеты, eSIM-интернет, аренда авто, трансфер из аэропорта, экскурсии на русском</p><p style="margin:12px 0 0"><a href="/poezdki/" style="font-weight:700">Открыть →</a></p></section><!--/poezdki-->
+  <!--gaidy--><section class="newsbox" style="background:var(--surface);border-radius:20px;padding:20px 24px;margin-top:16px"><h2 style="margin:0 0 10px;font-family:var(--display);font-size:20px">Полезное о жизни в Испании</h2><ul style="margin:0;padding-left:20px;line-height:1.6"><li><a href="/polezno/zalog-i-propiska-pri-vyezde">Хозяин не отдаёт залог, пока вы не выпишетесь из квартиры. Законно ли это в Испании</a></li><li><a href="/polezno/mozhet-li-hozyain-voyti-v-kvartiru-bez-razresheniya">Может ли хозяин войти в съёмную квартиру без разрешения жильца в Испании</a></li><li><a href="/polezno/bazovyy-schet-v-banke-ispanii-3-evro">Базовый счёт в банке Испании: не дороже 3 евро в месяц, и отказать почти не могут</a></li><li><a href="/polezno/prava-na-lodku-bez-ekzamena">Права на лодку в Испании без экзамена: лицензия навигации на катер до 6 метров</a></li><li><a href="/gaidy/shtrafy-v-ispanii">Штрафы в Испании: 15 самых частых</a></li></ul><p style="margin:12px 0 0"><a href="/polezno/" style="font-weight:700">Все статьи →</a> · <a href="/gaidy/" style="font-weight:700">Гайды с PDF →</a></p></section><!--/gaidy-->
   <footer><span>Kalmykov Realty · Валенсия, Испания</span><span class="legal"><a href="aviso-legal.html">Aviso legal</a> · <a href="privacidad.html">Privacidad</a> · <a href="cookies.html">Cookies</a></span></footer>
 </div>
 
@@ -771,8 +794,7 @@ const socSO=[
   const box=document.getElementById("soc2");
   const mk=(h,items)=>{const g=document.createElement("div");g.innerHTML="<h3>"+h+"</h3>";const r=document.createElement("div");r.className="row";items.forEach(x=>r.appendChild(x));g.appendChild(r);box.appendChild(g)};
   const a=(k,c,av,t,s,href)=>{const e=document.createElement("a");e.href=href;e.target="_blank";e.rel="noopener";e.dataset.k=k;e.style.setProperty("--c",c);e.innerHTML='<i class="av">'+av+'</i><span><b>'+t+'</b><small>'+s+'</small></span>';return e};
-  mk("Мои Telegram-каналы",socTG.map(([k,t,s,h])=>a(k,"#229ed9",'<img src="/soc/'+k+'.jpg" alt="" loading="lazy" width="72" height="72"><i class="tgb">'+TGI+'</i>',t,s,h)));
-  mk("Видео и соцсети",socSO.map(([k,c,t,s,h])=>a(k,c,ICON[k],t,s,h)));
+  mk("Мои каналы и соцсети",socTG.map(([k,t,s,h])=>a(k,"#229ed9",'<img src="/soc/'+k+'.jpg" alt="" loading="lazy" width="72" height="72"><i class="tgb">'+TGI+'</i>',t,s,h)).concat(socSO.map(([k,c,t,s,h])=>a(k,c,ICON[k],t,s,h))));
 })();
 
 const G={home:["Жильё","#d9691a","1714919286244-6f3f6cce6e65"],doc:["Документы","#2f6fd6","1758518731462-d091b0b4ed0d"],money:["Деньги","#1f9a5a","1501167786227-4cba60f6d58f"],car:["Транспорт","#b5452f","1662577629898-484e7eb1d0d2"],house:["Дом","#0f8f8f","1704040686428-7534b262d0d8"],trip:["Путешествия","#2a7fb8","1436491865332-7a61a109cc05"],life:["Жизнь","#c2410c","1503676260728-1c00da094a0b"],more:["Ещё","#7a52c7","1763571294142-54993a594420"]};
