@@ -27,6 +27,22 @@ const RUBRICS = [
 const rubric = it => it.emo || (RUBRICS.find(([, re]) => re.test((it.title + ' ' + (it.desc || '')).toLowerCase())) || ['🇪🇸'])[0];
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// 22.11.2026 (решение Евгения): под новостью — одна строка с услугой по теме (если подходит) и одна постоянная на сайт. Ссылки через /go/ — со счётчиком
+const SVC = [
+  [/(отмен|задерж)\S* (рейс|вылет)|забаст\S*.{0,40}(аэропорт|авиа|пилот|ryanair|vueling|iberia)/, 'kompensaciya', '✈️ Задержали или отменили рейс — проверьте, положена ли компенсация'],
+  [/рейс|самол[её]т|аэропорт|авиа|лоукост|ryanair|vueling|iberia|wizz/, 'bilety', '✈️ Дешёвые авиабилеты из Испании'],
+  [/поезд|железн|электрич|автобус|renfe|\bave\b/, 'avtobus', '🚌 Билеты на автобусы по Испании и Европе'],
+  [/машин|авто|водител|дтп|\bdgt\b|прав[ао]? |бензин|трасс|itv|парков/, 'avto', '🚗 Аренда авто по Испании и Европе'],
+  [/страхов|аренд|квартир|жиль|ипотек|хозяин|жилец|недвижим|окупас|комунидад/, 'strahovka', '🛡 Страховка квартиры, здоровья, жизни — напишите специалисту'],
+  [/роуминг|мобильн|связь|интернет|сим-карт|\besim\b/, 'esim', '📲 Интернет в поездке без роуминга'],
+  [/отпуск|турист|туризм|отел|путешеств|праздник|пасх|рождеств/, 'oteli', '🏨 Отели по всему миру'],
+];
+function svcLine(it) {
+  const t = (it.title + ' ' + (it.desc || '')).toLowerCase();
+  const m = SVC.find(([re]) => re.test(t));
+  return m ? `<a href="${SITE}/go/${m[1]}">${m[2]}</a>` : '';
+}
+const SITE_LINE = `🇪🇸 <a href="${SITE}">Всё для жизни в Испании — kalmykovgroup.com</a>`;
 export async function onRequestGet({ env }) {
   if (!env.TG_TOKEN || !env.NEWS_CHANNEL || !env.BOT_KV) return new Response('нет настроек', { status: 200 });
   const data = await (await fetch(`${SITE}/novosti/_data.json`, { cf: { cacheTtl: 0 } })).json();
@@ -71,6 +87,8 @@ export async function onRequestGet({ env }) {
     if (!isRedo && !it.img && now - Date.parse(it.published) < 4 * 3600e3) continue;
     const url = `${SITE}/novosti/${it.slug}`;
     const link = `<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
+    const svc = svcLine(it);
+    const foot = '\n\n' + (svc ? svc + '\n' : '') + SITE_LINE;
     let r;
     // 17.11.2026 (Евгений: «красивое название, как у Нестеренко»): rich-сообщение — крупный заголовок, фото, текст, ссылка
     const paras = [];
@@ -80,7 +98,7 @@ export async function onRequestGet({ env }) {
     let pic = it.img ? SITE + it.img : '';
     if (pic) { const wide = pic.replace('/novosti/img/', '/novosti/img-wide/'); if ((await fetch(wide, { method: 'HEAD' })).ok) pic = wide; }
     const html = (pic ? `<img src="${pic}"/>` : '') + `<h2>${rubric(it)} ${esc(it.title)}</h2><p>\u00a0</p>` +
-      `<p>${paras.map(esc).join('<br/><br/>')}<br/><br/><b>${link}</b><br/><br/>🔹 <a href="https://t.me/ispaniya_zakony">Подписаться на канал</a></p>`;
+      `<p>${paras.map(esc).join('<br/><br/>')}<br/><br/><b>${link}</b><br/><br/>${svc ? svc + '<br/>' : ''}${SITE_LINE}<br/>🔹 <a href="https://t.me/ispaniya_zakony">Подписаться на канал</a></p>`;
     r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendRichMessage`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, rich_message: { html } }),
@@ -88,13 +106,13 @@ export async function onRequestGet({ env }) {
     if (!r.ok) posted.push('rich не вышел: ' + r.description);
     if (r.ok) {} else if (it.img) {
       const head = `<b>${esc(it.title)}</b>\n\n`;
-      const caption = head + esc(short(it.paras || [], 1000 - head.length - 70)) + '\n\n' + link;
+      const caption = head + esc(short(it.paras || [], 1000 - head.length - 70 - foot.length)) + '\n\n' + link + foot;
       r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendPhoto`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, photo: SITE + it.img, caption, parse_mode: 'HTML' }),
       })).json();
     } else {
-      const text = `<b>${esc(it.title)}</b>\n\n${esc(short(it.paras || []))}\n\n${link}`;
+      const text = `<b>${esc(it.title)}</b>\n\n${esc(short(it.paras || []))}\n\n${link}${foot}`;
       r = await (await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),

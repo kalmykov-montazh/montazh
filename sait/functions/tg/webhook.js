@@ -96,6 +96,7 @@ async function partnerReg(env, m, key) {
   if (env.ADMIN_USERNAME && f.username === env.ADMIN_USERNAME) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — вас не подключаю, заявки пойдут партнёру, вам копия' }); return; }
   const old = await env.BOT_KV.get('pchat2:' + key);
   const admin = await env.BOT_KV.get('admin');
+  if (admin && chat === admin) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — этот аккаунт не подключаю, сюда и так приходят копии заявок' }); return; }
   if (old && old !== chat) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Этот раздел уже подключён. Если это ошибка — напишите Евгению' }); if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `⚠️ Попытка подключиться к заявкам «${key}» с другого аккаунта: ${f.first_name || ''} @${f.username || '—'}` }); return; }
   await env.BOT_KV.put('pchat2:' + key, chat);
   await tg(env, 'sendMessage', { chat_id: chat, text: 'Готово! Сюда будут приходить заявки от Kalmykov Group с номером и контактом клиента' });
