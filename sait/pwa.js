@@ -29,7 +29,7 @@
   }
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault(); deferred = e;
-    setTimeout(function () { show('<b>Kalmykov Group на телефоне</b><br>Билеты, отели, авто и новости Испании — в один клик', 'Поставить'); }, 8000);
+    setTimeout(function () { show('<b>Kalmykov Group '+(/Android|iPhone|iPad|Mobi/i.test(ua)?'на телефоне':'на рабочем столе')+'</b><br>Билеты, отели, авто и новости Испании — в один клик', 'Поставить'); }, 8000);
   });
   if (ios) setTimeout(function () { show('<b>Добавьте значок на экран</b><br>Нажмите «Поделиться» внизу, затем «На экран «Домой»»', ''); }, 8000);
 })();
