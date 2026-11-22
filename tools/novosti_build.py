@@ -162,6 +162,23 @@ def human_date(iso):
     d = datetime.datetime.fromisoformat(iso)
     return f'{d.day} {MONTHS[d.month-1]} {d.year}'
 
+# 22.11.2026: строка с услугой по теме новости (как в Telegram-канале и комментариях Facebook) — через наши короткие ссылки /go/<услуга>
+SVC = [
+    (r'(отмен|задерж)\S*.{0,15}(рейс|вылет)|забаст\S*.{0,40}(аэропорт|авиа|пилот|ryanair|vueling|iberia)', 'kompensaciya', '✈️ Задержали или отменили рейс — проверьте, положена ли компенсация'),
+    (r'рейс|самол[её]т|аэропорт|авиа|лоукост|ryanair|vueling|iberia|wizz', 'bilety', '✈️ Дешёвые авиабилеты из Испании'),
+    (r'поезд|железн|электрич|автобус|renfe|\bave\b', 'avtobus', '🚌 Билеты на автобусы по Испании и Европе'),
+    (r'машин|авто|водител|дтп|\bdgt\b|прав[ао]? |бензин|трасс|itv|парков', 'avto', '🚗 Аренда авто по Испании и Европе'),
+    (r'страхов|аренд|квартир|жиль|ипотек|хозяин|жилец|недвижим|окупас|комунидад', 'strahovka', '🛡 Страховка квартиры, здоровья, жизни — напишите специалисту'),
+    (r'роуминг|мобильн|связь|интернет|сим-карт|\besim\b', 'esim', '📲 Интернет в поездке без роуминга'),
+    (r'отпуск|турист|туризм|отел|путешеств|праздник|пасх|рождеств', 'oteli', '🏨 Отели по всему миру'),
+]
+def svc_html(it):
+    t = (it['title'] + ' ' + it.get('desc', '')).lower()
+    for rx, key, label in SVC:
+        if re.search(rx, t):
+            return f'<div class="card"><p style="margin:0"><a class="go" href="/go/{key}" rel="noopener">{esc(label)} →</a></p></div>\n'
+    return ''
+
 def article_html(it):
     paras = ''.join('<p>' + '<br>'.join(esc(x) for x in p) + '</p>' for p in it['paras'])
     ld = {"@context": "https://schema.org", "@type": "NewsArticle", "headline": it['title'][:110],
@@ -184,7 +201,7 @@ def article_html(it):
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
 <p style="margin:0 0 14px"><a class="go" href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="background:#2aa1da">📰 Новости Испании каждый день — в Telegram</a></p>
 {paras}</article>
-<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
+{svc_html(it)}<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
 <p class="note"><a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>

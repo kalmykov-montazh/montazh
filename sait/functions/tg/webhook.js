@@ -85,20 +85,22 @@ async function partnerLead(env, m, key, src) {
   await remember(env, f, '', src);
   const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}\nКлиент: ${who}\nОн сейчас напишет вам в Telegram${f.username ? '' : ' (ника нет — ждите его сообщения)'}`;
   const btn = f.username ? { reply_markup: { inline_keyboard: [[{ text: 'Написать клиенту', url: 'https://t.me/' + f.username }]] } } : {};
-  const pchat = env.BOT_KV && await env.BOT_KV.get('pchat2:' + key);
+  const pchat = env.BOT_KV && await env.BOT_KV.get('pchat3:' + key);
   if (pchat) await tg(env, 'sendMessage', Object.assign({ chat_id: pchat, text: card }, btn));
   const admin = env.BOT_KV && await env.BOT_KV.get('admin');
   if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: card + (pchat ? '' : '\n⚠️ Партнёр ещё не подключён к боту') });
   await tg(env, 'sendMessage', { chat_id: chat, text: `Ваша заявка ${num}. Нажмите кнопку ниже — откроется чат со специалистом (${p.who}, ${p.topic}). Напишите, что вы от Kalmykov Group, заявка ${num}, и коротко ваш вопрос`, reply_markup: { inline_keyboard: [[{ text: 'Написать специалисту', url: p.tg }]] } });
 }
+const OWN = ['name_2016', 'kalmykov_broker'];
 async function partnerReg(env, m, key) {
   const chat = String(m.chat.id); const f = m.from || {};
-  if (env.ADMIN_USERNAME && f.username === env.ADMIN_USERNAME) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — вас не подключаю, заявки пойдут партнёру, вам копия' }); return; }
-  const old = await env.BOT_KV.get('pchat2:' + key);
+  // 22.11.2026: второй аккаунт Евгения тоже не подключаем как партнёра
+  if ((env.ADMIN_USERNAME && f.username === env.ADMIN_USERNAME) || OWN.includes((f.username || '').toLowerCase())) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — вас не подключаю, заявки пойдут партнёру, вам копия' }); return; }
+  const old = await env.BOT_KV.get('pchat3:' + key);
   const admin = await env.BOT_KV.get('admin');
   if (admin && chat === admin) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Ссылка работает. Это ссылка для партнёра — этот аккаунт не подключаю, сюда и так приходят копии заявок' }); return; }
   if (old && old !== chat) { await tg(env, 'sendMessage', { chat_id: chat, text: 'Этот раздел уже подключён. Если это ошибка — напишите Евгению' }); if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `⚠️ Попытка подключиться к заявкам «${key}» с другого аккаунта: ${f.first_name || ''} @${f.username || '—'}` }); return; }
-  await env.BOT_KV.put('pchat2:' + key, chat);
+  await env.BOT_KV.put('pchat3:' + key, chat);
   await tg(env, 'sendMessage', { chat_id: chat, text: 'Готово! Сюда будут приходить заявки от Kalmykov Group с номером и контактом клиента' });
   if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: `✅ К заявкам «${key}» подключился ${f.first_name || ''} @${f.username || '—'}` });
 }
@@ -119,6 +121,10 @@ export async function onRequestPost({ request, env }) {
         const [key = '', src = ''] = (text.split(' ')[1] || '').split('_');
         await remember(env, m.from, key, src);
         if (GUIDES[key]) await sendGuide(env, chat, key); else await sendMenu(env, chat);
+      } else if (text === '/partners' && m.from && m.from.username === env.ADMIN_USERNAME) {
+        const lines = [];
+        for (const k of Object.keys(PARTNERS)) { const c = await env.BOT_KV.get('pchat3:' + k); lines.push(`${PARTNERS[k].topic} (${PARTNERS[k].who}): ${c ? 'подключён, чат ' + c : 'не подключён'}`); }
+        await tg(env, 'sendMessage', { chat_id: chat, text: lines.join('\n') });
       } else if (text === '/stat' && m.from && m.from.username === env.ADMIN_USERNAME) {
         const list = await env.BOT_KV.list({ prefix: 'u:' });
         const cnt = {}, srcs = {};

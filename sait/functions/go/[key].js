@@ -18,6 +18,8 @@ const SERVICES = {
   avtobus: 'https://unitiki.tpk.ro/AsxlAvk3?erid=2VtzqvWzeNT',
   transfer: 'https://kiwitaxi.tpk.ro/MxN3zjHJ?erid=2VtzqvZxcw9',
   ekskursii: 'https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M',
+  bagazh: 'https://radicalstorage.tpk.ro/fQvALFGI?erid=2VtzqvuETbd',
+  muzei: 'https://getyourguide.tpk.ro/uFPhTm0U?erid=2VtzqwNw26b',
   strahovka: 'https://kalmykovgroup.com/strahovka/',
   poezdki: 'https://kalmykovgroup.com/poezdki/',
 };
