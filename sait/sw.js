@@ -1,6 +1,6 @@
 // Значок сайта на телефоне (22.11.2026). Страницы — сначала из сети, без сети — сохранённая копия.
 // Короткие ссылки /go/, заявки /p/, бот /tg/ не трогаем, чтобы считались все переходы
-const C = 'kg-v1';
+const C = 'kg-v2';
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(['/', '/poezdki/', '/novosti/'])).catch(() => {})); });
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n !== C).map(n => caches.delete(n)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {

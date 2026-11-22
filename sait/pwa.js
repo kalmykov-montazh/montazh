@@ -1,5 +1,7 @@
 // Значок Kalmykov Group на телефоне (22.11.2026): регистрируем sw.js и со 2-го визита мягко предлагаем поставить значок
 (function () {
+  // Пометка «Реклама…» от Travelpayouts — мелко и аккуратно, над нижними кнопками
+  try { var st = document.createElement('style'); st.textContent = '.tp-advertiser-info{font:11px/1.45 system-ui,sans-serif!important;color:#8b8f94!important;opacity:.75;text-align:center;max-width:760px;margin:0 auto!important;padding:10px 16px 96px!important}.tp-advertiser-info div{font-size:11px!important}'; document.head.appendChild(st); } catch (e) {}
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   if (standalone) return;
