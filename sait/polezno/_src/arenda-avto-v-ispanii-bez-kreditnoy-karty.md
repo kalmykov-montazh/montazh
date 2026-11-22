@@ -26,6 +26,7 @@ tema: Транспорт
 
 Удобнее всего сравнивать сразу все прокаты в одном месте и смотреть условия каждого:
 
+- [DiscoverCars](https://www.discovercars.com/?a_aid=kalmykovgroup) — сотни прокатов по всему миру, в условиях каждой брони видно, принимают ли дебетовую карту
 - [Economybookings](https://economybookings.tpk.ro/P0O35S8l) — сравнение прокатов в аэропортах и городах Испании и всего мира
 - [QEEQ](https://qeeq.tpk.ro/0lb2IDVw?erid=2VtzqvpnVkb) — ещё один сравнитель, часто дешевле на длинные сроки
 
