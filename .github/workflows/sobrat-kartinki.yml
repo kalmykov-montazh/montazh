@@ -1,0 +1,42 @@
+name: Собрать картинки прогона в ветку
+
+# 23.11.2026: картинки (артефакты) любого прогона — зашифрованным архивом в ветку, чтобы Claude их видел
+# (хранилище артефактов GitHub из облака Claude недоступно). Нужно, когда прогон отменён и его шаг list не дошёл.
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "id прогона"
+        required: true
+      branch:
+        description: "ветка для архива"
+        required: true
+        default: "tmp-obl-pics"
+      key:
+        description: "Ключ шифрования"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  go:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: a
+          merge-multiple: true
+          run-id: ${{ inputs.run }}
+          github-token: ${{ github.token }}
+      - env:
+          KEY: ${{ inputs.key }}
+          BR: ${{ inputs.branch }}
+        run: |
+          echo "::add-mask::$KEY"
+          ls a | wc -l
+          tar czf p.tgz a && openssl enc -aes-256-cbc -pbkdf2 -salt -in p.tgz -out p.enc -pass env:KEY
+          mkdir g && cd g && cp ../p.enc . && git init -q && git checkout -q -b "$BR"
+          git config user.name bot; git config user.email bot@x; git add -A; git commit -qm "pics ${{ inputs.run }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "$BR"
