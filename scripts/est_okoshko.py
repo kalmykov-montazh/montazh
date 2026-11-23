@@ -19,8 +19,8 @@ for p in (0.25, 0.45, 0.65):
                           "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True).stdout
     if len(raw) < 1080 * 1920: continue
     g = np.frombuffer(raw, np.uint8).reshape(1920, 1080)
-    for reg in (g[60:420, 760:1080], g[60:420, 0:320]):
-        for s in (60, 70, 84, 100):
+    for reg in (g[30:420, 700:1080], g[30:420, 0:380]):
+        for s in (60, 70, 84, 100, 120, 140):
             t = cv2.resize(kgg, (s, int(kgg.shape[0] * s / kgg.shape[1])))
             if t.shape[0] >= reg.shape[0] or t.shape[1] >= reg.shape[1]: continue
             r = cv2.matchTemplate(reg, t, cv2.TM_CCOEFF_NORMED)

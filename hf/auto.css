@@ -39,8 +39,8 @@
 .sait u{display:flex!important;align-items:center;gap:12px;color:#C9A24B!important;font-size:38px!important;font-weight:900!important;letter-spacing:.2px!important}
 .sait u img{width:54px;height:54px;flex:none}
 .sait b{color:#fff!important}
-/* значок KG в правом верхнем углу весь ролик */
-.kgw{position:absolute;right:30px;top:150px;width:84px;height:84px;z-index:20;opacity:.9;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+/* значок KG в правом верхнем углу весь ролик. 23.11.2026 (Евгений, вариант 2): 140 px, на 160 px от края (ближе к центру), верх 55 px — над плашками (они с 200 px) */
+.kgw{position:absolute;right:160px;top:55px;width:140px;height:140px;z-index:20;opacity:.9;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
 /* адрес сайта на белой карточке-призыве */
 .apple s.adr{display:table;text-decoration:none;margin:18px auto 0;font-family:M;font-weight:900;font-size:34px;color:#C9A24B;background:#0d0f16;border-radius:12px;padding:8px 18px}
 .sait.mini{left:auto;right:auto;left:50%;transform:translateX(-50%);height:auto;padding:12px 22px;gap:18px;width:auto;white-space:nowrap}
