@@ -15,6 +15,12 @@
 # новость: метка «НОВОСТЬ · <top>», bot одной жёлтой строкой во всю ширину (230 → не меньше 110), полоса сразу под подбородком, низ не ниже 1500
 # (ниже — счётчик просмотров в сетке).
 import os, sys, json, re, subprocess
+# 23.11.2026 (Евгений 22:00): один формат на все ролики — «яркие плашки» (hf/plashki6.py). Старые 5 стилей — только OBL5_OLD=1
+if os.environ.get("OBL5_OLD") != "1" and __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import plashki6
+    plashki6.render(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else "")
+    sys.exit(0)
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 

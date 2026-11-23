@@ -75,7 +75,7 @@ box = (cx - cw // 2, top, cx + cw // 2, top + chh)
 pad = Image.new("RGB", (W * 3, H * 3), "#0d1220"); pad.paste(src, (W, H))
 face = pad.crop((box[0] + W, box[1] + H, box[2] + W, box[3] + H))
 face = ImageEnhance.Contrast(face).enhance(1.06)
-FW = 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
+FW = 820 if os.environ.get("OBL_B_OLD") != "1" else 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
 FY0 = max(520, 1370 - face.height); fh_ = min(face.height, 1380 - FY0)
 face = face.crop((0, 0, FW, fh_))
 hh = face.height
@@ -88,10 +88,12 @@ m = Image.fromarray((np.minimum(np.minimum(xs, ys), yc) * 255).astype(np.uint8),
 bg.paste(face, (W - FW, FY0), m)
 
 d = ImageDraw.Draw(bg)
-# заголовок
-y = 330
-f1 = fit(d, L1, UNB, 96, W - 80, 50); y += ctext(d, y, L1, f1, "white") + 24
-f2 = fit(d, L2, UNB, 96, W - 80, 50); ctext(d, y, L2, f2, YEL)
+NEW6 = os.environ.get("OBL_B_OLD") != "1"   # 23.11.2026: заголовок и плашка — «яркие плашки» (hf/plashki6.py)
+CARD_Y = 860 if NEW6 else 760
+if not NEW6:
+    y = 330
+    f1 = fit(d, L1, UNB, 96, W - 80, 50); y += ctext(d, y, L1, f1, "white") + 24
+    f2 = fit(d, L2, UNB, 96, W - 80, 50); ctext(d, y, L2, f2, YEL)
 
 # карточка-картинка
 if PIC != "-" and os.path.exists(PIC):
@@ -104,12 +106,27 @@ if PIC != "-" and os.path.exists(PIC):
         card = card.rotate(7, expand=True, resample=Image.BICUBIC)
         sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         sm = Image.new("L", card.size, 0); sm.paste(card.split()[3], (0, 0))
-        sh.paste((0, 0, 0, 170), (40, 790), sm.filter(ImageFilter.GaussianBlur(18)))
-        bgr = bg.convert("RGBA"); bgr.alpha_composite(sh.filter(ImageFilter.GaussianBlur(6))); bgr.alpha_composite(card, (20, 760))
+        sh.paste((0, 0, 0, 170), (40, CARD_Y + 30), sm.filter(ImageFilter.GaussianBlur(18)))
+        bgr = bg.convert("RGBA"); bgr.alpha_composite(sh.filter(ImageFilter.GaussianBlur(6))); bgr.alpha_composite(card, (20, CARD_Y))
         bg = bgr.convert("RGB"); d = ImageDraw.Draw(bg)
     except Exception as e:
         print("oblozhka_b: картинка не встала:", e)
 
+if NEW6:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import plashki6
+    # сверху синяя + жёлтая (заголовок), внизу красная (бывшая жёлтая плашка) — все под одним наклоном
+    up_ = [(x.strip().upper(), r) for x, r in ((L1, "blue"), (L2, "yellow")) if x and x.strip()]
+    bgr = bg.convert("RGBA")
+    if up_:
+        for k in (1.0, 0.9, 0.8, 0.7):
+            tb = plashki6.title(up_, k)
+            if tb.height <= 600: break
+        bgr.alpha_composite(tb, ((W - tb.width) // 2, 120))
+    if PL and PL.strip():
+        rb = plashki6.title([(PL.strip().upper(), "red")], 1.0)
+        bgr.alpha_composite(rb, ((W - rb.width) // 2, min(1290, 1430 - rb.height)))
+    bgr.convert("RGB").save(OUT)
+    print("oblozhka_b: плашки6 готово", OUT, "k", k); sys.exit(0)
 # жёлтая плашка
 fp = fit(d, PL, MON, 86, W - 120, 46)
 b = d.textbbox((0, 0), PL, font=fp); tw, th = b[2] - b[0], b[3] - b[1]

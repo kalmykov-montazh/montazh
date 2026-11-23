@@ -17,6 +17,10 @@ on:
         description: "Номера из описи через запятую (пусто — все)"
         required: false
         default: ""
+      roots:
+        description: "Папки через ; (23.11.2026: К публикации не трогаем — там уже Blotato)"
+        required: false
+        default: "Брокер/На проверке;Брокер/Готовые/Шортсы;Брокер/К публикации"
       key:
         description: "Ключ шифрования"
         required: true
@@ -39,13 +43,15 @@ jobs:
       - id: m
         env:
           ONLY: ${{ inputs.only }}
+          ROOTS: ${{ inputs.roots }}
           KEY: ${{ inputs.key }}
         run: |
           echo "::add-mask::$KEY"
           rclone copyto "montazh:Брокер/К публикации/_задания/_blotato.json" bl.json 2>/dev/null || echo '{}' > bl.json
           rclone lsf "montazh:Брокер/К публикации/_задания/" --include "_blotato.lock" > lock.txt 2>/dev/null || true
           : > all.txt
-          for r in "Брокер/На проверке" "Брокер/Готовые/Шортсы" "Брокер/К публикации"; do rclone lsf -R --files-only --include "*.mp4" "montazh:$r" | sed "s#^#$r/#" >> all.txt || true; done
+          IFS=';' read -ra RS <<< "$ROOTS"
+          for r in "${RS[@]}"; do rclone lsf -R --files-only --include "*.mp4" "montazh:$r" | sed "s#^#$r/#" >> all.txt || true; done
           python3 scripts/oblozhki_opis.py all.txt bl.json lock.txt "" > opis.txt
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os, re, sys
