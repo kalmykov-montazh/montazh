@@ -10,7 +10,7 @@ from novosti_design2 import redesign, redesign_index
 import shutil
 import json, re, sys, html, datetime, zoneinfo, urllib.parse
 from pathlib import Path
-DRIVE = '<script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">(function(){var script=document.createElement("script");script.async=1;script.setAttribute("data-cmp-ab","2");script.src=\'https://tpembars.com/NjA0ODc0.js?t=604874\';document.head.appendChild(script);})();</script>'  # 22.11.2026: Travelpayouts Drive (партнёрские ссылки на туристических страницах)
+DRIVE = ''  # 23.11.2026: Travelpayouts Drive ОТКЛЮЧЁН — перекидывал людей на Яндекс Путешествия (Targeted Offers). Не возвращать
 
 SITE = Path(__file__).resolve().parent.parent / 'sait'
 NEWS = SITE / 'novosti'
