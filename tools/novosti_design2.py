@@ -69,3 +69,54 @@ def redesign(s):
         v2 = rest.index('<div class="card"><h2>Нужна помощь', v1) if '<h2>Нужна помощь' in rest[v1:] else len(rest)
         side.append(rest[v1:v2].strip().replace('<div class="card">', '<div class="card vid">', 1))
     return s[:a1] + '<div class="lay">' + s[a1:a2] + '<aside class="side">\n' + '\n'.join(side) + '\n</aside></div>\n' + s[end:]
+
+
+# ---------- 23.11.2026: Евгений одобрил образец — новый вид на все новости, статьи «Полезное» и страницы-списки ----------
+POLEZNO_CSS = CSS + '''
+.card h2:before{background:#d4a24c}.box{border-left-color:#d4a24c}
+.help p{margin:0 0 16px}.help .btn+.btn{margin-top:12px}
+.more h2{margin-top:0}.more a{display:block;padding:12px 0;border-bottom:1px solid #e6e9ef;text-decoration:none;font-weight:700;color:#16294a;font-size:16px;line-height:1.4}.more a:last-child{border:0}.more a:hover{color:#b8860b}
+.muted{text-align:center;margin-top:28px}
+'''
+
+
+def redesign_polezno(s):
+    s = s.replace('</style>', POLEZNO_CSS + '</style>', 1)
+    a1 = s.index('<article'); a2 = s.index('</article>') + len('</article>')
+    end = s.index('<p class="muted">')
+    rest = s[a2:end]
+    btns = []
+    sp = re.search(r'<a class="go" href="(/[^"]*)">Написать специалисту</a>', rest)
+    w = re.search(r'<a class="go wa" href="([^"]+)"', rest)
+    t = re.search(r'<a class="go tg" href="([^"]+)"', rest)
+    if w: btns.append(f'<a class="btn blk" href="{w.group(1)}" target="_blank" rel="noopener">{WA}Задать вопрос в WhatsApp</a>')
+    if sp: btns.append(f'<a class="btn blk" href="{sp.group(1)}">Написать специалисту</a>')
+    if t: btns.append(f'<a class="btn navy" href="{t.group(1)}" target="_blank" rel="noopener">{TG}Новости Испании в Telegram</a>')
+    side = ['<div class="card help"><h2>Остались вопросы по своей ситуации?</h2><p>Напишите — дам контакт проверенного специалиста по вашему вопросу</p>' + ''.join(btns) + '</div>']
+    m = re.search(r'<div class="card more">.*?</div>', rest, re.S)
+    if m: side.append(m.group(0).replace(' style="margin-top:0"', ''))
+    return s[:a1] + '<div class="lay">' + s[a1:a2] + '<aside class="side">\n' + '\n'.join(side) + '\n</aside></div>\n' + s[end:]
+
+
+INDEX_CSS = '''
+body{background:linear-gradient(160deg,#e6f0fb 0%,#f3eefa 45%,#fdf1e8 100%) fixed}
+.w{max-width:980px;padding:26px 22px 90px}
+.back{background:#fff;border-radius:999px;padding:8px 18px;box-shadow:0 2px 8px rgba(22,41,74,.08);color:#16294a}
+.card{border-radius:24px;box-shadow:0 10px 30px rgba(22,41,74,.08)}
+.card:first-of-type{border-top:6px solid #d4a24c}
+h1{font-size:34px;line-height:1.2}
+.card h2{display:flex;gap:10px;align-items:center}.card h2:before{content:"";width:6px;height:22px;background:#d4a24c;border-radius:3px;flex:none}
+.list a{padding:16px 12px;border-radius:12px;transition:background .15s}.list a:hover{background:#fff8e6}
+.btn{display:flex;justify-content:center;align-items:center;gap:12px;text-decoration:none!important;text-align:center;font-weight:900;font-size:21px;line-height:1.25;border-radius:16px;padding:16px 20px;margin:6px 0 14px;
+ border:3px solid #d4a24c;background:linear-gradient(135deg,#21418a,#16294a);color:#ffd54a;box-shadow:inset 0 0 0 2px #0e1b33,inset 0 0 0 3.5px rgba(255,213,74,.5),0 8px 20px rgba(22,41,74,.25);text-shadow:0 2px 0 #000}
+.btn svg{width:30px;height:30px;flex:none}
+.muted,.note{text-align:center;margin-top:28px}
+@media(max-width:640px){h1{font-size:26px}.btn{font-size:19px}}
+'''
+
+
+def redesign_index(s):
+    s = s.replace('</style>', INDEX_CSS + '</style>', 1)
+    s = re.sub(r'<p style="margin:0 0 12px"><a class="go" href="(https://t\.me/[^"]+)"[^>]*>([^<]*)</a></p>',
+               lambda m: f'<a class="btn" href="{m.group(1)}" target="_blank" rel="noopener">{TG}{m.group(2)}</a>', s, count=1)
+    return s

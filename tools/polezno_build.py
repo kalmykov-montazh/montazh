@@ -6,6 +6,9 @@
 # Ключи шапки: title, description, date (ГГГГ-ММ-ДД), tema (Аренда/Документы/Деньги/Транспорт/Жизнь…),
 #   partner (адрес страницы партнёра без «/», например yuristy — кнопка появится, когда страница есть), video (id YouTube)
 # Запуск: python3 tools/polezno_build.py — делает страницы, список /polezno/, блок «Полезное» на главной, sitemap.xml
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from novosti_design2 import redesign_polezno, redesign_index  # 23.11.2026 новый вид
 import re, html, json, datetime, urllib.parse
 from pathlib import Path
 DRIVE = '<script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">(function(){var script=document.createElement("script");script.async=1;script.setAttribute("data-cmp-ab","2");script.src=\'https://tpembars.com/NjA0ODc0.js?t=604874\';document.head.appendChild(script);})();</script>'  # 22.11.2026: Travelpayouts Drive (партнёрские ссылки на туристических страницах)
@@ -180,8 +183,8 @@ def main():
     for f in DIR.glob('*.html'):
         if f.stem not in keep and f.name != 'index.html': f.unlink()
     for a in items:
-        (DIR / f'{a["slug"]}.html').write_text(fix(article(a, items)), encoding='utf-8')
-    (DIR / 'index.html').write_text(fix(index(items)), encoding='utf-8')
+        (DIR / f'{a["slug"]}.html').write_text(fix(redesign_polezno(article(a, items))), encoding='utf-8')
+    (DIR / 'index.html').write_text(fix(redesign_index(index(items))), encoding='utf-8')
     update_home(items); update_sitemap(items)
     print(f'Полезное: {len(items)} статей')
     # 22.11.2026: украинская главная — копия русской с переводом (tools/ua_build.py)

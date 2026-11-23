@@ -6,7 +6,7 @@
 # и _ссылки_новостей.txt (имя файла → адрес статьи) на Диск + копия sait/novosti/ssylki.txt на сайте (её читает задача комментариев).
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-from novosti_design2 import redesign, DESIGN2_SLUGS
+from novosti_design2 import redesign, redesign_index
 import shutil
 import json, re, sys, html, datetime, zoneinfo, urllib.parse
 from pathlib import Path
@@ -366,11 +366,9 @@ def main(src_dir, removed_list, extra_dir=None):
     if attach_photos(data): changed = True
     items = sorted(data.values(), key=lambda x: x['published'], reverse=True)
     for it in items:
-        _h = article_html(it)
-        if it['slug'] in DESIGN2_SLUGS:   # 23.11.2026: новый вид — пока на образце, см. tools/novosti_design2.py
-            _h = redesign(_h)
+        _h = redesign(article_html(it))   # 23.11.2026: новый вид для всех новостей (tools/novosti_design2.py)
         (NEWS / f"{it['slug']}.html").write_text(_h, encoding='utf-8')
-    (NEWS / 'index.html').write_text(index_html(items), encoding='utf-8')
+    (NEWS / 'index.html').write_text(redesign_index(index_html(items)), encoding='utf-8')
     update_home(items); update_sitemap(items)
     DATA.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding='utf-8')
     links = ['обновлено ' + now.strftime('%Y-%m-%d %H:%M'), 'формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте']
