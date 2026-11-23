@@ -54,7 +54,8 @@ jobs:
           if git diff --cached --quiet; then echo "::notice::новых новостей нет"; exit 0; fi
           git config user.name "kalmykov-robot"; git config user.email "robot@kalmykovgroup.com"
           git commit -qm "Новости на сайт: $(date -u +%F\ %H:%M)"
-          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done
+          # 23.11.2026: сборка теперь трогает и sait/en, sait/es — без --autostash pull падал «unstaged changes», новости не пушились с 22.11 вечера
+          for i in 1 2 3; do git pull -q --rebase --autostash && git push -q && break; sleep 5; done
           echo "::notice::$(git log -1 --stat --format=%s | tail -3 | tr '\n' ' ')"
       - name: Новости в Telegram-канал @ispaniya_zakony
         # 17.11.2026, решение Евгения: в канал идут все новости, что вышли на сайт (обычно 2–3), по воскресеньям вечером — итог недели.
