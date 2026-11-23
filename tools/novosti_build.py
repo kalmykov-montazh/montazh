@@ -215,7 +215,7 @@ def article_html(it):
 {paras}</article>
 {svc}<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
-<a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
+<a href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener" style="{SVC_STYLE};margin-top:14px">Написать в WhatsApp</a></div>
 <p class="note"><a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты{SVC_NOTE if svc else ''}</p>
 {YT_JS}"""
     if it.get('img'):   # 17.11.2026: фото из Facebook — вверху статьи и в превью соцсетей и Telegram
