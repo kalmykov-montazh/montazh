@@ -1,4 +1,6 @@
 формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+23.11 Кто голосует 29 ноября | https://kalmykovgroup.com/novosti/2026-11-23-kto-golosuet-29-noyabrya-a-kto-net-dazhe-s-vnzh-i-propiskoy | полная
+23.11 Поднял аренду плати больше налога | https://kalmykovgroup.com/novosti/2026-11-23-s-dekabrya-hozyain-kotoryy-podnimet-arendu-zaplatit-bolshe-n | полная
 22.11 Испания за неделю | https://kalmykovgroup.com/novosti/2026-11-22-ispaniya-za-nedelyu-minimalka-pensii-svet-benzin-i-airbnb | коротко
 22.11 Залог за бутылки не начался | https://kalmykovgroup.com/novosti/2026-11-22-zalog-10-tsentov-za-butylku-dolzhen-byl-nachatsya-segodnya-n | полная
 21.11 Airbnb 20 дней хозяевам | https://kalmykovgroup.com/novosti/2026-11-21-airbnb-dal-hozyaevam-20-dney-chtoby-ubrat-lishnie-pravila | полная
