@@ -75,8 +75,11 @@ box = (cx - cw // 2, top, cx + cw // 2, top + chh)
 pad = Image.new("RGB", (W * 3, H * 3), "#0d1220"); pad.paste(src, (W, H))
 face = pad.crop((box[0] + W, box[1] + H, box[2] + W, box[3] + H))
 face = ImageEnhance.Contrast(face).enhance(1.06)
-FW = 820 if os.environ.get("OBL_B_OLD") != "1" else 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
-FY0 = max(520, 1370 - face.height); fh_ = min(face.height, 1380 - FY0)
+FW = 860 if os.environ.get("OBL_B_OLD") != "1" else 720; face = face.resize((FW, int(FW * chh / cw)), Image.LANCZOS)
+if os.environ.get("OBL_B_OLD") != "1":   # 23.11.2026: низ лица выше красной плашки — плашка не на подбородке и не на рту
+    FY0 = max(560, 1300 - face.height); fh_ = min(face.height, 1310 - FY0)
+else:
+    FY0 = max(520, 1370 - face.height); fh_ = min(face.height, 1380 - FY0)
 face = face.crop((0, 0, FW, fh_))
 hh = face.height
 xs = np.minimum(np.arange(FW) / 140.0, 1.0)[None, :]                                  # мягкий левый край
@@ -89,7 +92,8 @@ bg.paste(face, (W - FW, FY0), m)
 
 d = ImageDraw.Draw(bg)
 NEW6 = os.environ.get("OBL_B_OLD") != "1"   # 23.11.2026: заголовок и плашка — «яркие плашки» (hf/plashki6.py)
-CARD_Y = 860 if NEW6 else 760
+CARD_Y = 930 if NEW6 else 760
+CS = 330 if NEW6 else 400   # карточка меньше и ниже — не заходит на лицо
 if not NEW6:
     y = 330
     f1 = fit(d, L1, UNB, 96, W - 80, 50); y += ctext(d, y, L1, f1, "white") + 24
@@ -99,9 +103,9 @@ if not NEW6:
 if PIC != "-" and os.path.exists(PIC):
     try:
         p = ImageOps.exif_transpose(Image.open(PIC)).convert("RGB")
-        p = ImageOps.fit(p, (400, 400), Image.LANCZOS)
-        card = Image.new("RGB", (424, 424), "white"); card.paste(p, (12, 12))
-        cm = Image.new("L", card.size, 0); ImageDraw.Draw(cm).rounded_rectangle((0, 0, 423, 423), radius=30, fill=255)
+        p = ImageOps.fit(p, (CS, CS), Image.LANCZOS)
+        card = Image.new("RGB", (CS + 24, CS + 24), "white"); card.paste(p, (12, 12))
+        cm = Image.new("L", card.size, 0); ImageDraw.Draw(cm).rounded_rectangle((0, 0, CS + 23, CS + 23), radius=30, fill=255)
         card.putalpha(cm)
         card = card.rotate(7, expand=True, resample=Image.BICUBIC)
         sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -124,7 +128,7 @@ if NEW6:
         bgr.alpha_composite(tb, ((W - tb.width) // 2, 270))
     if PL and PL.strip():
         rb = plashki6.title([(PL.strip().upper(), "red")], 1.0)
-        bgr.alpha_composite(rb, ((W - rb.width) // 2, min(1290, 1430 - rb.height)))
+        bgr.alpha_composite(rb, ((W - rb.width) // 2, 1300))
     bgr.convert("RGB").save(OUT)
     print("oblozhka_b: плашки6 готово", OUT, "k", k); sys.exit(0)
 # жёлтая плашка
