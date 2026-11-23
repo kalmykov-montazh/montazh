@@ -111,6 +111,13 @@ def article(a, items):
         btns.append(f'<a class="go" href="/{esc(p)}">Написать специалисту</a>')
     btns.append(f'<a class="go wa" href="{esc(wa("Здравствуйте! Пишу с сайта, после статьи «" + a["title"] + "»"))}" target="_blank" rel="noopener">Задать вопрос в WhatsApp</a>')
     btns.append(f'<a class="go tg" href="{TG_SITE}" target="_blank" rel="noopener">Новости Испании в Telegram</a>')
+    # 23.11.2026 (Евгений): строку «Реклама…» не показываем в тексте статьи — переносим вниз страницы мелким шрифтом
+    body_lines, ad = [], ''
+    for l in a['body'].split('\n'):
+        if l.strip().startswith('Реклама'): ad = l.strip()
+        else: body_lines.append(l)
+    body = '\n'.join(body_lines)
+    ad_html = f'<br><span style="font-size:11px;color:#8a94a0">{esc(ad)}</span>' if ad else ''
     same = [x for x in items if x['slug'] != a['slug'] and x['tema'] == a['tema']]
     other = [x for x in items if x['slug'] != a['slug'] and x['tema'] != a['tema']]
     more = ''.join(f'<a href="/polezno/{x["slug"]}">→ {esc(x["title"])}</a>' for x in (same + other)[:5])
@@ -118,11 +125,11 @@ def article(a, items):
     return (head(a['title'], a.get('description', ''), canon, ld) +
             f'<body><div class="w"><a class="back" href="/polezno/">← Полезное</a>\n'
             f'<article class="card"><a class="tag" href="/polezno/#{esc(a["tema"])}">{esc(a["tema"])}</a><h1>{esc(a["title"])}</h1>'
-            f'<p class="date">{date_ru(a.get("updated", a["date"]))} · Евгений Калмыков, Валенсия</p>\n{video}{render(a["body"])}\n</article>\n'
+            f'<p class="date">{date_ru(a.get("updated", a["date"]))} · Евгений Калмыков, Валенсия</p>\n{video}{render(body)}\n</article>\n'
             f'<div class="cta2"><b>Остались вопросы по своей ситуации?</b>Напишите — дам контакт проверенного специалиста по вашему вопросу. '
             f'<div class="btns">{"".join(btns)}</div></div>\n'
             f'<div class="card more"><h2 style="margin-top:0">Ещё по теме</h2>{more}</div>\n'
-            f'<p class="muted">Информация общая и не заменяет консультацию юриста. Законы меняются — дата проверки указана сверху. · <a href="/">kalmykovgroup.com</a></p>\n'
+            f'<p class="muted">Информация общая и не заменяет консультацию юриста. Законы меняются — дата проверки указана сверху. · <a href="/">kalmykovgroup.com</a>{ad_html}</p>\n'
             '</div></body></html>\n')
 
 def index(items):

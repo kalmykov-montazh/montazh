@@ -167,19 +167,27 @@ def human_date(iso):
 
 # 22.11.2026: строка с услугой по теме новости (как в Telegram-канале и комментариях Facebook) — через наши короткие ссылки /go/<услуга>
 SVC = [
-    (r'(отмен|задерж)\S*.{0,15}(рейс|вылет)|забаст\S*.{0,40}(аэропорт|авиа|пилот|ryanair|vueling|iberia)', 'kompensaciya', '✈️ Задержали или отменили рейс — проверьте, положена ли компенсация'),
-    (r'рейс|самол[её]т|аэропорт|авиа|лоукост|ryanair|vueling|iberia|wizz', 'bilety', '✈️ Дешёвые авиабилеты из Испании'),
-    (r'поезд|железн|электрич|автобус|renfe|\bave\b', 'avtobus', '🚌 Билеты на автобусы по Испании и Европе'),
-    (r'машин|авто|водител|дтп|\bdgt\b|прав[ао]? |бензин|трасс|itv|парков', 'avto', '🚗 Аренда авто по Испании и Европе'),
-    (r'страхов|аренд|квартир|жиль|ипотек|хозяин|жилец|недвижим|окупас|комунидад', 'strahovka', '🛡 Страховка квартиры, здоровья, жизни — напишите специалисту'),
-    (r'роуминг|мобильн|связь|интернет|сим-карт|\besim\b', 'esim', '📲 Интернет в поездке без роуминга'),
-    (r'отпуск|турист|туризм|отел|путешеств|праздник|пасх|рождеств', 'oteli', '🏨 Отели по всему миру'),
+    (r'(отмен|задерж)\S*.{0,15}(рейс|вылет)|забаст\S*.{0,40}(аэропорт|авиа|пилот|ryanair|vueling|iberia)', 'kompensaciya', 'Задержали или отменили рейс — проверьте, положена ли компенсация'),
+    (r'рейс|самол[её]т|аэропорт|авиа|лоукост|ryanair|vueling|iberia|wizz', 'bilety', 'Дешёвые авиабилеты из Испании'),
+    (r'поезд|железн|электрич|автобус|renfe|\bave\b', 'avtobus', 'Билеты на автобусы по Испании и Европе'),
+    (r'машин|авто|водител|дтп|\bdgt\b|прав[ао]? |бензин|трасс|itv|парков', 'avto', 'Аренда авто по Испании и Европе'),
+    (r'страхов|аренд|квартир|жиль|ипотек|хозяин|жилец|недвижим|окупас|комунидад', 'strahovka', 'Страховка квартиры, здоровья, жизни — напишите специалисту'),
+    (r'роуминг|мобильн|связь|интернет|сим-карт|\besim\b', 'esim', 'Интернет в поездке без роуминга'),
+    (r'отпуск|турист|туризм|отел|путешеств|праздник|пасх|рождеств', 'oteli', 'Отели по всему миру'),
 ]
+# 23.11.2026 (Евгений): кнопка как на главной — чёрный глянец, золотая надпись и золотая окантовка, без эмодзи;
+# «Реклама» — маленькими буквами внизу страницы (SVC_NOTE в строке .note), а не у кнопки
+SVC_STYLE = ('display:flex;justify-content:center;align-items:center;gap:10px;background:linear-gradient(180deg,#2b2b2b,#0c0c0c);'
+             'color:#ffcf40;border:2px solid #d4a24c;border-radius:14px;padding:15px 18px;font-weight:800;font-size:16px;'
+             'text-decoration:none;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.25)')
+SVC_NOTE = '<br><span style="font-size:11px;color:#8a94a0">Реклама. Ссылка на сервис партнёрская, для вас цена такая же, как на его сайте</span>'
+def svc_card(key, label):
+    return f'<div class="card"><a href="/go/{key}" rel="sponsored noopener" style="{SVC_STYLE}">{esc(label)} <span style="color:#d4a24c">→</span></a></div>\n'
 def svc_html(it):
     t = (it['title'] + ' ' + it.get('desc', '')).lower()
     for rx, key, label in SVC:
         if re.search(rx, t):
-            return f'<div class="card"><p style="margin:0"><a class="go" href="/go/{key}" rel="noopener">{esc(label)} →</a></p></div>\n'
+            return svc_card(key, label)
     return ''
 
 def article_html(it):
@@ -200,14 +208,15 @@ def article_html(it):
     if ex.get('src'):
         paras += '<h2>Источники</h2><ul class="src">' + ''.join(f'<li><a href="{esc(u)}" target="_blank" rel="noopener nofollow">{esc(n)}</a></li>' for u, n in ex['src']) + '</ul>'
     vid, vname = pick_video(it)
+    svc = svc_html(it)
     body = f"""<a class="back" href="/novosti/">← Все новости Испании</a>
 <article class="card"><h1>{esc(it['title'])}</h1><p class="date">{human_date(it['published'])} · Евгений Калмыков, Валенсия</p>
 <p style="margin:0 0 14px"><a class="go" href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener" style="background:#2aa1da">📰 Новости Испании каждый день — в Telegram</a></p>
 {paras}</article>
-{svc_html(it)}<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
+{svc}<div class="card"><h2>Видео по теме</h2><button type="button" class="yt" data-id="{vid}" aria-label="Смотреть: {esc(vname)}"><img src="https://i.ytimg.com/vi/{vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span><b>{esc(vname)}</b></button>{guide_html(vid)}</div>
 <div class="card"><h2>Нужна помощь в Испании?</h2><p>Аренда и покупка жилья, разбор договора удалённо, проверенные юристы по ВНЖ и документам. Напишите, что у вас за ситуация</p>
 <a class="go" href="{wa('Здравствуйте! Пишу с сайта, после новости «' + it['title'][:80] + '»')}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>
-<p class="note"><a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты</p>
+<p class="note"><a href="https://t.me/+yhlXtzU1hcU4OGNk" target="_blank" rel="noopener">Новости Испании каждый день — в Telegram-канале</a> · <a href="/">kalmykovgroup.com</a> · все соцсети и проверенные специалисты{SVC_NOTE if svc else ''}</p>
 {YT_JS}"""
     if it.get('img'):   # 17.11.2026: фото из Facebook — вверху статьи и в превью соцсетей и Telegram
         body = body.replace(f"<article class=\"card\"><h1>", f"<article class=\"card\"><img src=\"{it['img']}\" alt=\"\" style=\"width:100%;border-radius:12px;margin:0 0 14px;display:block\" loading=\"lazy\"><h1>", 1)
