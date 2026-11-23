@@ -36,7 +36,7 @@ h1{font-size:36px;line-height:1.2;letter-spacing:-.3px}
 .btn svg{width:32px;height:32px;flex:none}.btn:hover{transform:translateY(-2px)}.side .btn{font-size:21px;padding:17px 14px;margin:0}
 .btn.blk{background:linear-gradient(180deg,#333 0%,#111 55%,#050505 100%);color:#ffd54a}
 .btn.navy{background:linear-gradient(135deg,#21418a,#16294a);color:#ffd54a;box-shadow:inset 0 0 0 2px #0e1b33,inset 0 0 0 3.5px rgba(255,213,74,.5),0 8px 20px rgba(22,41,74,.25)}
-.svc{background:linear-gradient(160deg,#fff 0%,#fff8e6 100%);text-align:center}
+.svc{background:linear-gradient(160deg,#fff 0%,#fff3d1 100%);text-align:center;border:2px solid #d4a24c;box-shadow:inset 0 0 0 4px #fff,inset 0 0 0 5px rgba(212,162,76,.45),0 10px 30px rgba(22,41,74,.1)}
 .svc .k{font-size:14px;color:#8a6d2b;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px}
 .vid{border-top:6px solid #ff3b30}
 .help{background:linear-gradient(150deg,#16294a 0%,#22437f 100%);color:#e9eef7;border:2px solid #d4a24c}
