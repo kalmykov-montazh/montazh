@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 W, H = 1080, 1920
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FD = os.path.join(ROOT, "fonts")
-TOPY = 150          # выше — почти не видно в сетке, но в ленте видно: верх блока не выше 150
+TOPY = 270          # сетка профиля 3:4 видна с 240 — верх блока не выше 270 (проба 23.11: синяя строка срезалась)
 BOTY = 1420         # низ текста — выше счётчика просмотров в сетке
 ANGLE = 3.5
 
@@ -167,14 +167,15 @@ def extend_down(src, shift):
 
 
 def place(lines, head_top, chin, max_shift=480, top_y=TOPY, bot_y=BOTY):
-    """План раскладки: [(блок, y)], сдвиг кадра. Лицо не закрываем; крупные буквы важнее."""
-    for k in (1.0, 0.9):
+    """План раскладки: [(блок, y)], сдвиг кадра. Лицо и рот не закрываем и не выталкиваем за сетку 3:4 (низ 1680)."""
+    CHIN_MAX = 1640
+    for k in (1.0, 0.9, 0.82, 0.75):
         b = title(lines, k)
         free = head_top - 15 - top_y
         if b.height <= free:
             return [(b, head_top - 15 - b.height)], 0, f"всё над головой (k {k})"
         need = b.height - free
-        if need <= max_shift and chin + need <= 1800:
+        if need <= max_shift and chin + need <= CHIN_MAX:
             return [(b, top_y)], need, f"кадр ниже на {need}, всё над головой (k {k})"
     for k in (1.0, 0.9, 0.8):   # разносим строки: часть над головой, часть на груди
         for cut in range(len(lines) - 1, 0, -1):
@@ -183,16 +184,12 @@ def place(lines, head_top, chin, max_shift=480, top_y=TOPY, bot_y=BOTY):
             sh = max(0, a.height - free)
             if sh <= max_shift and chin + sh + 20 + c.height <= bot_y:
                 return [(a, top_y if sh else head_top - 15 - a.height), (c, chin + sh + 20)], sh, f"{cut} стр. над головой, {len(lines) - cut} на груди (k {k})"
-    for k in (1.0, 0.85, 0.7, 0.6):
-        b = title(lines, k)
-        if chin + 20 + b.height <= bot_y:
-            return [(b, chin + 20)], 0, f"всё на груди (k {k})"
-    for k in (0.9, 0.8, 0.7):   # лицо крупное: кадр опускаем сильнее, низ кадра уходит — лицо остаётся целым
-        b = title(lines, k); need = b.height - (head_top - 15 - top_y)
-        if need <= 650 and chin + need <= 1950:
-            return [(b, top_y)], max(0, need), f"кадр ниже на {need} (крупное лицо), k {k}"
-    b = title(lines, 0.6)
-    return [(b, top_y)], max(0, min(650, b.height - (head_top - 15 - top_y))), "крайний случай: сверху, k 0.6"
+    for k in (0.7, 0.65, 0.6):  # лицо очень крупное: шрифт меньше, рот в сетке остаётся
+        b = title(lines, k); need = max(0, b.height - (head_top - 15 - top_y))
+        if chin + need <= CHIN_MAX + 40:
+            return [(b, top_y)], need, f"кадр ниже на {need} (крупное лицо), k {k}"
+    b = title(lines, 0.6); need = max(0, b.height - (head_top - 15 - top_y))
+    return [(b, top_y)], min(need, max(0, CHIN_MAX + 60 - chin)), "крайний случай, k 0.6"
 
 
 def render(bg_path, out_path, spec_path, key=""):

@@ -120,8 +120,8 @@ if NEW6:
     if up_:
         for k in (1.0, 0.9, 0.8, 0.7):
             tb = plashki6.title(up_, k)
-            if tb.height <= 600: break
-        bgr.alpha_composite(tb, ((W - tb.width) // 2, 120))
+            if tb.height <= 520: break
+        bgr.alpha_composite(tb, ((W - tb.width) // 2, 270))
     if PL and PL.strip():
         rb = plashki6.title([(PL.strip().upper(), "red")], 1.0)
         bgr.alpha_composite(rb, ((W - rb.width) // 2, min(1290, 1430 - rb.height)))
