@@ -184,7 +184,7 @@ def main():
         if f.stem not in keep and f.name != 'index.html': f.unlink()
     for a in items:
         (DIR / f'{a["slug"]}.html').write_text(fix(redesign_polezno(article(a, items))), encoding='utf-8')
-    (DIR / 'index.html').write_text(fix(redesign_index(index(items))), encoding='utf-8')
+    (DIR / 'index.html').write_text(fix(redesign_index(index(items), 'polezno')), encoding='utf-8')
     update_home(items); update_sitemap(items)
     print(f'Полезное: {len(items)} статей')
     # 22.11.2026: украинская главная — копия русской с переводом (tools/ua_build.py)
