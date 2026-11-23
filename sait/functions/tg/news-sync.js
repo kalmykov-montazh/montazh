@@ -27,7 +27,7 @@ const RUBRICS = [
 const rubric = it => it.emo || (RUBRICS.find(([, re]) => re.test((it.title + ' ' + (it.desc || '')).toLowerCase())) || ['🇪🇸'])[0];
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// 22.11.2026 (решение Евгения): под новостью — одна строка с услугой по теме (если подходит) и одна постоянная на сайт. Ссылки через /go/ — со счётчиком
+// 22.11.2026 (решение Евгения): под новостью — одна строка с услугой (с 23.11 — по кругу, см. ROTA) и одна постоянная на сайт. Ссылки через /go/ — со счётчиком
 const SVC = [
   [/(отмен|задерж)\S*.{0,15}(рейс|вылет)|забаст\S*.{0,40}(аэропорт|авиа|пилот|ryanair|vueling|iberia)/, 'kompensaciya', '✈️ Задержали или отменили рейс — проверьте, положена ли компенсация'],
   [/рейс|самол[её]т|аэропорт|авиа|лоукост|ryanair|vueling|iberia|wizz/, 'bilety', '✈️ Дешёвые авиабилеты из Испании'],
@@ -37,10 +37,24 @@ const SVC = [
   [/роуминг|мобильн|связь|интернет|сим-карт|\besim\b/, 'esim', '📲 Интернет в поездке без роуминга'],
   [/отпуск|турист|туризм|отел|путешеств|праздник|пасх|рождеств/, 'oteli', '🏨 Отели по всему миру'],
 ];
-function svcLine(it) {
+// 23.11.2026 (решение Евгения): реклама в каждой новости разная — по кругу. Подходит по теме и не повторяет прошлую — берём по теме,
+// иначе следующая из круга. Последняя показанная — ключ KV «adlast»
+const ROTA = [
+  ['avto', '🚗 Аренда авто по Испании и Европе'],
+  ['bilety', '✈️ Дешёвые авиабилеты из Испании'],
+  ['strahovka', '🛡 Страховка квартиры, здоровья, жизни — напишите специалисту'],
+  ['oteli', '🏨 Отели по всему миру'],
+  ['esim', '📲 Интернет в поездке без роуминга'],
+  ['transfer', '🚕 Трансфер из аэропорта — заранее и по фиксированной цене'],
+  ['ekskursii', '🎟 Экскурсии и билеты в музеи'],
+  ['avtobus', '🚌 Билеты на автобусы по Испании и Европе'],
+];
+function pickAd(it, last) {
   const t = (it.title + ' ' + (it.desc || '')).toLowerCase();
   const m = SVC.find(([re]) => re.test(t));
-  return m ? `<a href="${SITE}/go/${m[1]}">${m[2]}</a>` : '';
+  if (m && m[1] !== last) return [m[1], m[2]];
+  const i = ROTA.findIndex(([k]) => k === last);
+  return ROTA[(i + 1) % ROTA.length];
 }
 const SITE_LINE = `🇪🇸 <a href="${SITE}">Всё для жизни в Испании — kalmykovgroup.com</a>`;
 export async function onRequestGet({ env }) {
@@ -79,15 +93,20 @@ export async function onRequestGet({ env }) {
     .filter(it => redo.includes(it.slug) || (it.published && now - Date.parse(it.published) < 20 * 3600e3 && Date.parse(it.published) <= now))
     .sort((a, b) => Date.parse(a.published) - Date.parse(b.published));
   const posted = [];
+  // 23.11.2026 (решение Евгения): не две новости сразу — одна, следующая не раньше чем через 75 минут (задача ходит раз в 20 минут → 75–95 мин)
+  const GAP = 75 * 60e3;
+  let lastAt = parseInt(await env.BOT_KV.get('nlast') || '0', 10);
   for (const it of items) {
     const isRedo = redo.includes(it.slug);
     if (done >= PER_DAY && !isRedo) continue;
     if (await env.BOT_KV.get('news:' + it.slug)) continue;
     // 17.11.2026: ждём фото из Facebook (робот публикует в окно слота) — до 4 часов, потом без фото
     if (!isRedo && !it.img && now - Date.parse(it.published) < 4 * 3600e3) continue;
+    if (!isRedo && now - lastAt < GAP) { posted.push('ждёт перерыв: ' + it.slug); break; }
     const url = `${SITE}/novosti/${it.slug}`;
     const link = `<a href="${url}">Подробно, что делать и источники — на сайте</a>`;
-    const svc = svcLine(it);
+    const ad = pickAd(it, await env.BOT_KV.get('adlast'));
+    const svc = `<a href="${SITE}/go/${ad[0]}">${ad[1]}</a>`;
     const foot = '\n\n' + (svc ? svc + '\n' : '') + SITE_LINE;
     let r;
     // 17.11.2026 (Евгений: «красивое название, как у Нестеренко»): rich-сообщение — крупный заголовок, фото, текст, ссылка
@@ -118,7 +137,7 @@ export async function onRequestGet({ env }) {
         body: JSON.stringify({ chat_id: env.NEWS_CHANNEL, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }),
       })).json();
     }
-    if (r.ok) { await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); if (!isRedo) done++; await env.BOT_KV.put('nday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
+    if (r.ok) { await env.BOT_KV.put('adlast', ad[0]); if (!isRedo) { lastAt = now; await env.BOT_KV.put('nlast', String(now), { expirationTtl: 2 * 86400 }); } await env.BOT_KV.put('news:' + it.slug, day); await env.BOT_KV.put('msg:' + it.slug, String(r.result.message_id), { expirationTtl: 60 * 86400 }); if (!isRedo) done++; await env.BOT_KV.put('nday:' + day, String(done), { expirationTtl: 3 * 86400 }); posted.push(it.slug); }
     else posted.push('ошибка: ' + r.description);
   }
   // Воскресенье после 19:00 по Испании — итог недели (один раз)
