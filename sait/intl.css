@@ -711,6 +711,29 @@ html[data-bg="4"] .trip{background:linear-gradient(135deg,#3b1d6e,#8a2e7c)!impor
 .trip h2#h-trip{background:linear-gradient(180deg,#2b2b2b,#0c0c0c)!important;border-color:#d4a24c!important}
 .trip h2#h-trip .gl{background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;color:#ffcf40!important;-webkit-text-stroke:3px #000!important;paint-order:stroke fill!important;filter:none!important;text-shadow:0 2px 0 #000,0 0 12px rgba(255,190,60,.5)}
 .tp-advertiser-info{font:11px/1.45 system-ui,sans-serif!important;color:#8b8f94!important;opacity:.75;text-align:center;max-width:760px;margin:0 auto!important;padding:10px 16px 96px!important}.tp-advertiser-info div{font-size:11px!important}
+/* 23.11.2026: телефон — кнопки не разъезжаются при крупном шрифте (Facebook-браузер), нижняя панель в стиле сайта */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.mbar>*{flex:1 1 0!important;min-width:0!important;white-space:nowrap;overflow:hidden;font-size:16px!important;font-weight:900!important;padding:12px 6px!important;border-radius:14px!important;
+ border:3px solid #d4a24c!important;color:#ffd54a!important;text-shadow:0 2px 0 #000;box-shadow:inset 0 0 0 2px #0c0c0c,0 8px 20px rgba(0,0,0,.3)!important}
+.mbar>* span{overflow:hidden;text-overflow:ellipsis}
+.mbar a{background:linear-gradient(180deg,#333,#0c0c0c)!important}
+.mbar button{background:linear-gradient(135deg,#21418a,#16294a)!important}
+.mbar a svg{fill:none}
+.hp h3 .ht{max-width:100%}
+.hp h3 .ht small{font-family:Manrope,Inter,system-ui,sans-serif!important;font-size:12.5px!important;line-height:1.3!important;white-space:normal}
+@media(max-width:600px){.hp h3 .ht{font-size:18px!important;padding:8px 14px!important}}
+
+.wrap,.wrap>*,.hub,.hub-g,.hp,.trip,section{min-width:0;max-width:100%}
+.hub-tabs{overflow-x:auto;scrollbar-width:none}.hub-tabs::-webkit-scrollbar{display:none}.hub-tabs>*{flex:0 0 auto}
+html,body{overflow-x:hidden}
+
+.savec{white-space:normal!important;max-width:min(440px,calc(100% - 24px))!important;text-align:left;font-size:clamp(15px,4.4vw,19px)!important;line-height:1.25}
+.pbtns a{font-size:19px!important;font-weight:900!important;padding:15px 16px!important;border-radius:16px!important;border:3px solid #d4a24c!important;color:#ffd54a!important;text-shadow:0 2px 0 #000;
+ background:linear-gradient(135deg,#21418a,#16294a)!important;box-shadow:inset 0 0 0 2px #0e1b33,0 8px 20px rgba(22,41,74,.25)!important}
+.pbtns a.pmain{background:linear-gradient(180deg,#333,#0c0c0c)!important;box-shadow:inset 0 0 0 2px #0c0c0c,0 8px 20px rgba(0,0,0,.25)!important}
+.pbtns svg{width:24px!important;height:24px!important;fill:#25d366!important}
+.newsbox a{text-decoration:none!important;color:#16294a!important;font-weight:700}.newsbox a:hover{color:#b8860b!important}
+
 .art{background:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 2px 10px rgba(22,41,74,.07);margin:16px 0;font-size:17px;line-height:1.65}
 .art h1{font-family:var(--display);font-size:30px;line-height:1.2;color:#16294a;margin:4px 0 8px}
 .art h2{font-family:var(--display);font-size:21px;color:#16294a;margin:26px 0 8px}
