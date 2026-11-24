@@ -172,6 +172,13 @@ def erase_subs(src, y0):
     for i in range(1, n):                       # строка субтитров: широкая и невысокая
         x, y, w, h, a = st[i]
         if w > 60 and h < 200 and w > 1.5 * h: keep[lab == i] = 1
+    # 24.11: жёлтые субтитры без тёмной обводки — ярко-жёлтая строка, отдельно от зелени
+    yel = ((h_ > 20) & (h_ < 36) & (s_ > 190) & (v_ > 200)).astype(np.uint8)
+    yl = cv2.morphologyEx(cv2.dilate(yel, np.ones((5, 5), np.uint8)), cv2.MORPH_CLOSE, np.ones((9, 25), np.uint8))
+    n2, lab2, st2, _ = cv2.connectedComponentsWithStats(yl)
+    for i in range(1, n2):
+        x, y, w, h, a_ = st2[i]
+        if w > 80 and 25 < h < 180 and w > 2 * h and yel[y:y + h, x:x + w].mean() > 0.12: keep[lab2 == i] = 1
     mask = cv2.dilate(keep, np.ones((11, 11), np.uint8)) * 255
     if mask.mean() < 0.3: return src
     full = np.zeros(arr.shape[:2], np.uint8); full[y0:] = mask
