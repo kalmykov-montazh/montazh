@@ -45,3 +45,10 @@
 .apple s.adr{display:table;text-decoration:none;margin:18px auto 0;font-family:M;font-weight:900;font-size:34px;color:#C9A24B;background:#0d0f16;border-radius:12px;padding:8px 18px}
 .sait.mini{left:auto;right:auto;left:50%;transform:translateX(-50%);height:auto;padding:12px 22px;gap:18px;width:auto;white-space:nowrap}
 .sait.mini i{font-size:28px}
+
+/* 24.11.2026: живое окошко поиска (поле "poisk" в sait) — «Валенсия → город» печатается, потом цена */
+.sait .pz{flex:none;background:#fff;border-radius:18px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:14px 20px;box-sizing:border-box;font-family:M;overflow:hidden}
+.sait .pz .pr1{font-weight:700;font-size:30px;color:#555}
+.sait .pz .pr2{font-weight:900;font-size:44px;color:#111;white-space:nowrap}
+.sait .pz .cur{color:#1f74e8;font-weight:400}
+.sait .pz .pp{align-self:flex-start;background:#ff5a1f;color:#fff;font-weight:900;font-size:40px;padding:6px 16px;border-radius:12px;line-height:1.1}
