@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "proba / zamena"
+        description: "proba / zamena / oblozhka (24.11.2026: только обложка.jpg, ролик не трогать — для Опубликованных)"
         required: true
         default: "proba"
       only:
@@ -139,6 +139,13 @@ jobs:
           fi
           python3 scripts/proverka_oblozhki.py out/cover.png || echo "::warning::$N лицо на обложке не прошло проверку — смотреть"
           ffmpeg -v error -y -i out/cover.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
+          if [ "$MODE" = "oblozhka" ]; then   # 24.11.2026: опубликованные — ролик не трогаем, старую обложку сохраняем рядом
+            D=$(dirname "$F")
+            rclone lsf "montazh:$D/обложка_старая.jpg" 2>/dev/null | grep -q . || rclone copyto "montazh:$D/обложка.jpg" "montazh:$D/обложка_старая.jpg" 2>/dev/null || true
+            ffmpeg -v error -y -i out/cover.png -vf scale=1080:1920 -q:v 2 in/oblozhka.jpg
+            rclone copyto in/oblozhka.jpg "montazh:$D/обложка.jpg"
+            echo "::notice::Обложка заменена: $D"
+          fi
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")
             ffmpeg -v error -y -i in/v.mp4 -i out/cover.png -filter_complex "[1:v]scale=1080:1920,format=rgba[c];[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[b];[b][c]overlay=0:0:enable='lt(t,0.12)',format=yuv420p" \
