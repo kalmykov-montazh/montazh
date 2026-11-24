@@ -6,62 +6,78 @@ trc = subprocess.run(['ffprobe','-v','error','-select_streams','v','-show_entrie
 TM = ('zscale=t=linear:npl=80,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p,') if trc in ('arib-std-b67','smpte2084') else ''
 GR = ''
 SW, SH = 540, 960; STEP = 0.2
-# громкость звука по кадрам: тишина = рот закрыт
-subprocess.run(['ffmpeg','-v','error','-y','-i',raw,'-ar','8000','-ac','1','/tmp/pa.wav'],check=True)
-w = wave.open('/tmp/pa.wav'); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(float)
-def rms(t):
-    i = int(t*8000); seg = a[max(0,i-400):i+400]; return np.sqrt((seg**2).mean()) if len(seg) else 0
-p = subprocess.Popen(['ffmpeg','-v','error','-i',raw,'-vf',f'fps={1/STEP},{TM}{GR}scale={SW}:{SH}:force_original_aspect_ratio=increase,crop={SW}:{SH}','-f','rawvideo','-pix_fmt','bgr24','-'],stdout=subprocess.PIPE)
-fc = cv2.CascadeClassifier(f'{D}/haar.xml')
-fm = cv2.face.createFacemarkLBF(); fm.loadModel(f'{D}/lbf.yaml')
-def dist(p, q): return float(np.hypot(*(p - q)))
-best = None; cands = []; allc = []; n = 0; rmax = max(1, np.percentile(np.abs(a), 99))
-while True:
-    b = p.stdout.read(SW*SH*3)
-    if len(b) < SW*SH*3: break
-    t = n*STEP; n += 1
-    if t < 0.5: continue
-    fr = np.frombuffer(b, np.uint8).reshape(SH, SW, 3); g = cv2.cvtColor(fr, cv2.COLOR_BGR2GRAY)
-    f = fc.detectMultiScale(g, 1.1, 5, minSize=(40,40))   # 04.10.2026: шортсы в полный рост
-    if not len(f): continue
-    x,y,fw,fh = max(f, key=lambda r: r[2]*r[3])
-    ok, lm = fm.fit(g, np.array([[x, y, fw, fh]]))
-    if not ok: continue
-    P = np.array(lm[0]).reshape(-1, 2)
-    ear = np.mean([(dist(P[i+1], P[i+5]) + dist(P[i+2], P[i+4])) / (2 * dist(P[i], P[i+3])) for i in (36, 42)])
-    mar = (dist(P[61], P[67]) + dist(P[62], P[66]) + dist(P[63], P[65])) / (3 * dist(P[60], P[64]))
-    allc.append((t, ear, mar))
-    if ear < 0.22 or mar > 0.06: continue        # глаза прикрыты или рот открыт
-    sharp = cv2.Laplacian(g[y:y+fh, x:x+fw], cv2.CV_64F).var()
-    loud = rms(t) / rmax
-    cands.append((t, ear, mar, loud, sharp, cv2.resize(fr, (180, 320)), fh / SH))
-p.wait()
-# 04.10.2026: раньше «ear * 8» награждало широко раскрытые глаза — лицо выходило удивлённым и испуганным.
-# Теперь глаза ближе к обычным для этого ролика (медиана), рот закрыт, тихо, резко.
-if cands:
-    med = float(np.median([c[1] for c in cands]))
-    sc = lambda c: min(c[4], 600) / 150 - abs(c[1] - med) * 30 - c[2] * 40 - c[3] * 2
-    # 15.11.2026 (Евгений: «выбери кадр, где я чуть подальше, чтобы поставить буквы больше»): PICK_FAR=1 — меньше лицо в кадре
-    if os.environ.get('PICK_FAR'):
-        _sc0 = sc; sc = lambda c: _sc0(c) - c[6] * float(os.environ.get('PICK_FAR_W', '30'))
-    cands.sort(key=sc, reverse=True)
-    b = cands[0]; best = (sc(b), b[0], b[2], b[3], b[4], round(b[1], 3), round(med, 3))
-    pick = []
-    for c in cands:
-        if all(abs(c[0] - q[0]) >= 1.5 for q in pick): pick.append(c)
-        if len(pick) == 16: break
-    sheet = np.zeros((320 * 2, 180 * 4, 3), np.uint8)
-    for i, c in enumerate(pick[:8]):
-        im = c[5].copy(); cv2.putText(im, f'{c[0]:.1f}', (6, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
-        sheet[(i // 4) * 320:(i // 4 + 1) * 320, (i % 4) * 180:(i % 4 + 1) * 180] = im
-    cv2.imwrite(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.jpg'), sheet)
-    open(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.txt'), 'w').write('\n'.join(f'{c[0]:.2f}' for c in pick))
-t = best[1] if best else 1.0
-# 13.11.2026 (Евгений: «глаза полностью закрыты… сколько тебя учить»): если строгих кадров нет — не брать секунду наугад,
-# а самый открытый глаз при самом закрытом рте среди всех кадров с лицом
-if not best and allc:
-    t = max(allc, key=lambda c: c[1] - c[2] * 1.5)[0]
-    print('cover frame: строгих кадров нет — взял самые открытые глаза', round(t, 2))
+# 24.11.2026 (Евгений: «лицо с закрытыми глазами… рот открытый»): сначала строгий выбор по 106 точкам лица
+# (scripts/kadr_glaza.py — глаза открыты, рот закрыт, и в соседних кадрах тоже). Старый подсчёт ниже — только запасной.
+KG = None
+if not os.environ.get('PICK_T') and not os.environ.get('PICK_FAR') and not os.environ.get('PICK_OLD'):
+    try:
+        r = subprocess.run([sys.executable, f'{D}/kadr_glaza.py', raw, '--top', '16'], capture_output=True, text=True, timeout=1500)
+        ts = [l.split()[0] for l in r.stdout.splitlines() if l.strip() and l.split()[0].replace('.', '', 1).isdigit()]
+        print(r.stderr.strip().splitlines()[-1] if r.stderr.strip() else '', file=sys.stderr)
+        if ts and 'строгих нет' not in r.stderr:
+            KG = float(ts[0])
+            open(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.txt'), 'w').write('\n'.join(ts))
+    except Exception as e:
+        print('kadr_glaza не сработал:', e, file=sys.stderr)
+best = None; cands = []; allc = []
+if KG is None:   # старый подсчёт — только если строгий не нашёл
+    # громкость звука по кадрам: тишина = рот закрыт
+    subprocess.run(['ffmpeg','-v','error','-y','-i',raw,'-ar','8000','-ac','1','/tmp/pa.wav'],check=True)
+    w = wave.open('/tmp/pa.wav'); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(float)
+    def rms(t):
+        i = int(t*8000); seg = a[max(0,i-400):i+400]; return np.sqrt((seg**2).mean()) if len(seg) else 0
+    p = subprocess.Popen(['ffmpeg','-v','error','-i',raw,'-vf',f'fps={1/STEP},{TM}{GR}scale={SW}:{SH}:force_original_aspect_ratio=increase,crop={SW}:{SH}','-f','rawvideo','-pix_fmt','bgr24','-'],stdout=subprocess.PIPE)
+    fc = cv2.CascadeClassifier(f'{D}/haar.xml')
+    fm = cv2.face.createFacemarkLBF(); fm.loadModel(f'{D}/lbf.yaml')
+    def dist(p, q): return float(np.hypot(*(p - q)))
+    best = None; cands = []; allc = []; n = 0; rmax = max(1, np.percentile(np.abs(a), 99))
+    while True:
+        b = p.stdout.read(SW*SH*3)
+        if len(b) < SW*SH*3: break
+        t = n*STEP; n += 1
+        if t < 0.5: continue
+        fr = np.frombuffer(b, np.uint8).reshape(SH, SW, 3); g = cv2.cvtColor(fr, cv2.COLOR_BGR2GRAY)
+        f = fc.detectMultiScale(g, 1.1, 5, minSize=(40,40))   # 04.10.2026: шортсы в полный рост
+        if not len(f): continue
+        x,y,fw,fh = max(f, key=lambda r: r[2]*r[3])
+        ok, lm = fm.fit(g, np.array([[x, y, fw, fh]]))
+        if not ok: continue
+        P = np.array(lm[0]).reshape(-1, 2)
+        ear = np.mean([(dist(P[i+1], P[i+5]) + dist(P[i+2], P[i+4])) / (2 * dist(P[i], P[i+3])) for i in (36, 42)])
+        mar = (dist(P[61], P[67]) + dist(P[62], P[66]) + dist(P[63], P[65])) / (3 * dist(P[60], P[64]))
+        allc.append((t, ear, mar))
+        if ear < 0.22 or mar > 0.06: continue        # глаза прикрыты или рот открыт
+        sharp = cv2.Laplacian(g[y:y+fh, x:x+fw], cv2.CV_64F).var()
+        loud = rms(t) / rmax
+        cands.append((t, ear, mar, loud, sharp, cv2.resize(fr, (180, 320)), fh / SH))
+    p.wait()
+    # 04.10.2026: раньше «ear * 8» награждало широко раскрытые глаза — лицо выходило удивлённым и испуганным.
+    # Теперь глаза ближе к обычным для этого ролика (медиана), рот закрыт, тихо, резко.
+    if cands:
+        med = float(np.median([c[1] for c in cands]))
+        sc = lambda c: min(c[4], 600) / 150 - abs(c[1] - med) * 30 - c[2] * 40 - c[3] * 2
+        # 15.11.2026 (Евгений: «выбери кадр, где я чуть подальше, чтобы поставить буквы больше»): PICK_FAR=1 — меньше лицо в кадре
+        if os.environ.get('PICK_FAR'):
+            _sc0 = sc; sc = lambda c: _sc0(c) - c[6] * float(os.environ.get('PICK_FAR_W', '30'))
+        cands.sort(key=sc, reverse=True)
+        b = cands[0]; best = (sc(b), b[0], b[2], b[3], b[4], round(b[1], 3), round(med, 3))
+        pick = []
+        for c in cands:
+            if all(abs(c[0] - q[0]) >= 1.5 for q in pick): pick.append(c)
+            if len(pick) == 16: break
+        sheet = np.zeros((320 * 2, 180 * 4, 3), np.uint8)
+        for i, c in enumerate(pick[:8]):
+            im = c[5].copy(); cv2.putText(im, f'{c[0]:.1f}', (6, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
+            sheet[(i // 4) * 320:(i // 4 + 1) * 320, (i % 4) * 180:(i % 4 + 1) * 180] = im
+        cv2.imwrite(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.jpg'), sheet)
+        open(os.path.join(os.path.dirname(os.path.abspath(out)), 'кандидаты.txt'), 'w').write('\n'.join(f'{c[0]:.2f}' for c in pick))
+    t = best[1] if best else 1.0
+    # 13.11.2026 (Евгений: «глаза полностью закрыты… сколько тебя учить»): если строгих кадров нет — не брать секунду наугад,
+    # а самый открытый глаз при самом закрытом рте среди всех кадров с лицом
+    if not best and allc:
+        t = max(allc, key=lambda c: c[1] - c[2] * 1.5)[0]
+        print('cover frame: строгих кадров нет — взял самые открытые глаза', round(t, 2))
+if KG is not None: t = KG; print('cover frame: строгий выбор kadr_glaza', t)
 if os.environ.get('PICK_T'): t = float(os.environ['PICK_T'])   # кадр выбран вручную
 print('cover frame', round(t,2), 'score', [round(v,3) for v in best] if best else None)
 # кадр для обложки (с 03.10.2026): мягче перевод HDR (npl=200), чуть контраста и резкости — иначе обложка бледная и мутная

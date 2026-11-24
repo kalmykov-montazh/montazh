@@ -128,6 +128,8 @@ jobs:
           # 13.11.2026: кадр, проверенный глазами (cover_t в novyj, секунда готового ролика), важнее автовыбора — как в skleiki.yml
           CT=$(python3 -c "import json;print(json.load(open('novyj/$KEY.json')).get('cover_t',''))" 2>/dev/null)
           if [ -n "$CT" ]; then ffmpeg -v error -y -ss "$CT" -i "$P/osnova.mp4" -frames:v 1 "$P/cover_bg.png" && echo "::notice::Обложка: кадр $CT с (cover_t)"; fi
+          # 24.11.2026: кадр под обложку обязан пройти проверку лица (глаза открыты, рот закрыт), иначе — строгий автовыбор
+          python3 scripts/proverka_oblozhki.py "$P/cover_bg.png" || { echo "::warning::кадр обложки не прошёл проверку лица — выбираю заново"; rm -f "$P/cover_bg.png"; python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true; }
           python3 hf/build_auto.py "$P" "novyj/$KEY.json" in/osnova_words.json in/face.json in/vst.json | tee build.txt
           echo "::notice::$(tr '\n' ' ' < build.txt | cut -c1-900)"
           if [ -s "$P/kartinki.txt" ]; then mkdir -p "$P/img"
@@ -168,6 +170,7 @@ jobs:
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          python3 scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
           echo "::notice::Готово: $DEST ($D с)"
           # 11.11.2026 (Евгений): сырой уезжает из «Сырые» в папку готового ролика — в «Сырые» остаётся только несделанное
           if [[ "$SRC" == Брокер/Сырые/* ]] && rclone lsf "montazh:$SRC" 2>/dev/null | grep -q .; then rclone moveto "montazh:$SRC" "montazh:$DEST/$(basename "$SRC")" && echo "::notice::Сырой перенесён в папку ролика"; fi

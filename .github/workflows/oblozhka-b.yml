@@ -126,6 +126,7 @@ jobs:
           P=in/pic.jpg; [ -s "$P" ] || P=-
           python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
           fi
+          python3 scripts/proverka_oblozhki.py out/cover.png || echo "::warning::$N лицо на обложке не прошло проверку — смотреть"
           ffmpeg -v error -y -i out/cover.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")

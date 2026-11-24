@@ -135,6 +135,8 @@ jobs:
           if [ -n "$CT" ]; then ffmpeg -v error -y -ss "$CT" -i "$P/osnova.mp4" -frames:v 1 "$P/cover_bg.png"; echo "обложка: кадр $CT с"
           else python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true; fi
           [ -f "$P/cover_bg.png" ] || echo "::warning::нет кадра обложки"
+          # 24.11.2026: кадр под обложку обязан пройти проверку лица (глаза открыты, рот закрыт), иначе — строгий автовыбор
+          [ -f "$P/cover_bg.png" ] && { python3 scripts/proverka_oblozhki.py "$P/cover_bg.png" || { echo "::warning::кадр обложки не прошёл проверку лица — выбираю заново"; python3 scripts/pick_frame.py "$P/osnova.mp4" "$P/cover_bg.png" 2>&1 | tail -1 || true; }; }
           python3 hf/build_auto.py "$P" "novyj/$KEY.json" sk/osnova_words.json sk/face.json vst.json | tee build.txt
           echo "::notice::$(tr '\n' ' ' < build.txt | cut -c1-900)"
           if [ -s "$P/kartinki.txt" ]; then mkdir -p "$P/img"
@@ -172,6 +174,7 @@ jobs:
           python3 ../scripts/sait_auto.py final.mp4 "$DEST" ../build.txt || true
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
+          python3 scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
           rclone copyto упаковка.txt "montazh:$DEST/упаковка.txt"
           [ -s плейлист.txt ] && rclone copyto плейлист.txt "montazh:$DEST/плейлист.txt"
           echo "::notice::Готово: $DEST ($D с)"

@@ -2,3 +2,4 @@ pywhispercpp
 opencv-contrib-python-headless<5
 numpy
 pillow
+onnxruntime

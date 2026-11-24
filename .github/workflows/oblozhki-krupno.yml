@@ -132,6 +132,7 @@ jobs:
           fi
           [ "$VARS" = "ab" -o "$VARS" = "fon" -o "$VARS" = "far" ] && VV="" || VV="$VARS"
           OBL_VAR="$VV" python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
+          python3 scripts/proverka_oblozhki.py out/cover_full.png || echo "::warning::$N лицо на обложке не прошло проверку — смотреть"
           ffmpeg -v error -y -i out/cover_full.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")
