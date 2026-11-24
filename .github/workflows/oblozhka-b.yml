@@ -70,7 +70,7 @@ jobs:
               if only and n not in only: continue
               l1, l2, pl, q = T[k]; p = pr.get(k, {})
               items.append({"n": n, "name": folder[:50], "file": c[2], "l1": p.get("l1", l1), "l2": p.get("l2", l2),
-                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", "")), "fx": str(p.get("fx", "")), "box": str(p.get("box", "")), "frf": p.get("frf", "")})
+                            "pl": p.get("pl", pl), "q": p.get("q", q), "url": p.get("url", ""), "t": str(p.get("t", "")), "fx": str(p.get("fx", "")), "box": str(p.get("box", "")), "frf": p.get("frf", ""), "cover": p.get("cover", "")})
           print("m=" + json.dumps(items, ensure_ascii=False))
           PY
 
@@ -105,12 +105,15 @@ jobs:
           FX: ${{ matrix.v.fx }}
           BOX: ${{ matrix.v.box }}
           FRF: ${{ matrix.v.frf }}
+          COV: ${{ matrix.v.cover }}
           MODE: ${{ inputs.mode }}
           KEY: ${{ inputs.key }}
         run: |
           echo "::add-mask::$KEY"
           mkdir -p in out
           rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
+          if [ -n "$COV" ]; then mkdir -p out; python3 -c "from PIL import Image;Image.open('$COV').convert('RGB').resize((1080,1920)).save('out/cover.png')"; echo "обложка готовая: $COV"
+          else
           if [ -z "$T" ]; then python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true
             python3 scripts/oblozhka_b_kadr.py in/v.mp4 in/кандидаты.txt in/fr.png
           elif [ -n "$FRF" ]; then rclone copyto "montazh:$FRF" in/f.mp4; ffmpeg -v error -y -ss "$T" -i in/f.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с из $FRF"
@@ -119,6 +122,7 @@ jobs:
           else python3 scripts/oblozhka_b_kartinka.py "$Q" in/pic.jpg || true; fi
           P=in/pic.jpg; [ -s "$P" ] || P=-
           python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
+          fi
           ffmpeg -v error -y -i out/cover.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")

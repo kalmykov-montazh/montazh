@@ -155,6 +155,31 @@ def face_box(img):
     return None
 
 
+def erase_subs(src, y0):
+    """24.11.2026: старый монтаж — вшитые субтитры (белые/жёлтые/зелёные буквы с тёмной обводкой) ниже y0 закрашиваем."""
+    import cv2
+    arr = cv2.cvtColor(np.array(src), cv2.COLOR_RGB2BGR)
+    y0 = max(0, min(H - 10, int(y0)))
+    hsv = cv2.cvtColor(arr[y0:], cv2.COLOR_BGR2HSV)
+    h_, s_, v_ = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+    txt = (((s_ < 45) & (v_ > 225)) | ((h_ > 15) & (h_ < 38) & (s_ > 140) & (v_ > 170)) | ((h_ > 45) & (h_ < 85) & (s_ > 140) & (v_ > 150))).astype(np.uint8)
+    dark = (v_ < 70).astype(np.uint8)
+    near = cv2.dilate(dark, np.ones((7, 7), np.uint8))
+    letters = cv2.dilate(txt & near, np.ones((7, 7), np.uint8))
+    letters = cv2.morphologyEx(letters, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
+    n, lab, st, _ = cv2.connectedComponentsWithStats(letters)
+    keep = np.zeros_like(letters)
+    for i in range(1, n):                       # строка субтитров: широкая и невысокая
+        x, y, w, h, a = st[i]
+        if w > 60 and h < 200 and w > 1.5 * h: keep[lab == i] = 1
+    mask = cv2.dilate(keep, np.ones((11, 11), np.uint8)) * 255
+    if mask.mean() < 0.3: return src
+    full = np.zeros(arr.shape[:2], np.uint8); full[y0:] = mask
+    arr = cv2.inpaint(arr, full, 11, cv2.INPAINT_TELEA)
+    print(f"plashki6: стёрты старые субтитры ({(full > 0).mean() * 100:.2f}% кадра)")
+    return Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
+
+
 def extend_down(src, shift):
     """Кадр опускается на shift, сверху продлевается стена (размытая верхняя полоса кадра)."""
     if shift <= 0: return src
@@ -205,6 +230,10 @@ def render(bg_path, out_path, spec_path, key=""):
     src = ImageEnhance.Color(ImageEnhance.Contrast(src).enhance(1.06)).enhance(1.15)
     win = int(spec.get("top_px") or 0)
     fb = face_box(src)
+    if spec.get("face"):                             # 24.11.2026: голова задана вручную [верх кепки/волос, подбородок]
+        fb = (int(spec["face"][0]), int(spec["face"][1]), (0, 0, 999, 999))
+    if spec.get("erase_subs"):
+        src = erase_subs(src, spec.get("erase_from") or ((fb[1] if fb else 700) + 20))
     if win and (not fb or fb[2][2] < 330):          # две камеры: лицо окошком сверху — текст под окошком
         blocks = [(title(lines), win + 40)]; shift = 0; how = f"окошко до {win}, текст ниже"
     else:
