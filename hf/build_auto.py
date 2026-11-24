@@ -300,28 +300,44 @@ for n, (gi, built, te) in enumerate(clean):
             tl(f'tl.to("#{gid}r{k-1}",{{opacity:0.55,duration:0.2}},{t-0.1:.3f});')
 
 # ---------- всплывающий призыв на сайт (пункт 13, 11.11.2026): окошко-уведомление со скрином блока сайта ----------
-# spec["sait"] = {"img": "bbva.png", "text": "Основной текст. Ссылка в шапке профиля", "at": "фраза"}; 3,6 с, со «вжиком»,
+# spec["sait"] = {"img": "bbva.png", "text": "Основной текст. Ссылка в шапке профиля", "at": "фраза"}; 4 с, со «вжиком»,
 # сверху над головой (где нет плашек), иначе внизу под субтитрами; не на лице, не поверх белой карточки в конце
+# 24.11.2026 (решение Евгения, файл «Призывы и окошки сайта — решение 24.11.2026»):
+#  - "sait": "travel" — готовое окошко путешествий (тема без услуги на сайте: быт, новости, цены, праздники)
+#  - "poisk": {"to": "Милан", "price": "от 19 €"} внутри sait — ЖИВОЕ окошко: набирается поиск «Валенсия → город», потом цена
+#  - ролик длиннее 90 с — второе окошко само: путешествия, не раньше чем через 40 с после первого
+#    (своё — поле "sait2" тем же форматом; выключить — "no_sait2": true)
+TRAVEL = {"img": "puteshestviya.png", "text": "Отели, перелёты, eSIM — на моём сайте. Ссылка в шапке профиля"}
 KART = []
 PICB = []
 SAIT = spec.get("sait"); SAIT_T = []
+if SAIT == "travel": SAIT = dict(TRAVEL)
 # 17.11.2026 (Евгений: «мы же договаривались, что ты ставишь сайт наш»): без окошка сайта ролик НЕ собирается.
-# Тема про услугу — её карточка (налоги/ВНЖ/суды → usl_yuristy, ипотека → usl_ipoteka …), иначе общий призыв на сайт.
+# Тема про услугу — её карточка (налоги/ВНЖ/суды → usl_yuristy, ипотека → usl_ipoteka …), иначе путешествия ("travel").
 # Выключить можно только явно: "no_sait": true с причиной в "no_sait_why"
 if not SAIT and not spec.get("no_sait"):
-    sys.exit("СТОП: нет окошка сайта (поле \"sait\"). Правило «Монтаж — окошко сайта…»: в КАЖДОМ ролике. Добавьте sait или no_sait + no_sait_why")
-if SAIT:
-    SD = float(SAIT.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
-    ws = sorted({w["s"] for w in W if max(start_min, 6.0) <= w["s"] <= CTA_T - 0.3 - SD})
-    ta = find(SAIT["at"]) if SAIT.get("at") else None
-    if ta is None: ta = DUR * 0.4
+    sys.exit("СТОП: нет окошка сайта (поле \"sait\"). Правило «Монтаж — окошко сайта…»: в КАЖДОМ ролике. Тема без услуги — \"sait\": \"travel\". Или no_sait + no_sait_why")
+
+def poisk_html(pz, hc):
+    # 24.11.2026: живое окошко — строка поиска сайта, буквы печатаются по одной, потом цена
+    fr = esc(pz.get("from", "Валенсия")); to = str(pz.get("to", "Париж")); pr = esc(pz.get("price", ""))
+    chars = "".join(f'<span class="ch">{esc(c) if c != " " else "&nbsp;"}</span>' for c in to)
+    return (f'<div class="pz" style="width:{int(hc*1.35)}px;height:{hc}px"><div class="pr1">✈ {fr}</div>'
+            f'<div class="pr2">→ {chars}<span class="cur">|</span></div><div class="pp">{pr}</div></div>')
+
+def place_sait(S, ident, after=0.0):
+    SD = float(S.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
+    lo = max(start_min, 6.0, after)
+    ws = sorted({w["s"] for w in W if lo <= w["s"] <= CTA_T - 0.3 - SD})
+    ta = find(S["at"], lo) if S.get("at") else None
+    if ta is None: ta = max(lo, DUR * (0.4 if ident == "sait" else 0.72))
     order = sorted(ws, key=lambda x: (0 if x >= ta - 0.2 else 1, abs(x - ta)))
     my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
     lowtop = my + 78; lowh = min(1920 - 30 - lowtop, 270)
     pick = None
     # 13.11.2026: ручное место после просмотра кадров — "t" (секунда), "top" и "h" (px). Нарезки из лонгов, ролики с Серёгой
-    if SAIT.get("t") is not None and SAIT.get("top") is not None:
-        pick = (float(SAIT["t"]), "ручное")
+    if S.get("t") is not None and S.get("top") is not None:
+        pick = (float(S["t"]), "ручное")
     for t in ([] if pick else order):
         set_top(t)
         # 13.11.2026: компактное окошко (от 170 px) лучше, чем никакого
@@ -332,30 +348,55 @@ if SAIT:
     if pick is None and order:
         # 13.11.2026: нигде нет места — минимальная полоска «KG kalmykovgroup.com · ссылка в шапке», бренд всё равно мелькнёт
         t = order[0]; t1 = t + SD; shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
-        H.append(f'<div id="sait" class="sait mini" style="top:{max(40, TOP - 110)}px"><u><img src="kg.svg">kalmykovgroup.com</u><i>Ссылка в шапке профиля</i></div>')
-        tl(f'tl.from("#sait",{{y:-200,opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).to("#sait",{{y:-100,opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
-        snd("whoosh", t - 0.12, 0.25); SAIT_T.append((t, t1)); log(f"окошко сайта: МИНИ-полоска в {t:.1f} с (нет места)")
-    elif pick is None: log("окошко сайта пропущено: нет места")
+        H.append(f'<div id="{ident}" class="sait mini" style="top:{max(40, TOP - 110)}px"><u><img src="kg.svg">kalmykovgroup.com</u><i>Ссылка в шапке профиля</i></div>')
+        tl(f'tl.from("#{ident}",{{y:-200,opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).to("#{ident}",{{y:-100,opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
+        snd("whoosh", t - 0.12, 0.25); SAIT_T.append((t, t1)); log(f"окошко сайта ({ident}): МИНИ-полоска в {t:.1f} с (нет места)")
+        return t
+    if pick is None: log(f"окошко сайта ({ident}) пропущено: нет места"); return None
+    t, where = pick; t1 = t + SD
+    shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
+    txt = sanitize(S["text"]).strip().rstrip(".")
+    main, pill = (txt.rsplit(". ", 1) + [""])[:2] if ". " in txt else (txt, "Ссылка в шапке профиля")
+    if where == "ручное":
+        hc = int(S.get("h", 300)); top = int(S["top"]); BUSY.append((t, t1))
+    elif where == "верх":
+        set_top(t); hc = min(AVAIL + 6, 330); top = TOP - 20; BUSY.append((t, t1))
     else:
-        t, where = pick; t1 = t + SD
-        os.makedirs(f"{P}/sait", exist_ok=True); shutil.copy(f"{B}/sait_skriny/{SAIT['img']}", f"{P}/sait/{SAIT['img']}"); shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
-        txt = sanitize(SAIT["text"]).strip().rstrip(".")
-        main, pill = (txt.rsplit(". ", 1) + [""])[:2] if ". " in txt else (txt, "Ссылка в шапке профиля")
-        if where == "ручное":
-            hc = int(SAIT.get("h", 300)); top = int(SAIT["top"]); BUSY.append((t, t1))
-        elif where == "верх":
-            set_top(t); hc = min(AVAIL + 6, 330); top = TOP - 20; BUSY.append((t, t1))
-        else:
-            hc = lowh; top = lowtop; PICB.append((t, t1))
-        fs = 46 if len(main) <= 34 else (40 if len(main) <= 50 else 34)
-        if hc < 250: fs = min(fs, 34)   # компактное окошко
-        # 13.11.2026 (Евгений, вариант «Б»): чёрное окошко с золотой рамкой, бренд KG + kalmykovgroup.com золотом, скрин целиком
-        H.append(f'<div id="sait" class="sait" style="top:{top}px;height:{hc}px"><img class="sk" src="sait/{SAIT["img"]}" style="width:{int(hc*1.15)}px">'
-                 f'<div class="st"><u><img src="kg.svg">kalmykovgroup.com</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
-        dy = 320 if where == "низ" or (where == "ручное" and top > 900) else -320
-        tl(f'tl.from("#sait",{{y:{dy},opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).from("#sait i",{{scale:0,duration:0.35,ease:"back.out(3)"}},{t+0.5:.3f}).to("#sait",{{y:{dy//2},opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
-        snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2); SAIT_T.append((t, t1))
-        log(f"окошко сайта: {SAIT['img']} в {t:.1f} с ({where}), «{main}»")
+        hc = lowh; top = lowtop; PICB.append((t, t1))
+    fs = 46 if len(main) <= 34 else (40 if len(main) <= 50 else 34)
+    if hc < 250: fs = min(fs, 34)   # компактное окошко
+    if S.get("poisk"):
+        left = poisk_html(S["poisk"], hc)
+    else:
+        img = S.get("img") or TRAVEL["img"]
+        if not os.path.exists(f"{B}/sait_skriny/{img}"):
+            log(f"окошко {ident}: нет скрина {img} — беру plitki.png"); img = "plitki.png"
+        os.makedirs(f"{P}/sait", exist_ok=True); shutil.copy(f"{B}/sait_skriny/{img}", f"{P}/sait/{img}")
+        left = f'<img class="sk" src="sait/{img}" style="width:{int(hc*1.15)}px">'
+    # 13.11.2026 (Евгений, вариант «Б»): чёрное окошко с золотой рамкой, бренд KG + kalmykovgroup.com золотом, скрин целиком
+    H.append(f'<div id="{ident}" class="sait" style="top:{top}px;height:{hc}px">{left}'
+             f'<div class="st"><u><img src="kg.svg">kalmykovgroup.com</u><b style="font-size:{fs}px">{esc(main)}</b><i>{esc(pill)}</i></div></div>')
+    dy = 320 if where == "низ" or (where == "ручное" and top > 900) else -320
+    tl(f'tl.from("#{ident}",{{y:{dy},opacity:0,duration:0.5,ease:"back.out(1.5)"}},{t-0.08:.3f}).from("#{ident} i",{{scale:0,duration:0.35,ease:"back.out(3)"}},{t+0.5:.3f}).to("#{ident}",{{y:{dy//2},opacity:0,duration:0.32,ease:"power2.in"}},{t1-0.32:.3f});')
+    if S.get("poisk"):
+        n = len(str(S["poisk"].get("to", "")))
+        tl(f'tl.from("#{ident} .ch",{{opacity:0,duration:0.01,stagger:0.08}},{t+0.45:.3f}).from("#{ident} .pp",{{scale:0,opacity:0,duration:0.4,ease:"back.out(2.5)"}},{t+0.55+0.08*n:.3f});')
+        snd("pop", t + 0.55 + 0.08 * n, 0.25)
+    snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2); SAIT_T.append((t, t1))
+    log(f"окошко сайта ({ident}): {'поиск ' + str(S['poisk'].get('to')) if S.get('poisk') else (S.get('img') or TRAVEL['img'])} в {t:.1f} с ({where}), «{main}»")
+    return t
+
+if SAIT:
+    t_first = place_sait(SAIT, "sait")
+    S2 = spec.get("sait2")
+    if S2 == "travel": S2 = dict(TRAVEL)
+    if not S2 and DUR > 90 and not spec.get("no_sait2") and not (SAIT.get("img") == TRAVEL["img"] and SAIT.get("text") == TRAVEL["text"]):
+        S2 = dict(TRAVEL)
+    if not S2 and DUR > 90 and not spec.get("no_sait2"):
+        # первое уже путешествия — второе общее «всё для жизни в Испании»
+        S2 = {"img": "plitki.png", "text": "Всё для жизни в Испании — на моём сайте. Ссылка в шапке профиля"}
+    if S2:
+        place_sait(S2, "sait2", (t_first or 0) + 40.0)
 
 # ---------- картинки-предметы (03.11.2026): фото-карточка сбоку сверху, только когда верх свободен ----------
 BAD = {"receipt_1.jpg"}   # 07.11.2026: старая французская квитанция — негодная
