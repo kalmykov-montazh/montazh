@@ -114,17 +114,28 @@ jobs:
           rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
           if [ -n "$COV" ]; then mkdir -p out; python3 -c "from PIL import Image;Image.open('$COV').convert('RGB').resize((1080,1920)).save('out/cover.png')"; echo "обложка готовая: $COV"
           else
-          if [ -z "$T" ]; then pip install -q onnxruntime >/dev/null 2>&1 || true
-            # 24.11.2026: кандидаты — только с открытыми глазами и закрытым ртом (kadr_glaza), из них — где меньше старых надписей
-            python3 scripts/kadr_glaza.py in/v.mp4 --top 4 2> kg.txt | awk '{print $1}' > in/кандидаты.txt; cat kg.txt in/кандидаты.txt
-            [ -s in/кандидаты.txt ] || { python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true; }
-            python3 scripts/oblozhka_b_kadr.py in/v.mp4 in/кандидаты.txt in/fr.png
-          elif [ -n "$FRF" ]; then rclone copyto "montazh:$FRF" in/f.mp4; ffmpeg -v error -y -ss "$T" -i in/f.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с из $FRF"
-          else ffmpeg -v error -y -ss "$T" -i in/v.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с (из правок)"; fi
+          pip install -q onnxruntime >/dev/null 2>&1 || true
           if [ -n "$URL" ]; then curl -fsSL -A "kalmykov-montazh/1.0" -o in/pic.jpg "$URL" || true
           else python3 scripts/oblozhka_b_kartinka.py "$Q" in/pic.jpg || true; fi
           P=in/pic.jpg; [ -s "$P" ] || P=-
-          python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
+          if [ -z "$T" ]; then
+            # 24.11.2026: кадры только с открытыми глазами и закрытым ртом (kadr_glaza), самый закрытый рот первым;
+            # берётся первый, у которого готовая обложка проходит scripts/proverka_oblozhki.py
+            python3 scripts/kadr_glaza.py in/v.mp4 --top 5 2> kg.txt | awk '{print $1}' > in/кандидаты.txt; cat kg.txt in/кандидаты.txt
+            if [ ! -s in/кандидаты.txt ]; then python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true
+              grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}' > in/кандидаты.txt; [ -s in/кандидаты.txt ] || echo 2 > in/кандидаты.txt; fi
+            OKC=""
+            for TT in $(cat in/кандидаты.txt); do ffmpeg -v error -y -ss "$TT" -i in/v.mp4 -frames:v 1 in/fr.png
+              python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
+              if python3 scripts/proverka_oblozhki.py out/cover.png; then OKC="$TT"; break; fi; done
+            if [ -z "$OKC" ]; then TT=$(head -1 in/кандидаты.txt); ffmpeg -v error -y -ss "$TT" -i in/v.mp4 -frames:v 1 in/fr.png
+              python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"; echo "::warning::$N лицо не прошло проверку ни на одном кадре — смотреть глазами"; fi
+            echo "кадр обложки: $TT"
+          else
+            if [ -n "$FRF" ]; then rclone copyto "montazh:$FRF" in/f.mp4; ffmpeg -v error -y -ss "$T" -i in/f.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с из $FRF"
+            else ffmpeg -v error -y -ss "$T" -i in/v.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с (из правок)"; fi
+            python3 hf/oblozhka_b.py in/fr.png "$P" out/cover.png "$L1" "$L2" "$PL"
+          fi
           fi
           python3 scripts/proverka_oblozhki.py out/cover.png || echo "::warning::$N лицо на обложке не прошло проверку — смотреть"
           ffmpeg -v error -y -i out/cover.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"

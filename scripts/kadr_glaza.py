@@ -5,7 +5,8 @@
 # Берём кадр, если и он, и соседние ±0,2 с спокойные: глаза открыты, рот закрыт (не на полуслове и не моргнул).
 #   python3 scripts/kadr_glaza.py video.mp4 [--top N] [--from S] [--to S] > кадры.txt
 # Вывод: «секунда глаза рот_внутри рот_снаружи резкость», лучшие первыми.
-# Пороги (по разметке 24.11): глаза ≥ 0,28 и не ниже медианы ролика −0,03; рот внутри ≤ 0,030, снаружи ≤ 0,355.
+# Пороги (по разметке 24.11, ужесточены после проверки: 0,026/0,35 ещё давал приоткрытый рот): глаза ≥ 0,28 и не ниже медианы −0,03;
+# рот внутри ≤ 0,022, снаружи ≤ 0,335. Среди подходящих — самый закрытый рот.
 import sys, os, subprocess, numpy as np, cv2
 a = sys.argv[1:]; v = a[0]
 def arg(k, d):
@@ -19,15 +20,20 @@ FPS = 5
 trc = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=color_transfer', '-of', 'csv=p=0', v],
                      capture_output=True, text=True).stdout.strip().strip(',').split(',')[0]
 TM = 'zscale=t=linear:npl=80,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p,' if trc in ('arib-std-b67', 'smpte2084') else ''
-p = subprocess.Popen(['ffmpeg', '-v', 'error', '-ss', str(T0), '-i', v, '-vf', f'fps={FPS},{TM}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920',
-                      '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-'], stdout=subprocess.PIPE)
+# 24.11.2026: время кадра — точно по номеру кадра (fps-фильтр сдвигал на 1–2 кадра, а рот за это время успевает открыться)
+fr_ = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=r_frame_rate', '-of', 'csv=p=0', v],
+                     capture_output=True, text=True).stdout.strip().split(',')[0].split('/')
+SRC = float(fr_[0]) / float(fr_[1] if len(fr_) > 1 else 1) if fr_ and fr_[0] else 30.0
+K = max(1, round(SRC / FPS))
+p = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', v, '-vf', f"select='not(mod(n\\,{K}))',{TM}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+                      '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-'], stdout=subprocess.PIPE)
 SZ = 1080 * 1920 * 3
 res = []; n = 0
 while True:
     b = p.stdout.read(SZ)
     if len(b) < SZ: break
-    t = T0 + n / FPS; n += 1
-    if t > T1: continue
+    t = (n * K) / SRC + 0.001; n += 1
+    if t < T0 or t > T1: continue
     im = np.frombuffer(b, np.uint8).reshape(1920, 1080, 3)
     sm = cv2.cvtColor(cv2.resize(im, (540, 960)), cv2.COLOR_BGR2GRAY)
     f = fc.detectMultiScale(sm, 1.1, 5, minSize=(45, 45))
@@ -46,14 +52,14 @@ def good(i, soft=False):
     if r[1] is None: return False
     e, mi, mo = r[1][:3]
     if soft: return e >= max(0.25, med - 0.06) and mi <= 0.05 and mo <= 0.40
-    return e >= max(0.28, med - 0.03) and mi <= 0.030 and mo <= 0.355
+    return e >= max(0.28, med - 0.03) and mi <= 0.022 and mo <= 0.335
 cands = []
 for i, r in enumerate(res):
     if not good(i): continue
     nb = [j for j in (i - 1, i + 1) if 0 <= j < len(res)]
     if not all(good(j, True) for j in nb): continue
     e, mi, mo, sh, w = r[1]
-    sc = min(sh, 300) / 100 - abs(e - (med + 0.02)) * 30 - mi * 150 - mo * 25 + w / 500   # рот важнее всего
+    sc = min(sh, 150) / 100 - abs(e - (med + 0.02)) * 30 - mi * 400 - mo * 60 + w / 800   # рот важнее всего (24.11, вторая правка)
     cands.append((sc, r[0], e, mi, mo, sh))
 cands.sort(reverse=True); pick = []
 for c in cands:

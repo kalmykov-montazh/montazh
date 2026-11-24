@@ -106,15 +106,22 @@ jobs:
           # кадр, проверенный глазами (cover_t в novyj), важнее автовыбора — как в skleiki.yml
           T=$(python3 -c "import json;print(json.load(open('novyj/$K.json')).get('cover_t',''))")
           [ "$STROGO" = "1" ] && T=""
-          # 24.11.2026: глаза открыты, рот закрыт — строгий выбор по 106 точкам (scripts/kadr_glaza.py), pick_frame — запасной
-          if [ -z "$T" ]; then pip install -q onnxruntime >/dev/null 2>&1 || true
-            T=$(python3 scripts/kadr_glaza.py in/osnova.mp4 --top 1 2> kg.txt | awk 'NR==1{print $1}'); cat kg.txt
-            if [ -z "$T" ]; then python3 scripts/pick_frame.py in/osnova.mp4 in/pick.png > pick.txt 2>&1 || true
-              T=$(grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}'); [ -n "$T" ] || T=1; fi
-            echo "кадр обложки: $T"; fi
+          # 24.11.2026: глаза открыты, рот закрыт — строгий выбор по 106 точкам (scripts/kadr_glaza.py), до 5 кадров по очереди:
+          # берётся первый, у которого готовая обложка проходит scripts/proverka_oblozhki.py
+          pip install -q onnxruntime >/dev/null 2>&1 || true
+          if [ -z "$T" ]; then
+            python3 scripts/kadr_glaza.py in/osnova.mp4 --top 5 2> kg.txt | awk '{print $1}' > cands.txt; cat kg.txt cands.txt
+            if [ ! -s cands.txt ]; then python3 scripts/pick_frame.py in/osnova.mp4 in/pick.png > pick.txt 2>&1 || true
+              grep -o 'cover frame [0-9.]*' pick.txt | awk '{print $3}' > cands.txt; [ -s cands.txt ] || echo 1 > cands.txt; fi
+          else echo "$T" > cands.txt; fi
+          [ "$VARS" = "ab" -o "$VARS" = "fon" -o "$VARS" = "far" ] && VV="" || VV="$VARS"
+          mk() { ffmpeg -v error -y -ss "$1" -i in/osnova.mp4 -frames:v 1 \
+              -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
+            OBL_VAR="$VV" python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt; }
+          OKC=""
+          for T in $(cat cands.txt); do mk "$T"; if python3 scripts/proverka_oblozhki.py out/cover_full.png; then OKC="$T"; break; fi; done
+          if [ -z "$OKC" ]; then T=$(head -1 cands.txt); mk "$T"; echo "::warning::$N лицо на обложке не прошло проверку ни на одном кадре — смотреть глазами"; fi
           echo "кадр обложки: $T с"
-          ffmpeg -v error -y -ss "$T" -i in/osnova.mp4 -frames:v 1 \
-            -vf "split[a][b];[b]lut3d=$GITHUB_WORKSPACE/hf/luts/warm.cube[w];[a][w]blend=all_expr='A*0.65+B*0.35'" in/cover_bg.png
           if [ "$VARS" = "far" ]; then   # 15.11.2026: кадр, где Евгений дальше от камеры (меньше лицо) — для пробы
             PICK_FAR=1 python3 scripts/pick_frame.py in/osnova.mp4 in/pickf.png > pickf.txt 2>&1 || true
             TF=$(grep -o 'cover frame [0-9.]*' pickf.txt | awk '{print $3}')
@@ -130,9 +137,6 @@ jobs:
             for V in a b; do OBL_VAR=$V python3 hf/oblozhka5.py in/cover_bg.png out/v_$V.png "novyj/$K.json" "$K" > /dev/null
               ffmpeg -v error -y -i out/v_$V.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/${N}_$V.jpg"; done
           fi
-          [ "$VARS" = "ab" -o "$VARS" = "fon" -o "$VARS" = "far" ] && VV="" || VV="$VARS"
-          OBL_VAR="$VV" python3 hf/oblozhka5.py in/cover_bg.png out/cover_full.png "novyj/$K.json" "$K" | tee o5.txt
-          python3 scripts/proverka_oblozhki.py out/cover_full.png || echo "::warning::$N лицо на обложке не прошло проверку — смотреть"
           ffmpeg -v error -y -i out/cover_full.png -vf "crop=1080:1440:0:240,scale=360:-2" "out/$N.jpg"
           if [ "$MODE" = "zamena" ]; then
             D=$(dirname "$F")

@@ -17,7 +17,7 @@ for p in sys.argv[1:]:
     e, ea, mi, mo = metr(landmarks(im, (x, y, w, h)))
     why = []
     if e < 0.27: why.append(f"глаза прикрыты ({e:.2f})")
-    if mi > 0.035 or mo > 0.36: why.append(f"рот открыт ({mi:.3f}/{mo:.2f})")
+    if mi > 0.028 or mo > 0.35: why.append(f"рот открыт ({mi:.3f}/{mo:.2f})")
     if why: bad = 1; print("ПЛОХО", p, "; ".join(why))
     else: print(f"ОК {p} глаза {e:.2f} рот {mi:.3f}/{mo:.2f}")
 sys.exit(bad)
