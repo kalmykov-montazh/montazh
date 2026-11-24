@@ -1289,5 +1289,16 @@ function look(inp){clearTimeout(t);var q=inp.value.trim();inp.dataset.code='';if
 [f.o,f.d].forEach(function(i){i.addEventListener('input',function(){look(i)});i.addEventListener('blur',function(){setTimeout(function(){ac.hidden=true},150)})});
 function dm(v){return v.slice(8,10)+v.slice(5,7)}
 f.addEventListener('submit',function(e){e.preventDefault();var o=f.o.dataset.code||f.o.dataset.first,d=f.d.dataset.code||f.d.dataset.first;if(!o){f.o.focus();return}if(!d){f.d.focus();return}var u='https://www.aviasales.com/search/'+o+dm(f.d1.value)+d+(f.d2.value?dm(f.d2.value):'')+f.n.value+'?marker=809770.form&locale=ru&currency=eur';window.open(u,'_blank','noopener')})})()</script>
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ef679be80f984a5b876121ecba20c470"}'></script><!-- End Cloudflare Web Analytics --></body>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ef679be80f984a5b876121ecba20c470"}'></script><!-- End Cloudflare Web Analytics --><!-- 24.11.2026: кнопка «Наверх» (Евгений) -->
+<style>
+#naverh{position:fixed;right:22px;bottom:96px;z-index:60;display:flex;flex-direction:column;align-items:center;gap:1px;width:62px;height:62px;justify-content:center;border-radius:18px;background:linear-gradient(#ffd35c,#f2a91c);color:#111;border:3px solid #111;box-shadow:0 5px 0 #111,0 10px 20px rgba(0,0,0,.25);font-family:var(--body);font-weight:800;font-size:11px;cursor:pointer;opacity:0;transform:translateY(20px) scale(.8);pointer-events:none;transition:opacity .25s,transform .25s}
+#naverh.on{opacity:1;transform:none;pointer-events:auto}
+#naverh:active{transform:translateY(4px);box-shadow:0 1px 0 #111}
+#naverh svg{width:24px;height:24px;animation:nvh 1.6s ease-in-out infinite}
+@keyframes nvh{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+@media(max-width:760px){#naverh{right:12px;bottom:calc(86px + env(safe-area-inset-bottom));width:56px;height:56px}}
+</style>
+<button id="naverh" type="button" aria-label="Наверх"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11l6-6 6 6"/><path d="M6 18l6-6 6 6"/></svg>Наверх</button>
+<script>(function(){var b=document.getElementById("naverh");if(!b)return;function f(){b.classList.toggle("on",window.scrollY>700)}window.addEventListener("scroll",f,{passive:true});f();b.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"})})})()</script>
+</body>
 </html>
