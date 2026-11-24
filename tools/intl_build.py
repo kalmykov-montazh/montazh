@@ -348,6 +348,9 @@ def main():
         report.append(f'{lang}: {len(items)} статей' + (f', без перевода в блоке «Поездки»: {miss}' if miss else ''))
     update_sitemap(urls)
     print('; '.join(report))
+    try:  # 24.11.2026: счётчик Cloudflare Web Analytics во все страницы сайта (tools/beacon.py)
+        import beacon; print('счётчик:', beacon.add_all())
+    except Exception as e: print('beacon:', e)
 
 if __name__ == '__main__':
     main()

@@ -1269,5 +1269,5 @@ function look(inp){clearTimeout(t);var q=inp.value.trim();inp.dataset.code='';if
 [f.o,f.d].forEach(function(i){i.addEventListener('input',function(){look(i)});i.addEventListener('blur',function(){setTimeout(function(){ac.hidden=true},150)})});
 function dm(v){return v.slice(8,10)+v.slice(5,7)}
 f.addEventListener('submit',function(e){e.preventDefault();var o=f.o.dataset.code||f.o.dataset.first,d=f.d.dataset.code||f.d.dataset.first;if(!o){f.o.focus();return}if(!d){f.d.focus();return}var u='https://www.aviasales.com/search/'+o+dm(f.d1.value)+d+(f.d2.value?dm(f.d2.value):'')+f.n.value+'?marker=809770.form&locale=ru&currency=eur';window.open(u,'_blank','noopener')})})()</script>
-</body>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ef679be80f984a5b876121ecba20c470"}'></script><!-- End Cloudflare Web Analytics --></body>
 </html>
