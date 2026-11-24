@@ -1,0 +1,42 @@
+name: "Скрин блока путешествий с сайта (для окошка в роликах)"
+# 24.11.2026: кладёт hf/sait_skriny/puteshestviya.png — скрин карточек «Поездки дешевле» с живого kalmykovgroup.com.
+# Сайт поменялся — запустить ещё раз (Actions → эта задача → Run workflow).
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  skrin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Playwright
+        run: |
+          pip install playwright==1.48.0
+          timeout 600 python -m playwright install --with-deps chromium
+      - name: Скрин
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              pg = b.new_page(viewport={"width": 1100, "height": 1400}, device_scale_factor=2)
+              pg.goto("https://kalmykovgroup.com/?skrin=1", wait_until="load", timeout=90000)
+              pg.wait_for_timeout(3000)
+              el = pg.locator(".trip-g").first
+              el.scroll_into_view_if_needed(); pg.wait_for_timeout(2500)
+              el.screenshot(path="hf/sait_skriny/puteshestviya.png")
+              b.close()
+          print("ok")
+          PY
+          ls -la hf/sait_skriny/puteshestviya.png
+          echo "::notice::скрин путешествий готов"
+      - name: Коммит
+        run: |
+          git config user.name "bot"; git config user.email "bot@users.noreply.github.com"
+          git add hf/sait_skriny/puteshestviya.png
+          git commit -m "Скрин путешествий для окошка сайта [skip ci]" || echo "без изменений"
+          git pull --rebase -q && git push
