@@ -114,7 +114,10 @@ jobs:
           rclone copyto "montazh:$F" in/v.mp4 --multi-thread-streams 8
           if [ -n "$COV" ]; then mkdir -p out; python3 -c "from PIL import Image;Image.open('$COV').convert('RGB').resize((1080,1920)).save('out/cover.png')"; echo "обложка готовая: $COV"
           else
-          if [ -z "$T" ]; then python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true
+          if [ -z "$T" ]; then pip install -q onnxruntime >/dev/null 2>&1 || true
+            # 24.11.2026: кандидаты — только с открытыми глазами и закрытым ртом (kadr_glaza), из них — где меньше старых надписей
+            python3 scripts/kadr_glaza.py in/v.mp4 --top 4 2> kg.txt | awk '{print $1}' > in/кандидаты.txt; cat kg.txt in/кандидаты.txt
+            [ -s in/кандидаты.txt ] || { python3 scripts/pick_frame.py in/v.mp4 in/pick.png > pick.txt 2>&1 || true; }
             python3 scripts/oblozhka_b_kadr.py in/v.mp4 in/кандидаты.txt in/fr.png
           elif [ -n "$FRF" ]; then rclone copyto "montazh:$FRF" in/f.mp4; ffmpeg -v error -y -ss "$T" -i in/f.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с из $FRF"
           else ffmpeg -v error -y -ss "$T" -i in/v.mp4 -frames:v 1 in/fr.png; echo "кадр: $T с (из правок)"; fi
