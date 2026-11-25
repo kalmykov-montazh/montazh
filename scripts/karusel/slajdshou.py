@@ -258,7 +258,9 @@ def write_wav(path, data):
 # ---------- 16.11.2026: музыка FreePD (CC0) вместо своего синтеза ----------
 # Евгений 16.11: своя музыка «нудная» — ставим весёлые треки FreePD (CC0, общественное достояние,
 # без указания автора). Сайт freepd.com закрыт, берём с зеркала archive.org. Не скачалось — свой синтез.
-FREEPD = ["upbeat/Funshine.mp3", "upbeat/City Sunshine.mp3", "upbeat/Happy Whistling Ukulele.mp3",
+# 25.11.2026: «City Sunshine» убран — на YouTube пришла заявка Content ID (Kevin MacLeod), хотя трек CC0.
+# Трек, на который пришла заявка, больше не ставим (стоп-список — файл проекта «YouTube — заявки на авторские права»).
+FREEPD = ["upbeat/Funshine.mp3", "upbeat/Happy Whistling Ukulele.mp3",
           "upbeat/Ukulele Song.mp3", "upbeat/Inventing Flight.mp3", "upbeat/And Just Like That.mp3"]
 
 
