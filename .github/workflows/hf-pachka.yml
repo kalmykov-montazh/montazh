@@ -170,7 +170,7 @@ jobs:
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto кадры.jpg "montazh:$DEST/кадры.jpg"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
-          python3 scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
+          python3 ../scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
           echo "::notice::Готово: $DEST ($D с)"
           # 11.11.2026 (Евгений): сырой уезжает из «Сырые» в папку готового ролика — в «Сырые» остаётся только несделанное
           if [[ "$SRC" == Брокер/Сырые/* ]] && rclone lsf "montazh:$SRC" 2>/dev/null | grep -q .; then rclone moveto "montazh:$SRC" "montazh:$DEST/$(basename "$SRC")" && echo "::notice::Сырой перенесён в папку ролика"; fi
