@@ -163,6 +163,8 @@ def trip_block(lang, trip):
     b = re.sub(r'\s*<a href="/strahovka/">.*?</a>', '', b, flags=re.S)                 # страховка — наш личный партнёр
     # 22.11.2026: приложение Aviasales оставляем и на EN/ES (Евгений: «вечный клиент»), тексты переведены в _i18n
     b = b.replace('https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b')
+    b = re.sub(r'<a class="trip-all".*?</a>', '', b, flags=re.S)   # 26.11.2026: своей страницы сервисов на EN/ES пока нет
+    b = re.sub(r'<a class="tg-all".*?</a>', '', b, flags=re.S)
     b = b.replace('href="/poezdki/"', f'href="/{UI[lang]["dir"]}/{UI[lang]["art"]}/"')
     b = b.replace('www.discovercars.com/ru/', 'www.discovercars.com/' + ('' if en else 'es/'))
     b = b.replace('locale=ru', f'locale={lang}')
@@ -389,6 +391,9 @@ def main():
     try:  # 24.11.2026: счётчик Cloudflare Web Analytics во все страницы сайта (tools/beacon.py)
         import beacon; print('счётчик:', beacon.add_all())
     except Exception as e: print('beacon:', e)
+    try:  # 26.11.2026: кнопка «Наверх» на всех страницах (tools/naverh.py)
+        import naverh; print('наверх:', naverh.add_all())
+    except Exception as e: print('naverh:', e)
 
 if __name__ == '__main__':
     main()

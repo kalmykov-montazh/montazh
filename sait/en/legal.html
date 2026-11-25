@@ -9,7 +9,7 @@
 <link rel="alternate" hreflang="en" href="https://kalmykovgroup.com/en/legal"><link rel="alternate" hreflang="es" href="https://kalmykovgroup.com/es/legal"><link rel="alternate" hreflang="x-default" href="https://kalmykovgroup.com/en/legal">
 <meta property="og:title" content="Legal notice, privacy and cookies — Kalmykov Group"><meta property="og:description" content="Legal notice, privacy and cookies"><meta property="og:type" content="website"><meta property="og:locale" content="en_GB"><meta property="og:url" content="https://kalmykovgroup.com/en/legal"><meta property="og:image" content="https://kalmykovgroup.com/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lobster&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&display=swap"><link rel="stylesheet" href="/intl.css?v=2026-11-25">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lobster&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&display=swap"><link rel="stylesheet" href="/intl.css?v=2026-11-26">
 </head>
 <body class="v-c"><div class="wrap"><p style="margin:14px 0 0"><a href="/en/" style="font-weight:700;text-decoration:none">← Home</a></p><article class="art"><h1>Legal notice, privacy and cookies</h1><h2>Legal notice</h2>
 <p>Owner of this website: Ievgen Kalmykov (Kalmykov Group), Valencia, Spain. Contact: hola@kalmykovgroup.com · WhatsApp +34 624 916 605. Tax ID: will be shown after registration as self-employed (autónomo).</p>
@@ -19,4 +19,14 @@
 <h2>Privacy</h2>
 <p>This site has no registration and no forms that store personal data. If you write to us by email or WhatsApp, we use your message only to reply (art. 6.1.a GDPR) and keep it only as long as needed. You can ask for access, correction or deletion of your data at the contact above and complain to the Spanish Data Protection Agency (aepd.es).</p>
 <h2>Cookies</h2>
-<p>We do not set our own cookies and do not run our own analytics. The search forms and the price map on the home page are loaded from Travelpayouts and may use their own cookies; when you open a provider&#x27;s website, that provider applies its own cookie policy.</p></article></div><!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ef679be80f984a5b876121ecba20c470"}'></script><!-- End Cloudflare Web Analytics --></body></html>
+<p>We do not set our own cookies and do not run our own analytics. The search forms and the price map on the home page are loaded from Travelpayouts and may use their own cookies; when you open a provider&#x27;s website, that provider applies its own cookie policy.</p></article></div><!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ef679be80f984a5b876121ecba20c470"}'></script><!-- End Cloudflare Web Analytics --><!-- 24.11.2026: кнопка «Наверх» (Евгений) -->
+<style>
+#naverh{position:fixed;right:22px;bottom:96px;z-index:60;display:flex;flex-direction:column;align-items:center;gap:1px;width:62px;height:62px;justify-content:center;border-radius:18px;background:linear-gradient(#ffd35c,#f2a91c);color:#111;border:3px solid #111;box-shadow:0 5px 0 #111,0 10px 20px rgba(0,0,0,.25);font-family:var(--body);font-weight:800;font-size:11px;cursor:pointer;opacity:0;transform:translateY(20px) scale(.8);pointer-events:none;transition:opacity .25s,transform .25s}
+#naverh.on{opacity:1;transform:none;pointer-events:auto}
+#naverh:active{transform:translateY(4px);box-shadow:0 1px 0 #111}
+#naverh svg{width:24px;height:24px;animation:nvh 1.6s ease-in-out infinite}
+@keyframes nvh{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+@media(max-width:760px){#naverh{right:12px;bottom:calc(86px + env(safe-area-inset-bottom));width:56px;height:56px}}
+</style>
+<button id="naverh" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11l6-6 6 6"/><path d="M6 18l6-6 6 6"/></svg>Top</button>
+<script>(function(){var b=document.getElementById("naverh");if(!b)return;function f(){b.classList.toggle("on",window.scrollY>700)}window.addEventListener("scroll",f,{passive:true});f();b.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"})})})()</script></body></html>
