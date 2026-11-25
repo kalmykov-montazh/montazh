@@ -174,7 +174,7 @@ jobs:
           python3 ../scripts/sait_auto.py final.mp4 "$DEST" ../build.txt || true
           rclone copyto final.mp4 "montazh:$DEST/!!! $NAME.mp4"
           rclone copyto oblozhka.jpg "montazh:$DEST/обложка.jpg"
-          python3 scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
+          python3 ../scripts/proverka_oblozhki.py oblozhka.jpg > ob_chek.txt || { cp ob_chek.txt "ОБЛОЖКА — проверить.txt"; rclone copyto "ОБЛОЖКА — проверить.txt" "montazh:$DEST/ОБЛОЖКА — проверить.txt"; echo "::warning::$(cat ob_chek.txt)"; }
           rclone copyto упаковка.txt "montazh:$DEST/упаковка.txt"
           [ -s плейлист.txt ] && rclone copyto плейлист.txt "montazh:$DEST/плейлист.txt"
           echo "::notice::Готово: $DEST ($D с)"
