@@ -304,7 +304,7 @@ for n, (gi, built, te) in enumerate(clean):
             tl(f'tl.to("#{gid}r{k-1}",{{opacity:0.55,duration:0.2}},{t-0.1:.3f});')
 
 # ---------- всплывающий призыв на сайт (пункт 13, 11.11.2026): окошко-уведомление со скрином блока сайта ----------
-# spec["sait"] = {"img": "bbva.png", "text": "Основной текст. Ссылка в шапке профиля", "at": "фраза"}; 4 с, со «вжиком»,
+# spec["sait"] = {"img": "bbva.png", "text": "Основной текст. Ссылка в шапке профиля", "at": "фраза"}; 6 с (нет места — 5, 4), со «вжиком»,
 # сверху над головой (где нет плашек), иначе внизу под субтитрами; не на лице, не поверх белой карточки в конце
 # 24.11.2026 (решение Евгения, файл «Призывы и окошки сайта — решение 24.11.2026»):
 #  - "sait": "travel" — готовое окошко путешествий (тема без услуги на сайте: быт, новости, цены, праздники)
@@ -330,25 +330,33 @@ def poisk_html(pz, hc):
             f'<div class="pr2">→ {chars}<span class="cur">|</span></div><div class="pp">{pr}</div></div>')
 
 def place_sait(S, ident, after=0.0):
-    SD = float(S.get("sec", 4.0))   # 13.11.2026: 4 с (0,5 въезд + 3 стоит + 0,5 уезжает)
+    # 25.11.2026 (решение Евгения): окошко висит 6 с, чтобы спокойно прочитали. Нет свободных 6 с (плашки, картинки,
+    # голова высоко) — 5 с, потом 4 с; сначала сверху, потом внизу под субтитрами. "sec" в spec — ручная длина.
+    durs = [float(S["sec"])] if S.get("sec") else [6.0, 5.0, 4.0]
     lo = max(start_min, 6.0, after)
-    ws = sorted({w["s"] for w in W if lo <= w["s"] <= CTA_T - 0.3 - SD})
     ta = find(S["at"], lo) if S.get("at") else None
     if ta is None: ta = max(lo, DUR * (0.4 if ident == "sait" else 0.72))
-    order = sorted(ws, key=lambda x: (0 if x >= ta - 0.2 else 1, abs(x - ta)))
     my = (spec.get("mix_y") or [int(min(1640, max(1380, CHIN * 1920 + 110)))])[0]
     lowtop = my + 78; lowh = min(1920 - 30 - lowtop, 270)
-    pick = None
+    pick = None; SD = durs[-1]; order = []
     # 13.11.2026: ручное место после просмотра кадров — "t" (секунда), "top" и "h" (px). Нарезки из лонгов, ролики с Серёгой
     if S.get("t") is not None and S.get("top") is not None:
-        pick = (float(S["t"]), "ручное")
-    for t in ([] if pick else order):
-        set_top(t)
-        # 13.11.2026: компактное окошко (от 170 px) лучше, чем никакого
-        if not any(a < t + SD and t < b for a, b in BUSY) and AVAIL >= 170: pick = (t, "верх"); break
-    if pick is None and lowh >= 190:
-        for t in order:
-            if not any(a < t + SD and t < b for a, b in PICB): pick = (t, "низ"); break
+        SD = durs[0]; pick = (float(S["t"]), "ручное")
+    for SD_ in ([] if pick else durs):
+        ws = sorted({w["s"] for w in W if lo <= w["s"] <= CTA_T - 0.3 - SD_})
+        order_ = sorted(ws, key=lambda x: (0 if x >= ta - 0.2 else 1, abs(x - ta)))
+        if not order: order = order_
+        for t in order_:
+            set_top(t)
+            # 13.11.2026: компактное окошко (от 170 px) лучше, чем никакого
+            if not any(a < t + SD_ and t < b for a, b in BUSY) and AVAIL >= 170: pick = (t, "верх"); break
+        if pick is None and lowh >= 190:
+            for t in order_:
+                if not any(a < t + SD_ and t < b for a, b in PICB): pick = (t, "низ"); break
+        if pick is not None: SD = SD_; break
+    if pick is None and not order:
+        ws = sorted({w["s"] for w in W if lo <= w["s"] <= CTA_T - 0.3 - SD})
+        order = sorted(ws, key=lambda x: (0 if x >= ta - 0.2 else 1, abs(x - ta)))
     if pick is None and order:
         # 13.11.2026: нигде нет места — минимальная полоска «KG kalmykovgroup.com · ссылка в шапке», бренд всё равно мелькнёт
         t = order[0]; t1 = t + SD; shutil.copy(f"{B}/kg.svg", f"{P}/kg.svg")
@@ -387,7 +395,7 @@ def place_sait(S, ident, after=0.0):
         tl(f'tl.from("#{ident} .ch",{{opacity:0,duration:0.01,stagger:0.08}},{t+0.45:.3f}).from("#{ident} .pp",{{scale:0,opacity:0,duration:0.4,ease:"back.out(2.5)"}},{t+0.55+0.08*n:.3f});')
         snd("pop", t + 0.55 + 0.08 * n, 0.25)
     snd("whoosh", t - 0.12, 0.25); snd("ding", t + 0.45, 0.2); SAIT_T.append((t, t1))
-    log(f"окошко сайта ({ident}): {'поиск ' + str(S['poisk'].get('to')) if S.get('poisk') else (S.get('img') or TRAVEL['img'])} в {t:.1f} с ({where}), «{main}»")
+    log(f"окошко сайта ({ident}): {'поиск ' + str(S['poisk'].get('to')) if S.get('poisk') else (S.get('img') or TRAVEL['img'])} в {t:.1f} с ({where}), {SD:.0f} с, «{main}»")
     return t
 
 if SAIT:
