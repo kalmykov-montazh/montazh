@@ -52,6 +52,43 @@ def partners(lang):
         'car2': ('Economybookings', 'https://economybookings.tpk.ro/P0O35S8l',
                  'Another car rental comparison, airports and cities' if en else 'Otro comparador de alquiler de coches, aeropuertos y ciudades'),
     }
+# ── 25.11.2026: на /en/ и /es/ — только ссылки проектов Travelpayouts EN (605856) и ES (605857) ──────
+# (правило Евгения 24.11: русские ссылки на EN/ES не ставим). Ссылки русского проекта заменяются после сборки.
+# GetYourGuide в EN/ES закрыт → Klook. Trip.com, Welcome Pickups, Economybookings, приложение Aviasales
+# пока из русского проекта: в EN/ES их нет или нужна готовая ссылка бренда — заменить, когда откроются
+# (файл проекта «Travelpayouts — проекты EN и ES»).
+RELINK = {
+  'en': {'yesim.tpk.ro/PINKVK34': 'yesim.tpk.ro/P3EoaA79',
+         'airalo.tpk.ro/VEBEeOcy': 'airalo.tpk.ro/9SV4RThp', 'airalo.tpk.ro/EhQQaywr': 'airalo.tpk.ro/9SV4RThp',
+         'kiwitaxi.tpk.ro/MxN3zjHJ': 'kiwitaxi.tpk.ro/11m18X2U', 'kiwitaxi.tpk.ro/tFXbV8DW': 'kiwitaxi.tpk.ro/11m18X2U',
+         'kiwitaxi.tpk.ro/nmvjy52X': 'kiwitaxi.tpk.ro/11m18X2U', 'kiwitaxi.tpk.ro/hZWgyn6u': 'kiwitaxi.tpk.ro/11m18X2U',
+         'kiwitaxi.tpk.ro/zHLRijVY': 'kiwitaxi.tpk.ro/11m18X2U', 'kiwitaxi.tpk.ro/gqeFYqIK': 'kiwitaxi.tpk.ro/11m18X2U',
+         'compensair.tpk.ro/lAi8i3Do': 'compensair.tpk.ro/yNP2m9JU',
+         'getyourguide.tpk.ro/YzOdxjGC': 'klook.tpk.ro/lyyMwM9o'},
+  'es': {'yesim.tpk.ro/PINKVK34': 'yesim.tpk.ro/yAGmI4AL',
+         'airalo.tpk.ro/VEBEeOcy': 'airalo.tpk.ro/TzviVL3v', 'airalo.tpk.ro/EhQQaywr': 'airalo.tpk.ro/TzviVL3v',
+         'kiwitaxi.tpk.ro/MxN3zjHJ': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/tFXbV8DW': 'kiwitaxi.tpk.ro/4SiOYekY',
+         'kiwitaxi.tpk.ro/nmvjy52X': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/hZWgyn6u': 'kiwitaxi.tpk.ro/4SiOYekY',
+         'kiwitaxi.tpk.ro/zHLRijVY': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/gqeFYqIK': 'kiwitaxi.tpk.ro/4SiOYekY',
+         'compensair.tpk.ro/lAi8i3Do': 'compensair.tpk.ro/2RyQeKBg',
+         'getyourguide.tpk.ro/YzOdxjGC': 'klook.tpk.ro/ft6zyxhP'},
+}
+
+def relink_all():
+    import re as _re
+    n = 0
+    for lang, m in RELINK.items():
+        for f in (SITE / lang).rglob('*.html'):
+            s = f.read_text(encoding='utf-8'); o = s
+            for a, b in m.items():
+                # erid относится к старой ссылке — убираем его вместе с ней
+                s = _re.sub(r'https://' + _re.escape(a) + r'(\?erid=[A-Za-z0-9]+)?', 'https://' + b, s)
+            if 'klook.tpk.ro' in s:
+                s = s.replace('GetYourGuide', 'Klook')
+            if s != o:
+                f.write_text(s, encoding='utf-8'); n += 1
+    return n
+
 CTA_ALIAS = {'esim': ['esim', 'esim2'], 'transfer': ['transfer', 'pickup'], 'car': ['car', 'car2'],
              'car_vlc': ['car_vlc', 'car2']}
 
@@ -348,6 +385,7 @@ def main():
         report.append(f'{lang}: {len(items)} статей' + (f', без перевода в блоке «Поездки»: {miss}' if miss else ''))
     update_sitemap(urls)
     print('; '.join(report))
+    print('ссылки EN/ES:', relink_all())
     try:  # 24.11.2026: счётчик Cloudflare Web Analytics во все страницы сайта (tools/beacon.py)
         import beacon; print('счётчик:', beacon.add_all())
     except Exception as e: print('beacon:', e)
