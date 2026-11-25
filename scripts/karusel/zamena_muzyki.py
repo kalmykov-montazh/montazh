@@ -12,9 +12,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from slajdshou import freepd_audio, FREEPD
 
 DRY = '--dry' in sys.argv
+# 25.11.2026: --tolko=<часть названия трека> — менять только там, где в _музыка.txt стоит этот трек
+# (City Sunshine получил заявку Content ID на YouTube). Без ключа — как раньше, все невышедшие.
+TOLKO = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--tolko=')), '').lower()
 K = 'montazh:Брокер/Посты/Карусели'
 ZAD = 'montazh:Брокер/К публикации/_задания'
-BK = 'montazh:Брокер/работа/Рилсы каруселей — старая музыка (16.11.2026)'
+BK = 'montazh:Брокер/работа/Рилсы каруселей — старая музыка (16.11.2026)' + (' — City Sunshine 25.11' if any(a.startswith('--tolko=') for a in sys.argv) else '')
 API = 'https://backend.blotato.com/v2'
 KEY = open('key.txt', encoding='utf-8-sig').read().strip()
 NOW = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=20)
@@ -86,6 +89,9 @@ for name in sorted(folders):
     if reel_at and 'reel.mp4' in files: jobs.append(('reel.mp4', ('instagram', 'tiktok'), reel_at))
     if kar_at and kar_at > NOW and 'shorts.mp4' in files: jobs.append(('shorts.mp4', ('youtube',), [kar_at]))
     if not jobs: continue
+    if TOLKO:
+        mt = sh('rclone', 'cat', f'{K}/{name}/_музыка.txt').stdout if '_музыка.txt' in files else ''
+        if TOLKO not in mt.lower(): continue
     trek = n_trek % len(FREEPD); n_trek += 1
     for fn, nets, ats in jobs:
         r = {'papka': name, 'fail': fn, 'kogda': [a.isoformat() for a in ats], 'trek': FREEPD[trek]}
@@ -108,7 +114,7 @@ for name in sorted(folders):
             r['zvuk'] = ' '.join(l.split('] ')[-1] for l in vol.splitlines() if 'mean_volume' in l)
             sh('rclone', 'copyto', str(v), f'{BK}/{name}/{fn}')
             if sh('rclone', 'copyto', str(o), f'{K}/{name}/{fn}').returncode: raise RuntimeError('не залилось на Диск')
-            (W / 'm.txt').write_text(f'FreePD {src} (CC0), замена 16.11.2026, файл {fn}\n', encoding='utf-8')
+            (W / 'm.txt').write_text(f'FreePD {src} (CC0), замена {datetime.date.today():%d.%m.%Y}, файл {fn}\n', encoding='utf-8')
             sh('rclone', 'copyto', str(W / 'm.txt'), f'{K}/{name}/_музыка.txt')
             if hits:
                 url = upload(o); done = []
