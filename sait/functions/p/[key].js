@@ -35,11 +35,28 @@ export async function onRequestGet({ params, request, env, waitUntil }) {
       || (/^(main|page|site)$/.test(src) && !/kalmykovgroup\.(com|pages\.dev)/.test(request.headers.get('referer') || ''))) {
     return Response.redirect(`https://wa.me/${p.wa}`, 302);
   }
-  const num = await nextNumber(env, key);
-  await logLead(key, num, 'WhatsApp', '', lang === 'ru' ? src : src + '-' + lang);
-  const n = notifyWa(env, key, num, lang);
-  if (typeof waitUntil === 'function') waitUntil(n); else await n;
-  return Response.redirect(`https://wa.me/${p.wa}?text=${encodeURIComponent(waText(key, num, lang))}`, 302);
+  // 26.11.2026 22:40 (ЮР-14 в 22:21 пришла без клиента: человек открыл ссылку в обход окошка —
+  // долгим нажатием, до загрузки скрипта или со старой страницы). Теперь GET заявку НЕ создаёт и никого не будит:
+  // показывает страницу с тем же окошком «имя, фамилия, телефон». Заявка и карточка партнёру — только после POST
+  return new Response(formPage(key, p, src, lang), {
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' },
+  });
+}
+
+const PT = {
+  ru: { t: 'Написать специалисту в WhatsApp', s: 'Оставьте имя и телефон — специалист увидит, что вы от Kalmykov Group, и точно ответит', b: 'Написать в WhatsApp', h: 'На сайт' },
+  ua: { t: 'Написати фахівцю у WhatsApp', s: 'Залиште ім’я та телефон — фахівець побачить, що ви від Kalmykov Group, і точно відповість', b: 'Написати у WhatsApp', h: 'На сайт' },
+  en: { t: 'Message the specialist on WhatsApp', s: 'Leave your name and phone so the specialist sees you come from Kalmykov Group and replies', b: 'Message on WhatsApp', h: 'Back to site' },
+  es: { t: 'Escribir al especialista por WhatsApp', s: 'Deja tu nombre y teléfono para que el especialista sepa que vienes de Kalmykov Group y te responda', b: 'Escribir por WhatsApp', h: 'Volver a la web' },
+};
+function formPage(key, p, src, lang) {
+  const t = PT[lang] || PT.ru, hl = lang === 'ua' ? 'uk' : (PT[lang] ? lang : 'ru');
+  const home = lang === 'ru' || !PT[lang] ? '/' : '/' + lang + '/';
+  const href = `/p/${key}-wa?src=${encodeURIComponent(src)}${lang === 'ru' ? '' : '&lang=' + lang}`;
+  return `<!doctype html><html lang="${hl}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${t.t} — Kalmykov Group</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#16294A;font:17px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#16294A;padding:16px;box-sizing:border-box}.c{background:#fff;border-radius:16px;max-width:400px;width:100%;padding:26px 22px;text-align:center}h1{font-size:21px;margin:0 0 10px}p{margin:0 0 18px;color:#445}.b{display:block;padding:15px;border-radius:12px;background:#25D366;color:#fff;font-weight:700;text-decoration:none}.h{display:inline-block;margin-top:14px;color:#667;font-size:15px}</style></head>
+<body><div class="c"><h1>${t.t}</h1><p>${t.s}</p><a class="b" id="go" href="${href}">${t.b}</a><a class="h" href="${home}">${t.h}</a></div>
+<script src="/waform.js"></script><script>setTimeout(function(){var a=document.getElementById('go');if(a)a.click();},150)</script></body></html>`;
 }
 
 // 26.11.2026 (решение Евгения 18:06): перед WhatsApp человек вводит имя, фамилию и телефон (окошко sait/waform.js) —
