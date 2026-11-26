@@ -64,6 +64,7 @@ def render(body):
     for raw in body.split('\n'):
         l = raw.strip()
         if not l: flush(); continue
+        if l.startswith('### '): flush(); out.append(f'<h3>{inline(l[4:])}</h3>'); continue  # 26.11.2026: вопросы FAQ
         if l.startswith('## '): flush(); out.append(f'<h2>{inline(l[3:])}</h2>'); continue
         m = re.match(r'^(- |• |\d+[.)] |> )(.*)', l)
         k = {'- ': 'ul', '• ': 'ul', '> ': 'box'}.get(m.group(1), 'ol') if m else 'p'
@@ -72,8 +73,30 @@ def render(body):
     flush()
     return '\n'.join(out)
 
-def date_ru(iso):
-    d = datetime.date.fromisoformat(iso[:10]); return f'{d.day} {MONTHS[d.month-1]} {d.year}'
+FAQ_RE = re.compile(r'(частые вопросы|часто задаваемые|часті питання|поширені питання|faq|frequently asked|preguntas frecuentes)', re.I)
+
+def faq_ld(body):
+    # 26.11.2026 (SEO, решение Евгения «раскручиваем через Google»): блок «## Частые вопросы» + «### Вопрос» + ответ
+    # превращается в разметку FAQPage — Google может показывать вопросы прямо в выдаче
+    qa, on, q, ans = [], False, None, []
+    def push():
+        if q and ans: qa.append({'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': ' '.join(ans)}})
+    for raw in body.split('\n'):
+        l = raw.strip()
+        if l.startswith('## ') and not l.startswith('### '):
+            push(); q, ans = None, []; on = bool(FAQ_RE.search(l)); continue
+        if not on: continue
+        if l.startswith('### '): push(); q, ans = re.sub(r'\*\*', '', l[4:]).strip(), []; continue
+        if l and q:
+            t = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', re.sub(r'\*\*', '', re.sub(r'^(- |• |\d+[.)] |> )', '', l)))
+            ans.append(t)
+    push()
+    return {'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': qa} if len(qa) >= 2 else None
+
+MONTHS_UA = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня']
+
+def date_ru(iso, lang='ru'):
+    d = datetime.date.fromisoformat(iso[:10]); return f'{d.day} {(MONTHS_UA if lang == "uk" else MONTHS)[d.month-1]} {d.year}'
 
 def wa(text): return 'https://wa.me/34624916605?text=' + urllib.parse.quote(text)
 
@@ -82,7 +105,7 @@ CSS = '''*{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#16233a;
 .card{background:#fff;border-radius:20px;padding:26px;box-shadow:0 2px 10px rgba(22,41,74,.07);margin-bottom:16px}
 h1{font-size:28px;line-height:1.25;color:#16294a;margin:0 0 8px}.card h2{font-size:21px;color:#16294a;margin:26px 0 10px;display:flex;gap:9px;align-items:center}
 .card h2:before{content:"";width:6px;height:18px;background:#f5c518;border-radius:2px;flex:none}.date{color:#5f6b7a;font-size:14px;margin:0 0 16px}
-.lead{font-size:18px}.card p{margin:0 0 14px}.steps{padding-left:22px}.card li{margin:6px 0}
+.card h3{font-size:18px;color:#16294a;margin:18px 0 6px}.lead{font-size:18px}.card p{margin:0 0 14px}.steps{padding-left:22px}.card li{margin:6px 0}
 .box{background:#fff8db;border-left:5px solid #f5c518;padding:14px 16px;margin:12px 0 16px;border-radius:6px}
 .tag{display:inline-block;background:#eef2f8;color:#16294a;border-radius:999px;padding:2px 12px;font-size:13px;font-weight:700;text-decoration:none;margin-bottom:10px}
 .cta2{background:#16294a;color:#fff;border-radius:20px;padding:24px;margin:16px 0}.cta2 b{display:block;font-size:20px;margin-bottom:8px;color:#f5c518}
@@ -93,20 +116,33 @@ h1{font-size:28px;line-height:1.25;color:#16294a;margin:0 0 8px}.card h2{font-si
 .muted{color:#64707b;font-size:14px}.list a{display:block;padding:12px 0;border-bottom:1px solid #dde3ea;text-decoration:none;color:#16294a}.list a b{display:block}.list a span{color:#64707b;font-size:14px}
 @media (max-width:640px){h1{font-size:23px}.card{padding:18px}}'''
 
-def head(title, desc, canon, ld):
+def head(title, desc, canon, ld, alts=''):
     return (f'<!doctype html>\n<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n'
             f'<title>{esc(title)}</title><meta name="description" content="{esc(desc)}">\n'
-            f'<link rel="canonical" href="{canon}"><meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">\n'
+            f'<link rel="canonical" href="{canon}">{alts}<meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">\n'
             f'<meta property="og:image" content="{BASE}/og.jpg"><meta name="twitter:card" content="summary_large_image"><meta property="og:url" content="{canon}">\n'
             '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0a0a0d"><script src="/pwa.js" defer></script>\n'
             f'<style>{CSS}</style><script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>{DRIVE}</head>\n')
 
-def article(a, items):
-    canon = f'{BASE}/polezno/{a["slug"]}'
+UA_SRC = DIR / '_src_ua'   # 26.11.2026: украинские версии статей (тот же адрес файла, что у русской)
+
+def alt_links(a, ua_ok):
+    # hreflang между языками одной статьи: ru /polezno/<a>, uk /polezno/ua/<a>, en/es по alt_en / alt_es
+    al = {'ru': f'{BASE}/polezno/{a["slug"]}'}
+    if ua_ok: al['uk'] = f'{BASE}/polezno/ua/{a["slug"]}'
+    if a.get('alt_en'): al['en'] = f'{BASE}/en/guides/{a["alt_en"]}'
+    if a.get('alt_es'): al['es'] = f'{BASE}/es/guias/{a["alt_es"]}'
+    if len(al) < 2: return ''
+    return ''.join(f'<link rel="alternate" hreflang="{k}" href="{v}">' for k, v in al.items())
+
+def article(a, items, lang='ru', ua_ok=False):
+    canon = f'{BASE}/polezno/{a["slug"]}' if lang == 'ru' else f'{BASE}/polezno/ua/{a["slug"]}'
     ld = {'@context': 'https://schema.org', '@type': 'Article', 'headline': a['title'][:110], 'description': a.get('description', ''),
-          'datePublished': a['date'], 'dateModified': a.get('updated', a['date']), 'inLanguage': 'ru',
+          'datePublished': a['date'], 'dateModified': a.get('updated', a['date']), 'inLanguage': 'uk' if lang == 'uk' else 'ru',
           'author': {'@type': 'Person', 'name': 'Ievgen Kalmykov', 'url': BASE + '/'},
           'publisher': {'@type': 'Organization', 'name': 'Kalmykov Group', 'url': BASE + '/'}, 'mainEntityOfPage': canon}
+    fq = faq_ld(a['body'])
+    if fq: ld = [ld, fq]
     video = f'<div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/{esc(a["video"])}" title="{esc(a["title"])}" loading="lazy" allowfullscreen></iframe></div>' if a.get('video') else ''
     btns = []
     p = a.get('partner', '').strip('/ ')
@@ -123,12 +159,15 @@ def article(a, items):
     ad_html = f'<br><span style="font-size:11px;color:#8a94a0">{esc(ad)}</span>' if ad else ''
     same = [x for x in items if x['slug'] != a['slug'] and x['tema'] == a['tema']]
     other = [x for x in items if x['slug'] != a['slug'] and x['tema'] != a['tema']]
-    more = ''.join(f'<a href="/polezno/{x["slug"]}">→ {esc(x["title"])}</a>' for x in (same + other)[:5])
+    if lang == 'uk':  # 26.11.2026: в украинской статье — украинские заголовки и украинские версии, где они есть
+        more = ''.join(f'<a href="/polezno/{"ua/" if (UA_SRC / (x["slug"] + ".md")).exists() else ""}{x["slug"]}">→ {esc(x.get("ua_title") or x["title"])}</a>' for x in (same + other)[:5])
+    else:
+        more = ''.join(f'<a href="/polezno/{x["slug"]}">→ {esc(x["title"])}</a>' for x in (same + other)[:5])
     more += ''.join(f'<a href="{u}">→ {esc(t)} (гайд с PDF)</a>' for u, t in GAIDY[:2])
-    return (head(a['title'], a.get('description', ''), canon, ld) +
+    return (head(a['title'], a.get('description', ''), canon, ld, alt_links(a, ua_ok)) +
             f'<body><div class="w"><a class="back" href="/polezno/">← Полезное</a>\n'
             f'<article class="card"><a class="tag" href="/polezno/#{esc(a["tema"])}">{esc(a["tema"])}</a><h1>{esc(a["title"])}</h1>'
-            f'<p class="date">{date_ru(a.get("updated", a["date"]))} · Евгений Калмыков, Валенсия</p>\n{video}{render(body)}\n</article>\n'
+            f'<p class="date">{date_ru(a.get("updated", a["date"]), lang)} · {"Євген Калмиков, Валенсія" if lang == "uk" else "Евгений Калмыков, Валенсия"}</p>\n{video}{render(body)}\n</article>\n'
             f'<div class="cta2"><b>Остались вопросы по своей ситуации?</b>Напишите — дам контакт проверенного специалиста по вашему вопросу. '
             f'<div class="btns">{"".join(btns)}</div></div>\n'
             f'<div class="card more"><h2 style="margin-top:0">Ещё по теме</h2>{more}</div>\n'
@@ -174,7 +213,31 @@ def update_sitemap(items):
     last = max((x.get('updated', x['date']) for x in items), default=datetime.date.today().isoformat())
     add = f'\n  <url><loc>{BASE}/polezno/</loc><lastmod>{last[:10]}</lastmod></url>'
     add += ''.join(f'\n  <url><loc>{BASE}/polezno/{x["slug"]}</loc><lastmod>{x.get("updated", x["date"])[:10]}</lastmod></url>' for x in items)
+    if UA_SRC.is_dir():
+        add += ''.join(f'\n  <url><loc>{BASE}/polezno/ua/{f.stem}</loc><lastmod>{x.get("updated", x["date"])[:10]}</lastmod></url>' for x in items for f in [UA_SRC / (x['slug'] + '.md')] if f.exists())
     p.write_text(s + add + '\n</urlset>\n', encoding='utf-8')
+
+def build_ua(items, ua):
+    # 26.11.2026: украинская версия статьи /polezno/ua/<адрес> — текст из _src/_src_ua/<адрес>.md (своя шапка title/description),
+    # оформление и кнопки — как у русской, подписи переводятся словарём sait/_i18n/ua.json (ua_build.translate)
+    out = DIR / 'ua'; out.mkdir(exist_ok=True)
+    for f in out.glob('*.html'):
+        if f.stem not in ua: f.unlink()
+    if not ua: return
+    import ua_build
+    d = json.loads((SITE / '_i18n' / 'ua.json').read_text(encoding='utf-8'))
+    miss_all = []
+    for slug, u in ua.items():
+        ru = next((x for x in items if x['slug'] == slug), None)
+        if not ru: continue
+        a = {**ru, **{k: v for k, v in u.items() if k in ('title', 'description', 'body', 'updated')}}
+        h = redesign_polezno(article(a, items, lang='uk', ua_ok=True))
+        h, miss = ua_build.translate(h, d)
+        h = h.replace('<html lang="ru"', '<html lang="uk"').replace('href="/polezno/"', 'href="/ua"')
+        (out / f'{slug}.html').write_text(h, encoding='utf-8')
+        miss_all += miss
+    miss_all = [m for m in dict.fromkeys(miss_all) if len(m) < 90]
+    if miss_all: print('UA статьи — без перевода подписи:', miss_all[:15])
 
 def main():
     items = sorted((parse(f) for f in SRC.glob('*.md')), key=lambda x: (x.get('updated', x['date']), x['date']), reverse=True)
@@ -182,8 +245,10 @@ def main():
     keep = {x['slug'] for x in items}
     for f in DIR.glob('*.html'):
         if f.stem not in keep and f.name != 'index.html': f.unlink()
+    ua = {f.stem: parse(f) for f in UA_SRC.glob('*.md')} if UA_SRC.is_dir() else {}
     for a in items:
-        (DIR / f'{a["slug"]}.html').write_text(fix(redesign_polezno(article(a, items))), encoding='utf-8')
+        (DIR / f'{a["slug"]}.html').write_text(fix(redesign_polezno(article(a, items, ua_ok=a['slug'] in ua))), encoding='utf-8')
+    build_ua(items, ua)
     (DIR / 'index.html').write_text(fix(redesign_index(index(items), 'polezno')), encoding='utf-8')
     update_home(items); update_sitemap(items)
     try:  # 26.11.2026: украинский заголовок статьи (ключ шапки ua_title) — для украинской главной

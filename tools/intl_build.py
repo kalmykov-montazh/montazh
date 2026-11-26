@@ -14,7 +14,7 @@
 import re, html, json, datetime, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from polezno_build import render, inline, esc          # тот же разбор текста статей
+from polezno_build import render, inline, esc, faq_ld          # тот же разбор текста статей
 from ua_build import translate                         # тот же переводчик блока «Поездки»
 
 SITE = Path(__file__).resolve().parent.parent / 'sait'
@@ -219,6 +219,7 @@ ART_CSS = '''<style>
 .art{background:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 2px 10px rgba(22,41,74,.07);margin:16px 0;font-size:17px;line-height:1.65}
 .art h1{font-family:var(--display);font-size:30px;line-height:1.2;color:#16294a;margin:4px 0 8px}
 .art h2{font-family:var(--display);font-size:21px;color:#16294a;margin:26px 0 8px}
+.art h3{font-size:18px;color:#16294a;margin:18px 0 6px}
 .art .meta{color:#5f6b7a;font-size:14px;margin:0 0 14px}.art .kind{display:inline-block;background:#0f4c5c;color:#ffd54a;font-weight:700;font-size:12px;border-radius:99px;padding:3px 10px;margin-right:8px}
 .art .box{background:#fff8e1;border-left:4px solid #f5b400;border-radius:10px;padding:12px 14px;margin:14px 0}
 .art ol.steps{display:block;list-style:decimal;padding-left:26px;margin:10px 0}.art ol.steps li::before{display:none!important;content:none!important}.art ol.steps li{display:list-item;padding:0;background:none;border:0;border-radius:0}.art li{margin:4px 0}
@@ -266,6 +267,8 @@ def article_page(lang, a, items):
           "datePublished": a['date'], "dateModified": a.get('updated', a['date']),
           "author": {"@type": "Person", "name": u['name']}, "publisher": {"@type": "Organization", "name": "Kalmykov Group", "url": BASE},
           "mainEntityOfPage": BASE + canon}
+    fq = faq_ld(a['body'])   # 26.11.2026: «## FAQ» / «## Preguntas frecuentes» + «### вопрос» → разметка FAQPage
+    if fq: ld = [ld, fq]
     head = page_head(lang, a['title'] + ' | Kalmykov Group', a.get('description', ''), canon, alts,
                      f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>\n')
     more = [x for x in items if x['slug'] != a['slug']][:4]
