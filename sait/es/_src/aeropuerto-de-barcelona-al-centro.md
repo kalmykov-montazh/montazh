@@ -3,7 +3,7 @@ description: Aerobús, metro L9, tren R2 Nord, bus 46, buses nocturnos, taxi y t
 date: 2026-11-26
 tema: Transporte
 kind: guide
-cta: transfer, car, esim, tours, claim
+cta: transfer, car, esim, tours, citypass, claim
 alt_en: barcelona-airport-to-city-centre
 ---
 La forma más sencilla de ir del aeropuerto de Barcelona (El Prat) al centro es el **Aerobús**: cuesta unos **7,75 €** por trayecto y tarda unos **35 minutos** hasta la plaza de Catalunya, desde las dos terminales. La más barata es el **tren R2 Nord** desde la Terminal 2 (unos **4,60–4,90 €**, 19 minutos hasta Sants) o el **bus 46** hasta la plaza de Espanya. Un **taxi** al centro sale por unos **30–45 €**, y un **traslado privado** reservado con antelación empieza en unos 40–50 € por coche, con el conductor esperándote en la salida.

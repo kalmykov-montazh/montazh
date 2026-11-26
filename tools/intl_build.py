@@ -26,6 +26,20 @@ TODAY = datetime.date.today().isoformat()
 def dc(lang, path=''):  # DiscoverCars: /es/<путь> — по-испански, без префикса — по-английски
     return f'https://www.discovercars.com/{"es/" if lang == "es" else ""}{path}?a_aid=kalmykovgroup'.replace('.com/?', '.com/?')
 
+GOCITY_SALE_END = '2026-12-01'
+def gocity(lang):
+    en = lang == 'en'
+    if TODAY <= GOCITY_SALE_END:
+        return ('Go City — Black Friday −10%' if en else 'Go City — Black Friday −10 %',
+                'https://gocity.tpk.ro/umxcBnLk' if en else 'https://gocity.tpk.ro/jFa1dnHQ',
+                ('City pass for Barcelona or Madrid: museums and tours on one ticket. 10% off selected passes '
+                 '27 Nov – 1 Dec, the code is shown after you click') if en else
+                ('Pase turístico de Barcelona o Madrid: museos y tours con una sola entrada. 10 % de descuento en pases '
+                 'seleccionados del 27 nov al 1 dic, el código aparece al hacer clic'))
+    return ('Go City', 'https://gocity.tpk.ro/sjeqWc8B' if en else 'https://gocity.tpk.ro/kYFHa8Ld',
+            'City pass for Barcelona or Madrid: museums and tours on one ticket' if en else
+            'Pase turístico de Barcelona o Madrid: museos y tours con una sola entrada')
+
 def partners(lang):
     en = lang == 'en'
     return {
@@ -49,6 +63,10 @@ def partners(lang):
                   'Tours, tickets and day trips with free cancellation' if en else 'Tours, entradas y excursiones con cancelación gratuita'),
         'claim': ('Compensair', 'https://compensair.tpk.ro/lAi8i3Do?erid=2VtzqvygRSf',
                   'Check in 2 minutes if you are owed up to €600' if en else 'Comprueba en 2 minutos si te corresponden hasta 600 €'),
+        # 26.11.2026: Go City — городские пропуска (музеи и экскурсии одним билетом), ссылки проектов EN/ES.
+        # До 01.12.2026 включительно — ссылка с промокодом Чёрной пятницы (−10%, Tools → Promo codes),
+        # потом сама переключается на обычную ссылку и обычную подпись
+        'citypass': gocity(lang),
         'car2': ('Economybookings', 'https://economybookings.tpk.ro/P0O35S8l',
                  'Another car rental comparison, airports and cities' if en else 'Otro comparador de alquiler de coches, aeropuertos y ciudades'),
     }

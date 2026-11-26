@@ -3,7 +3,7 @@ description: Aerobús, metro L9, the R2 Nord train, bus 46, night buses, taxis a
 date: 2026-11-26
 tema: Transport
 kind: guide
-cta: transfer, car, esim, tours, claim
+cta: transfer, car, esim, tours, citypass, claim
 alt_es: aeropuerto-de-barcelona-al-centro
 ---
 The quickest simple way from Barcelona Airport (El Prat) to the city centre is the **Aerobús**: about **€7.75** one way and roughly **35 minutes** to Plaça de Catalunya, straight from both terminals. The cheapest is the **R2 Nord train** from Terminal 2 (around **€4.60–4.90**, 19 minutes to Sants) or **bus 46** to Plaça d'Espanya. A **taxi** costs about **€30–45** to the centre, and a **private transfer** booked in advance starts at roughly €40–50 per car with a driver waiting at arrivals.

@@ -2,7 +2,7 @@ title: Valencia–Madrid y Valencia–Barcelona: tren, autobús o coche
 description: Cuánto tarda cada opción, qué compañías de tren cubren la ruta, cuándo compensa el autobús o el coche de alquiler y cómo pagar menos
 date: 2026-11-22
 tema: Transporte
-cta: car, hotels
+cta: car, hotels, citypass
 alt_en: valencia-madrid-barcelona-train-bus-car
 ---
 Valencia está muy bien conectada: Madrid queda a unas dos horas en tren de alta velocidad y Barcelona a unas tres.

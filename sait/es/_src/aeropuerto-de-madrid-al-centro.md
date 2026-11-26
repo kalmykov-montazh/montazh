@@ -3,7 +3,7 @@ description: Metro línea 8, Cercanías desde la T4, autobús Exprés 24 horas y
 date: 2026-11-23
 tema: Transporte
 kind: guide
-cta: transfer, esim, hotels
+cta: transfer, esim, hotels, citypass
 ---
 Del aeropuerto de Madrid-Barajas al centro tienes cuatro opciones: metro (línea 8), tren de Cercanías desde la T4, el autobús Exprés Aeropuerto, que funciona las 24 horas, y el taxi con tarifa fija de 33 €. Si llegas de un vuelo largo con maletas grandes, el taxi o un traslado reservado te ahorran el cansancio; si viajas ligero, el autobús o el metro salen por unos 5 €.
 

@@ -3,7 +3,7 @@ description: Madrid switched on its Christmas lights on 21 November 2026. They s
 date: 2026-11-24
 tema: Travel
 kind: news
-cta: hotels, flights, tours
+cta: hotels, flights, tours, citypass
 ---
 Madrid switched on its Christmas lights on **Saturday 21 November 2026** with a show in Plaza de Cibeles, and they will stay up until **6 January 2027**, Three Kings Day. If you are planning a December city break or flying in for New Year, the whole centre is already lit and the season runs for about seven weeks.
 

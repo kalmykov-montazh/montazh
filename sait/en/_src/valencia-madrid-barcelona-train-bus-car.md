@@ -2,7 +2,7 @@ title: Valencia to Madrid or Barcelona: train, bus, car or plane
 description: How long each option takes, which train companies run the routes, when the bus or a rental car makes more sense, and how to pay less
 date: 2026-11-22
 tema: Transport
-cta: car, hotels
+cta: car, hotels, citypass
 alt_es: valencia-madrid-barcelona-tren-autobus-coche
 ---
 Valencia is well connected: Madrid is about two hours away by high-speed train and Barcelona about three. Here is how the options compare.
