@@ -27,6 +27,14 @@ export async function onRequestGet({ params, request, env, waitUntil }) {
   const src = (new URL(request.url).searchParams.get('src') || 'site').replace(/[^a-z0-9]/gi, '').slice(0, 20) || 'site';
   const lang = (new URL(request.url).searchParams.get('lang') || 'ru').replace(/[^a-z]/g, '').slice(0, 2);
   if (ch === 'tg') return Response.redirect(`https://t.me/${BOT}?start=p_${key}_${src}${['ua', 'en', 'es'].includes(lang) ? '_' + lang : ''}`, 302);
+  // 26.11.2026: ночью поисковые роботы прошли по кнопкам на 4 языках и создали пустые заявки ЮР-18…21 —
+  // роботов и превью ссылок пропускаем в WhatsApp без номера, таблицы и уведомлений
+  const ua = request.headers.get('user-agent') || '';
+  if (!ua || /bot|crawl|spider|slurp|preview|gpt|claude|anthropic|perplexity|bytespider|amazonbot|facebookexternalhit|whatsapp\/|telegrambot|headless|lighthouse|python|curl|wget|httpclient|okhttp|java\//i.test(ua) || request.headers.get('purpose') === 'prefetch' || request.headers.get('sec-purpose')
+      // кнопки на самом сайте (src=main/page/site): живой человек приходит со страницы сайта — без Referer считаем роботом
+      || (/^(main|page|site)$/.test(src) && !/kalmykovgroup\.(com|pages\.dev)/.test(request.headers.get('referer') || ''))) {
+    return Response.redirect(`https://wa.me/${p.wa}`, 302);
+  }
   const num = await nextNumber(env, key);
   await logLead(key, num, 'WhatsApp', '', lang === 'ru' ? src : src + '-' + lang);
   const n = notifyWa(env, key, num, lang);
