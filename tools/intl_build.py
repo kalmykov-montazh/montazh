@@ -403,6 +403,9 @@ def main():
         import naverh; print('наверх:', naverh.add_all())
         import ga; print('аналитика:', ga.add_all())   # 26.11.2026: Google Analytics + согласие на cookie (tools/ga.py)
     except Exception as e: print('naverh:', e)
+    try:  # 26.11.2026: окошко «имя, фамилия, телефон» перед WhatsApp к партнёру (tools/waform.py)
+        import waform; print('окошко WhatsApp:', waform.add_all())
+    except Exception as e: print('waform:', e)
 
 if __name__ == '__main__':
     main()

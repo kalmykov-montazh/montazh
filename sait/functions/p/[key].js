@@ -6,11 +6,11 @@
 import { PARTNERS, nextNumber, logLead, waText } from '../../_kg/partners.js';
 const BOT = 'kalmykov_spain_bot';
 
-async function notifyWa(env, key, num, lang) {
+async function notifyWa(env, key, num, lang, client) {
   if (!env.TG_TOKEN || !env.BOT_KV) return;
   const p = PARTNERS[key];
   const time = new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
-  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}${lang === 'ru' ? '' : '\nЯзык клиента: ' + lang.toUpperCase()}\nКлиент нажал WhatsApp в ${time} и сейчас напишет вам туда.\nЕсли номера заявки в его сообщении не будет — это он, сверяйте по времени`;
+  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}${lang === 'ru' ? '' : '\nЯзык клиента: ' + lang.toUpperCase()}${client ? '\nКлиент: ' + client : ''}\nКлиент нажал WhatsApp в ${time} и сейчас напишет вам туда.\nЕсли номера заявки в его сообщении не будет — это он, сверяйте по ${client ? 'телефону и ' : ''}времени`;
   const send = (chat, text) => fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }),
   }).catch(() => {});
@@ -40,4 +40,26 @@ export async function onRequestGet({ params, request, env, waitUntil }) {
   const n = notifyWa(env, key, num, lang);
   if (typeof waitUntil === 'function') waitUntil(n); else await n;
   return Response.redirect(`https://wa.me/${p.wa}?text=${encodeURIComponent(waText(key, num, lang))}`, 302);
+}
+
+// 26.11.2026 (решение Евгения 18:06): перед WhatsApp человек вводит имя, фамилию и телефон (окошко sait/waform.js) —
+// они сами пишутся в таблицу партнёра в «Клиент». Партнёр ничего не заполняет. Без ботов и платных сообщений.
+export async function onRequestPost({ params, request, env, waitUntil }) {
+  const [key, ch] = String(params.key).split('-');
+  const p = PARTNERS[key];
+  const json = (o, st = 200) => new Response(JSON.stringify(o), { status: st, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  if (!p || ch !== 'wa') return json({ error: 'no' }, 404);
+  let d = {};
+  try { d = await request.json(); } catch (e) { return json({ error: 'bad' }, 400); }
+  const name = String(d.name || '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const phone = String(d.phone || '').replace(/[^0-9+]/g, '').slice(0, 20);
+  if (name.length < 2 || phone.replace(/\D/g, '').length < 7) return json({ error: 'fields' }, 400);
+  const src = String(d.src || 'site').replace(/[^a-z0-9]/gi, '').slice(0, 20) || 'site';
+  const lang = String(d.lang || 'ru').replace(/[^a-z]/g, '').slice(0, 2) || 'ru';
+  const client = name + ', ' + phone;
+  const num = await nextNumber(env, key);
+  await logLead(key, num, 'WhatsApp', client, lang === 'ru' ? src : src + '-' + lang);
+  const n = notifyWa(env, key, num, lang, client);
+  if (typeof waitUntil === 'function') waitUntil(n); else await n;
+  return json({ url: `https://wa.me/${p.wa}?text=${encodeURIComponent(waText(key, num, lang))}` });
 }
