@@ -60,8 +60,8 @@ T = {
   chips=[('🧾', 'Spanish taxes and returns'), ('⭐', 'Beckham Law tax regime'), ('🏠', 'Non-resident property tax'), ('🛂', 'Digital Nomad Visa'),
          ('💼', 'Self-employed (autónomo)'), ('🏢', 'Company setup'), ('📜', 'Inheritance in Spain'), ('⚖️', 'Lawyers: family, court, tax')],
   trust='10 years in Spain · 35+ lawyers and tax advisers · 4,000+ cases', langs='They work in English, Spanish, Russian and Ukrainian',
-  wa='Write on WhatsApp', tg='', all='All legal services →', back='← Home', home='/en/', tgon=False,
-  h1='Lawyers in Spain: free consultation', intro='A law firm we work with and trust. Message them on WhatsApp: a lawyer will look at your case for free and tell you what to do and what it costs',
+  wa='WhatsApp', tg='Telegram', all='All legal services →', back='← Home', home='/en/', tgon=True,
+  h1='Lawyers in Spain: free consultation', intro='A law firm we work with and trust. Message them on WhatsApp or Telegram: a lawyer will look at your case for free and tell you what to do and what it costs',
   cats=[
    ('🏠 Property and inheritance', ['Buying or selling property: review of the deposit contract (arras), the sale contract, charges and debts', 'Inheritance of property in Spain']),
    ('🧾 Taxes and accounting', ['One-to-one tax consultation', 'Annual income tax return (Modelo 100)', 'Non-resident property owners tax (Modelo 210)', 'Declaration of assets abroad (Modelo 720)', 'Wealth tax (Modelo 714)', 'Change of tax residence (Modelo 030)', 'Beckham Law special tax regime and renewal', 'Self-employed (autónomo): registration and bookkeeping', 'Company accounting']),
@@ -79,8 +79,8 @@ T = {
   chips=[('🛂', 'Residencia y arraigo'), ('🇪🇸', 'Nacionalidad española'), ('🔁', 'Renovación y modificación'), ('🎓', 'Visado de estudiante'),
          ('💻', 'Visado nómada digital'), ('🧾', 'Impuestos y declaraciones'), ('💼', 'Alta de autónomo y gestoría'), ('🏠', 'Compra de vivienda segura')],
   trust='10 años en España · 35+ abogados y asesores fiscales · 4 000+ casos', langs='Atienden en español, inglés, ruso y ucraniano',
-  wa='Escribir por WhatsApp', tg='', all='Todos los servicios →', back='← Inicio', home='/es/', tgon=False,
-  h1='Abogados en España: consulta gratuita', intro='Un despacho con el que trabajamos y en el que confiamos. Escríbeles por WhatsApp: un abogado revisa tu caso gratis y te dice qué hacer y cuánto cuesta',
+  wa='WhatsApp', tg='Telegram', all='Todos los servicios →', back='← Inicio', home='/es/', tgon=True,
+  h1='Abogados en España: consulta gratuita', intro='Un despacho con el que trabajamos y en el que confiamos. Escríbeles por WhatsApp o Telegram: un abogado revisa tu caso gratis y te dice qué hacer y cuánto cuesta',
   cats=[
    ('🛂 Residencia y documentos', ['Regularización extraordinaria', 'Arraigo y renovaciones de residencia', 'Cambio de tipo de residencia (modificación)', 'Nacionalidad española', 'Visado de estudiante', 'Visado nómada digital', 'Visado de profesional altamente cualificado', 'Residencia de emprendedor', 'Traslado intraempresarial']),
    ('🧾 Impuestos y contabilidad', ['Consulta con asesor fiscal', 'Alta de autónomo y gestoría mensual', 'Contabilidad de empresa', 'Declaración de la renta (Modelo 100)', 'Impuesto de no residentes (Modelo 210)', 'Bienes en el extranjero (Modelo 720)', 'Impuesto sobre el patrimonio (Modelo 714)', 'Cambio de residencia fiscal (Modelo 030)', 'Ley Beckham y su renovación']),
@@ -104,7 +104,7 @@ def buttons(lang, src):
     d = T[lang]
     b = f'<a class="lwb lwwa" href="{wa_link(lang, src)}" target="_blank" rel="noopener">{WA_ICO}{esc(d["wa"])}</a>'
     if d['tgon']:
-        b += f'<a class="lwb lwtg" href="/p/yuristy-tg?src={src}" target="_blank" rel="noopener">{TG_ICO}{esc(d["tg"])}</a>'
+        b += f'<a class="lwb lwtg" href="/p/yuristy-tg?src={src}' + ('' if lang == 'ru' else f'&amp;lang={lang}') + f'" target="_blank" rel="noopener">{TG_ICO}{esc(d["tg"])}</a>'
     return f'<div class="lwbtns{"" if d["tgon"] else " one"}">{b}</div>'
 
 

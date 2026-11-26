@@ -78,20 +78,29 @@ async function remember(env, from, key, src) {
 
 
 // Заявки партнёрам через бот (22.11.2026): /start p_<партнёр>_<откуда> — клиент; /start reg_<партнёр> — партнёр один раз подключается
-async function partnerLead(env, m, key, src) {
+// 26.11.2026: язык клиента (ru/ua/en/es) — ответ бота на его языке, в карточке партнёру язык виден
+const PL = {
+  ru: (n, p) => [`Ваша заявка ${n}. Нажмите кнопку ниже — откроется чат со специалистом (${p.who}, ${p.topic}). Напишите, что вы от Kalmykov Group, заявка ${n}, и коротко ваш вопрос`, 'Написать специалисту'],
+  ua: (n, p) => [`Ваша заявка ${n}. Натисніть кнопку нижче — відкриється чат зі спеціалістом (${p.who}). Напишіть, що ви від Kalmykov Group, заявка ${n}, і коротко ваше питання`, 'Написати спеціалісту'],
+  en: (n, p) => [`Your request number is ${n}. Tap the button below to open a chat with the specialist (${p.who}). Say you come from Kalmykov Group, request ${n}, and briefly describe your question`, 'Message the specialist'],
+  es: (n, p) => [`Tu solicitud es la ${n}. Pulsa el botón de abajo para abrir el chat con la especialista (${p.who}). Dile que vienes de Kalmykov Group, solicitud ${n}, y cuéntale brevemente tu consulta`, 'Escribir a la especialista'],
+};
+async function partnerLead(env, m, key, src, lang) {
+  lang = PL[lang] ? lang : 'ru';
   const p = PARTNERS[key]; const chat = m.chat.id; const f = m.from || {};
   const num = await nextNumber(env, key);
   const name = [f.first_name, f.last_name].filter(Boolean).join(' ');
   const who = name + (f.username ? ' @' + f.username : '');
-  await logLead(key, num, 'Telegram', who, src);
+  await logLead(key, num, 'Telegram', who, lang === 'ru' ? src : src + '-' + lang);
   await remember(env, f, '', src);
-  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}\nКлиент: ${who}\nОн сейчас напишет вам в Telegram${f.username ? '' : ' (ника нет — ждите его сообщения)'}`;
+  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}${lang === 'ru' ? '' : '\nЯзык клиента: ' + lang.toUpperCase()}\nКлиент: ${who}\nОн сейчас напишет вам в Telegram${f.username ? '' : ' (ника нет — ждите его сообщения)'}`;
   const btn = f.username ? { reply_markup: { inline_keyboard: [[{ text: 'Написать клиенту', url: 'https://t.me/' + f.username }]] } } : {};
   const pchat = env.BOT_KV && await env.BOT_KV.get('pchat3:' + key);
   if (pchat) await tg(env, 'sendMessage', Object.assign({ chat_id: pchat, text: card }, btn));
   const admin = env.BOT_KV && await env.BOT_KV.get('admin');
   if (admin) await tg(env, 'sendMessage', { chat_id: admin, text: card + (pchat ? '' : '\n⚠️ Партнёр ещё не подключён к боту') });
-  await tg(env, 'sendMessage', { chat_id: chat, text: `Ваша заявка ${num}. Нажмите кнопку ниже — откроется чат со специалистом (${p.who}, ${p.topic}). Напишите, что вы от Kalmykov Group, заявка ${num}, и коротко ваш вопрос`, reply_markup: { inline_keyboard: [[{ text: 'Написать специалисту', url: p.tg }]] } });
+  const [txt, bt] = PL[lang](num, p);
+  await tg(env, 'sendMessage', { chat_id: chat, text: txt, reply_markup: { inline_keyboard: [[{ text: bt, url: p.tg }]] } });
 }
 const OWN = ['name_2016', 'kalmykov_broker'];
 async function partnerReg(env, m, key) {
@@ -115,8 +124,8 @@ export async function onRequestPost({ request, env }) {
       const m = up.message, chat = m.chat.id, text = (m.text || '').trim();
       if (m.from && env.ADMIN_USERNAME && m.from.username === env.ADMIN_USERNAME && env.BOT_KV) await env.BOT_KV.put('admin', String(chat));
       const pl = text.startsWith('/start') ? (text.split(' ')[1] || '') : '';
-      const pm = pl.match(/^p_([a-z]+)_?([a-z0-9]*)$/i), rm = pl.match(/^reg_([a-z]+)$/i);
-      if (pm && PARTNERS[pm[1]]) { await partnerLead(env, m, pm[1], pm[2] || 'site'); }
+      const pm = pl.match(/^p_([a-z]+)(?:_([a-z0-9]*))?(?:_(ru|ua|en|es))?$/i), rm = pl.match(/^reg_([a-z]+)$/i);
+      if (pm && PARTNERS[pm[1]]) { await partnerLead(env, m, pm[1], pm[2] || 'site', (pm[3] || 'ru').toLowerCase()); }
       else if (rm && PARTNERS[rm[1]] && env.BOT_KV) { await partnerReg(env, m, rm[1]); }
       else if (text.startsWith('/start')) {
         // ?start=<ключ>_<метка источника>, например chek_site, shtrafy_ig

@@ -8,8 +8,8 @@ export async function onRequestGet({ params, request, env }) {
   const p = PARTNERS[key];
   if (!p) return Response.redirect('https://kalmykovgroup.com/', 302);
   const src = (new URL(request.url).searchParams.get('src') || 'site').replace(/[^a-z0-9]/gi, '').slice(0, 20) || 'site';
-  if (ch === 'tg') return Response.redirect(`https://t.me/${BOT}?start=p_${key}_${src}`, 302);
   const lang = (new URL(request.url).searchParams.get('lang') || 'ru').replace(/[^a-z]/g, '').slice(0, 2);
+  if (ch === 'tg') return Response.redirect(`https://t.me/${BOT}?start=p_${key}_${src}${['ua', 'en', 'es'].includes(lang) ? '_' + lang : ''}`, 302);
   const num = await nextNumber(env, key);
   await logLead(key, num, 'WhatsApp', '', lang === 'ru' ? src : src + '-' + lang);
   return Response.redirect(`https://wa.me/${p.wa}?text=${encodeURIComponent(waText(key, num, lang))}`, 302);
