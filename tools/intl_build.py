@@ -398,6 +398,7 @@ def main():
     try:  # 26.11.2026: кнопка «Наверх» на всех страницах (tools/naverh.py)
         import yuristy_build; yuristy_build.main()
         import naverh; print('наверх:', naverh.add_all())
+        import ga; print('аналитика:', ga.add_all())   # 26.11.2026: Google Analytics + согласие на cookie (tools/ga.py)
     except Exception as e: print('naverh:', e)
 
 if __name__ == '__main__':
