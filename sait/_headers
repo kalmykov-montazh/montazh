@@ -5,3 +5,6 @@
 
 /tg-*.jpg
   Access-Control-Allow-Origin: *
+
+/*.pdf
+  X-Robots-Tag: noindex, nofollow

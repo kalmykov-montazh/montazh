@@ -49,6 +49,7 @@ foreach ($t['tree'] as $e) {
 $del = 0;
 foreach ($old as $p => $s) if (!isset($new[$p]) && !preg_match($SKIP, $p) && is_file("$ROOT/$p")) { unlink("$ROOT/$p"); $del++; }
 // .htaccess: короткие ссылки из _redirects + общие правила
+// 26.11.2026: PDF закрыты от Google (X-Robots-Tag noindex) — дублировали гайды, а бесплатное выдаём через бота
 $red = req("https://raw.githubusercontent.com/$REPO/$commit/$PREFIX/_redirects", null, $code);
 $short = [];
 if ($code == 200) foreach (explode("\n", $red) as $l) {
@@ -62,7 +63,7 @@ $ht .= "RewriteRule ^\\.well-known/ - [L]\nRewriteRule ^_data(/|$) - [F,L]\nRewr
 $ht .= implode("\n", $short) . "\n";
 $ht .= "RewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME}.html -f\nRewriteRule ^(.+?)/?$ $1.html [L]\n";
 $ht .= "RewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^ index.html [L]\n";
-$ht .= "<Files \"ssylki.txt\">\nHeader set X-Robots-Tag \"noindex\"\nHeader set Cache-Control \"no-cache\"\n</Files>\n<FilesMatch \"^tg-.*\\.jpg$\">\nHeader set Access-Control-Allow-Origin \"*\"\n</FilesMatch>\n<FilesMatch \"\\.(html|txt|xml)$\">\nHeader set Cache-Control \"no-cache\"\n</FilesMatch>\n";
+$ht .= "<Files \"ssylki.txt\">\nHeader set X-Robots-Tag \"noindex\"\nHeader set Cache-Control \"no-cache\"\n</Files>\n<FilesMatch \"^tg-.*\\.jpg$\">\nHeader set Access-Control-Allow-Origin \"*\"\n</FilesMatch>\n<FilesMatch \"\\.pdf$\">\nHeader set X-Robots-Tag \"noindex, nofollow\"\n</FilesMatch>\n<FilesMatch \"\\.(html|txt|xml)$\">\nHeader set Cache-Control \"no-cache\"\n</FilesMatch>\n";
 file_put_contents("$ROOT/.htaccess.tmp", $ht); rename("$ROOT/.htaccess.tmp", "$ROOT/.htaccess");
 if (!$err) $st['sait'] = $saitSha;
 $st['files'] = $new; $st['commit'] = $commit;
