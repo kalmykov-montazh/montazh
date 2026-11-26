@@ -165,7 +165,8 @@ def trip_block(lang, trip):
     b = b.replace('https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b')
     b = re.sub(r'<a class="trip-all".*?</a>', '', b, flags=re.S)   # 26.11.2026: своей страницы сервисов на EN/ES пока нет
     b = re.sub(r'<a class="tg-all".*?</a>', '', b, flags=re.S)
-    b = re.sub(r'<a data-r2="1".*?</a>', '', b, flags=re.S)       # второй ряд карточек — русский проект Travelpayouts
+    b = re.sub(r'<a data-r2="1".*?</a>', '', b, flags=re.S)
+    import yuristy_build; b = yuristy_build.insert(b, lang).replace('<div class="tw">', '<div class="tw tw6">')  # 26.11.2026: юристы на своём языке       # второй ряд карточек — русский проект Travelpayouts
     b = re.sub(r'<a class="allsv" href="/poezdki/">.*?</a>', '', b, flags=re.S)  # кнопка «Все сервисы» — страницы на EN/ES пока нет
     b = b.replace('href="/poezdki/"', f'href="/{UI[lang]["dir"]}/{UI[lang]["art"]}/"')
     b = b.replace('www.discovercars.com/ru/', 'www.discovercars.com/' + ('' if en else 'es/'))
@@ -387,6 +388,7 @@ def main():
         (d / 'legal.html').write_text(legal_page(lang), encoding='utf-8')
         urls += [(f'/{lang}/', TODAY), (f'/{lang}/{UI[lang]["art"]}/', TODAY)]
         report.append(f'{lang}: {len(items)} статей' + (f', без перевода в блоке «Поездки»: {miss}' if miss else ''))
+    urls += [('/en/lawyers/', TODAY), ('/es/abogados/', TODAY)]  # 26.11.2026: страницы юристов (tools/yuristy_build.py)
     update_sitemap(urls)
     print('; '.join(report))
     print('ссылки EN/ES:', relink_all())
@@ -394,6 +396,7 @@ def main():
         import beacon; print('счётчик:', beacon.add_all())
     except Exception as e: print('beacon:', e)
     try:  # 26.11.2026: кнопка «Наверх» на всех страницах (tools/naverh.py)
+        import yuristy_build; yuristy_build.main()
         import naverh; print('наверх:', naverh.add_all())
     except Exception as e: print('naverh:', e)
 

@@ -5,6 +5,7 @@
 # Запускается сам в конце tools/novosti_build.py и tools/polezno_build.py.
 # python3 tools/ua_build.py [--check]  — --check печатает русские строки без перевода
 import re, json, sys
+
 from pathlib import Path
 SITE = Path(__file__).resolve().parent.parent / 'sait'
 CYR = re.compile('[а-яА-ЯёЁ]')
@@ -51,6 +52,7 @@ def build(check=False):
         ('chek-list-arenda.pdf', 'chek-list-arenda-ua.pdf'),
     ]
     for a, b in fix: s = s.replace(a, b)
+    import yuristy_build; s = yuristy_build.insert(s, 'ua')   # 26.11.2026: блок юристов на украинском
     # переключатель языков: активный — UA
     s = re.sub(r'(<nav class="langsw"[^>]*>)(.*?)(</nav>)', lambda m: m.group(1) + re.sub(r' class="on"', '', m.group(2)).replace('href="ua.html"', 'class="on" href="ua.html"', 1).replace('href="/ua"', 'class="on" href="/ua"', 1) + m.group(3), s, flags=re.S)
     (SITE / 'ua.html').write_text(s, encoding='utf-8')

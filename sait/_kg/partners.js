@@ -9,6 +9,19 @@ export const PARTNERS = {
     form: '1FAIpQLSeVLPgIln1kyJpIERR7NH7TIsKF0LGod8rjH-5-l6WhN6WjlQ', // таблица «Заявки — Страхование (Анна)»
     e: { num: '1324185143', ch: '1482698654', topic: '1744528285', client: '1273831132', src: '1373185980' },
   },
+  yuristy: {
+    prefix: 'ЮР', who: 'Алина', topic: 'юристы',
+    wa: '34655749954',                       // рабочий WhatsApp Алины (ProSpain Consulting), дала 25.11.2026
+    tg: 'https://t.me/+34655749954',         // Telegram по тому же номеру
+    form: '1FAIpQLSdPyyyeAt_BfMmI7UjuDVwjWU4QUPRLzaP11EwRUl3ESOtZfw', // таблица «Заявки — Юристы (Алина, ProSpain)»
+    e: { num: '1324185143', ch: '1482698654', topic: '1744528285', client: '1273831132', src: '1373185980' },
+    wat: {
+      ru: 'Здравствуйте, Алина! Я от Kalmykov Group (kalmykovgroup.com), хочу бесплатную консультацию юриста. Заявка {num}',
+      ua: 'Добрий день, Аліно! Я від Kalmykov Group (kalmykovgroup.com), хочу безкоштовну консультацію юриста. Заявка {num}',
+      en: 'Hello Alina! I found you via Kalmykov Group (kalmykovgroup.com) and would like a free legal consultation. Request {num}',
+      es: '¡Hola, Alina! Vengo de Kalmykov Group (kalmykovgroup.com) y quiero una consulta gratuita con un abogado. Solicitud {num}',
+    },
+  },
 };
 
 export async function nextNumber(env, key) {
@@ -26,7 +39,8 @@ export async function logLead(key, num, channel, client, src) {
   try { await fetch(`https://docs.google.com/forms/d/e/${p.form}/formResponse`, { method: 'POST', body: b }); } catch (e) {}
 }
 
-export function waText(key, num) {
+export function waText(key, num, lang) {
   const p = PARTNERS[key];
+  if (p.wat) return (p.wat[lang] || p.wat.ru).replace('{num}', num);
   return `Здравствуйте, ${p.who}! Я от Kalmykov Group (kalmykovgroup.com), интересует ${p.topic}. Заявка ${num}`;
 }
