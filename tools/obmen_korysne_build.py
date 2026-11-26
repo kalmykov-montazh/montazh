@@ -6,7 +6,7 @@
 import json, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from polezno_build import render
+from polezno_build import render, faq_ld   # 26.11.2026: «## Часті питання» + «### питання» → FAQPage
 
 ROOT = Path(__file__).resolve().parent.parent / 'obmen-korysne'
 items = []
@@ -20,7 +20,9 @@ for f in sorted((ROOT / '_src').glob('*.md')):
     ua, _, ru = body.partition('\n=== RU ===\n')
     if not (m.get('title') and m.get('title_ru') and ua.strip() and ru.strip()):
         sys.exit(f'ПОМИЛКА {f.name}: потрібні title, title_ru, український і російський текст')
-    items.append({'slug': f.stem, 'date': m.get('date', ''), 'title': m['title'], 'title_ru': m['title_ru'],
+    fu, fr = faq_ld(ua), faq_ld(ru)
+    items.append({'slug': f.stem, 'date': m.get('date', ''), 'updated': m.get('updated', m.get('date', '')),
+                  'faq': fu, 'faq_ru': fr, 'title': m['title'], 'title_ru': m['title_ru'],
                   'desc': m.get('description', ''), 'desc_ru': m.get('description_ru', ''),
                   'html': render(ua.strip()), 'html_ru': render(ru.strip())})
 items.sort(key=lambda x: x['date'], reverse=True)

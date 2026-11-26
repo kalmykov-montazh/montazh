@@ -29,7 +29,8 @@ $r = current_rates();
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💱</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <?php if ($item): ?>
-<script type="application/ld+json"><?= json_encode(['@context' => 'https://schema.org', '@type' => 'Article', 'headline' => $item['title'], 'datePublished' => $item['date'], 'dateModified' => $item['date'], 'description' => $desc, 'mainEntityOfPage' => korysne_url($item), 'inLanguage' => $ru ? 'ru' : 'uk', 'author' => ['@type' => 'Organization', 'name' => 'Обмін Валют на Гагаріна'], 'publisher' => ['@type' => 'Organization', 'name' => 'Обмін Валют на Гагаріна', 'url' => SITE_URL]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+<script type="application/ld+json"><?= json_encode(['@context' => 'https://schema.org', '@type' => 'Article', 'headline' => $item['title'], 'datePublished' => $item['date'], 'dateModified' => ($item['updated'] ?? $item['date']), 'description' => $desc, 'mainEntityOfPage' => korysne_url($item), 'inLanguage' => $ru ? 'ru' : 'uk', 'author' => ['@type' => 'Organization', 'name' => 'Обмін Валют на Гагаріна'], 'publisher' => ['@type' => 'Organization', 'name' => 'Обмін Валют на Гагаріна', 'url' => SITE_URL]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+<?php $fq = $ru ? ($item['faq_ru'] ?? null) : ($item['faq'] ?? null); if ($fq): /* 26.11.2026 FAQPage */ ?><script type="application/ld+json"><?= json_encode($fq, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script><?php endif; ?>
 <?php endif; ?>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
