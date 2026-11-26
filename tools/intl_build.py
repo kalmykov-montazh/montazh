@@ -165,6 +165,8 @@ def trip_block(lang, trip):
     b = b.replace('https://tripster.tpk.ro/tejFlUxc?erid=2Vtzqw2eQ1M', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b')
     b = re.sub(r'<a class="trip-all".*?</a>', '', b, flags=re.S)   # 26.11.2026: своей страницы сервисов на EN/ES пока нет
     b = re.sub(r'<a class="tg-all".*?</a>', '', b, flags=re.S)
+    b = re.sub(r'<a data-r2="1".*?</a>', '', b, flags=re.S)       # второй ряд карточек — русский проект Travelpayouts
+    b = re.sub(r'<a class="allsv" href="/poezdki/">.*?</a>', '', b, flags=re.S)  # кнопка «Все сервисы» — страницы на EN/ES пока нет
     b = b.replace('href="/poezdki/"', f'href="/{UI[lang]["dir"]}/{UI[lang]["art"]}/"')
     b = b.replace('www.discovercars.com/ru/', 'www.discovercars.com/' + ('' if en else 'es/'))
     b = b.replace('locale=ru', f'locale={lang}')
