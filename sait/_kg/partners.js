@@ -11,6 +11,7 @@ export const PARTNERS = {
   },
   yuristy: {
     prefix: 'ЮР', who: 'Алина', topic: 'юристы',
+    start: 12,                               // ЮР-1…ЮР-11 переданы вручную до сайта (08.10–25.11), ЮР-12 — ручная передача 26.11; с сайта и бота — с ЮР-13
     wa: '34655749954',                       // рабочий WhatsApp Алины (ProSpain Consulting), дала 25.11.2026
     tg: 'https://t.me/+34655749954',         // Telegram по тому же номеру
     form: '1FAIpQLSdPyyyeAt_BfMmI7UjuDVwjWU4QUPRLzaP11EwRUl3ESOtZfw', // таблица «Заявки — Юристы (Алина, ProSpain)»
@@ -27,7 +28,7 @@ export const PARTNERS = {
 export async function nextNumber(env, key) {
   const p = PARTNERS[key];
   let n = 1;
-  if (env.BOT_KV) { n = parseInt(await env.BOT_KV.get('lead:' + key) || '0', 10) + 1; await env.BOT_KV.put('lead:' + key, String(n)); }
+  if (env.BOT_KV) { n = Math.max(parseInt(await env.BOT_KV.get('lead:' + key) || '0', 10), p.start || 0) + 1; await env.BOT_KV.put('lead:' + key, String(n)); }
   return p.prefix + '-' + n;
 }
 
