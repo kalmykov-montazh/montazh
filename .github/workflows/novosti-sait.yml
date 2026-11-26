@@ -38,6 +38,10 @@ jobs:
           mkdir -p e
           rclone mkdir "montazh:Брокер/Посты/Новости сайт" || true
           rclone copy "montazh:Брокер/Посты/Новости сайт" e --include "*.txt" --max-depth 1 --max-age 12d || true
+          # 26.11.2026: украинские версии новостей — их заголовки идут на украинскую главную (tools/novosti_build.py)
+          mkdir -p u
+          rclone copy "montazh:Брокер/Посты/Новости UA" u --include "*000 *.txt" --max-depth 1 --max-age 12d || true
+          rclone copy "montazh:Брокер/Посты/Опубликовано/UA" u --include "*000 *.txt" --max-depth 1 --max-age 12d || true
           rclone lsf -R "montazh:Брокер/На удаление" --include "*000 *.txt" > udal.txt 2>/dev/null || true
           # 17.11.2026: хвост журнала робота — какое фото ушло с каждой новостью в Facebook (то же фото — на сайт и в Telegram)
           rclone cat "montazh:Брокер/К публикации/_задания/журнал.txt" 2>/dev/null | grep "ТЕКСТ " | tail -400 > zhurnal.txt || true
@@ -45,7 +49,7 @@ jobs:
       - name: Собрать страницы
         run: |
           pip install -q pillow 2>/dev/null || true
-          python3 tools/novosti_build.py n udal.txt e
+          UA_DIR=u python3 tools/novosti_build.py n udal.txt e
       - name: Отправить на сайт
         run: |
           sed -e 's/^\[montazh\]/[ves]/' -e '/^root_folder_id/d' ~/.config/rclone/rclone.conf >> ~/.config/rclone/rclone.conf

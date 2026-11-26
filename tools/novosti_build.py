@@ -383,6 +383,15 @@ def main(src_dir, removed_list, extra_dir=None):
                 mm_ = re.search(r'^@ua:\s*(.+)$', ef.read_text(encoding='utf-8', errors='replace'), re.M)
                 ua = mm_.group(1).strip() if mm_ else ''
         if ua and data[k].get('ua') != ua: data[k]['ua'] = ua; changed = True
+    # и из украинской версии новости («Новости UA» / «Опубликовано/UA», каталог из переменной UA_DIR): первая строка = шапка
+    ua_dir = _os.environ.get('UA_DIR')
+    if ua_dir and Path(ua_dir).exists():
+        for f in Path(ua_dir).glob('*.txt'):
+            k = key_of(f.name)
+            if not k or k not in data: continue
+            h = parse(f.read_text(encoding='utf-8', errors='replace'))[1]
+            ua = clean_title(h) if h else ''
+            if ua and not data[k].get('ua'): data[k]['ua'] = ua; changed = True
     save_ua_titles({it['title']: it['ua'] for it in data.values() if it.get('ua')})
     if attach_photos(data): changed = True
     items = sorted(data.values(), key=lambda x: x['published'], reverse=True)
