@@ -79,11 +79,12 @@ async function remember(env, from, key, src) {
 
 // Заявки партнёрам через бот (22.11.2026): /start p_<партнёр>_<откуда> — клиент; /start reg_<партнёр> — партнёр один раз подключается
 // 26.11.2026: язык клиента (ru/ua/en/es) — ответ бота на его языке, в карточке партнёру язык виден
+// 26.11.2026 22:36 (Евгений): клиенту коротко — без номера заявки и «от Kalmykov Group», только кнопка к специалисту
 const PL = {
-  ru: (n, p) => [`Ваша заявка ${n}. Нажмите кнопку ниже — откроется чат со специалистом (${p.who}, ${p.topic}). Напишите, что вы от Kalmykov Group, заявка ${n}, и коротко ваш вопрос`, 'Написать специалисту'],
-  ua: (n, p) => [`Ваша заявка ${n}. Натисніть кнопку нижче — відкриється чат зі спеціалістом (${p.who}). Напишіть, що ви від Kalmykov Group, заявка ${n}, і коротко ваше питання`, 'Написати спеціалісту'],
-  en: (n, p) => [`Your request number is ${n}. Tap the button below to open a chat with the specialist (${p.who}). Say you come from Kalmykov Group, request ${n}, and briefly describe your question`, 'Message the specialist'],
-  es: (n, p) => [`Tu solicitud es la ${n}. Pulsa el botón de abajo para abrir el chat con la especialista (${p.who}). Dile que vienes de Kalmykov Group, solicitud ${n}, y cuéntale brevemente tu consulta`, 'Escribir a la especialista'],
+  ru: () => ['Вы попали к специалисту. Нажмите кнопку «Написать специалисту» 👇', 'Написать специалисту'],
+  ua: () => ['Ви потрапили до фахівця. Натисніть кнопку «Написати фахівцю» 👇', 'Написати фахівцю'],
+  en: () => ['You are in touch with the specialist. Tap «Message the specialist» 👇', 'Message the specialist'],
+  es: () => ['Ya estás con el especialista. Pulsa «Escribir al especialista» 👇', 'Escribir al especialista'],
 };
 async function partnerLead(env, m, key, src, lang) {
   lang = PL[lang] ? lang : 'ru';
