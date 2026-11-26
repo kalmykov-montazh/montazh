@@ -21,6 +21,7 @@ const SERVICES = {
   bagazh: 'https://radicalstorage.tpk.ro/fQvALFGI?erid=2VtzqvuETbd',
   muzei: 'https://getyourguide.tpk.ro/uFPhTm0U?erid=2VtzqwNw26b',
   strahovka: 'https://kalmykovgroup.com/strahovka/',
+  yuristy: 'https://kalmykovgroup.com/yuristy/',   // 26.11.2026: юристы-партнёры (Алина, ProSpain)
   poezdki: 'https://kalmykovgroup.com/poezdki/',
   // 22.11.2026: платные гайды — своя ссылка на каждый язык, счётчик переходов go:gaid-<язык> в KV.
   // Пока гайды не продаются (до автономо) — ведут на страницы «скоро». Со страницей оплаты — заменить адрес здесь;
