@@ -40,6 +40,8 @@ def translate(s, d):
 
 def build(check=False):
     d = json.loads((SITE / '_i18n' / 'ua.json').read_text(encoding='utf-8'))
+    t = SITE / '_i18n' / 'ua-titles.json'   # 26.11.2026: заголовки новостей и статей (пишут novosti_build / polezno_build)
+    if t.exists(): d = {**json.loads(t.read_text(encoding='utf-8')), **d}
     s = (SITE / 'index.html').read_text(encoding='utf-8')
     s, miss = translate(s, d)
     fix = [

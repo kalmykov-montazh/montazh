@@ -64,6 +64,14 @@ def parse(text):
 
 def esc(s): return html.escape(s, quote=True)
 
+def save_ua_titles(m):
+    # 26.11.2026: общий словарь украинских заголовков новостей и статей (читает tools/ua_build.py)
+    if not m: return
+    p = Path(__file__).resolve().parent.parent / 'sait' / '_i18n' / 'ua-titles.json'
+    d = json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+    if all(d.get(k) == v for k, v in m.items()): return
+    d.update(m); p.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding='utf-8')
+
 def parse_extra(text):
     """Файл «Новости сайт/ДД.ММ тема.txt»: разделы @что делать: / @подробнее: / @источники: (строки «ссылка | название»)"""
     sec, out = None, {'todo': [], 'more': [], 'src': []}
@@ -73,6 +81,7 @@ def parse_extra(text):
     for l in text.replace('\r\n', '\n').replace('\ufeff', '').split('\n'):
         t = l.strip()
         low = t.lower()
+        if low.startswith('@ua:'): continue   # 26.11.2026: украинский заголовок — не текст статьи
         if low.startswith('@что делать'): flush(); cur = []; sec = 'todo'; continue
         if low.startswith('@подробнее'): flush(); cur = []; sec = 'more'; continue
         if low.startswith('@источники'): flush(); cur = []; sec = 'src'; continue
@@ -363,6 +372,18 @@ def main(src_dir, removed_list, extra_dir=None):
             k = m.group(1).strip()
             if ex and data[k].get('extra') != ex:
                 data[k]['extra'] = ex; changed = True; print('дополнено', k)
+    # 26.11.2026: украинский заголовок для украинской главной — строка «@ua: …» в файле новости (пишет задача новостей)
+    for f in Path(src_dir).glob('*.txt'):
+        k = key_of(f.name)
+        if not k or k not in data: continue
+        ua = parse(f.read_text(encoding='utf-8', errors='replace'))[0].get('ua', '').strip()
+        if not ua and extra_dir:   # или строка «@ua: …» в файле полной версии («Новости сайт/ДД.ММ тема.txt»)
+            ef = Path(extra_dir) / (k + '.txt')
+            if ef.exists():
+                mm_ = re.search(r'^@ua:\s*(.+)$', ef.read_text(encoding='utf-8', errors='replace'), re.M)
+                ua = mm_.group(1).strip() if mm_ else ''
+        if ua and data[k].get('ua') != ua: data[k]['ua'] = ua; changed = True
+    save_ua_titles({it['title']: it['ua'] for it in data.values() if it.get('ua')})
     if attach_photos(data): changed = True
     items = sorted(data.values(), key=lambda x: x['published'], reverse=True)
     for it in items:

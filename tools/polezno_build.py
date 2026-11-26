@@ -186,6 +186,9 @@ def main():
         (DIR / f'{a["slug"]}.html').write_text(fix(redesign_polezno(article(a, items))), encoding='utf-8')
     (DIR / 'index.html').write_text(fix(redesign_index(index(items), 'polezno')), encoding='utf-8')
     update_home(items); update_sitemap(items)
+    try:  # 26.11.2026: украинский заголовок статьи (ключ шапки ua_title) — для украинской главной
+        import novosti_build; novosti_build.save_ua_titles({a['title']: a['ua_title'] for a in items if a.get('ua_title')})
+    except Exception as e: print('ua_title:', e)
     print(f'Полезное: {len(items)} статей')
     # 22.11.2026: украинская главная — копия русской с переводом (tools/ua_build.py)
     try:
