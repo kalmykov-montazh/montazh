@@ -174,7 +174,7 @@ def page(lang):
             + block(lang).replace(f'<a class="lwall" href="{d["page"]}">{esc(d["all"])}</a>', '').replace('src=main', 'src=page')
             + '</div>'
             f'<div class="ycats">{cats}</div>'
-            f'<div class="ycta">{buttons(lang, "page")}</div><p class="yad">{esc(d["ad"])}</p>'
+            f'<div class="ycta">{buttons(lang, "page")}</div>'  # 26.11.2026: без строки «от Kalmykov Group» — клиенту связку не показываем
             '</div></body></html>\n')
 
 

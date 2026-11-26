@@ -3,6 +3,10 @@
 // Добавить партнёра = новая запись здесь + страница sait/<ключ>/index.html + Google-форма (поля Номер, Канал, Тема, Клиент, Откуда), связанная с таблицей партнёра.
 // + ОБЯЗАТЕЛЬНО (решение Евгения 26.11.2026): строка в рекламный круг новостного Telegram-канала — ROTA и SVC в sait/functions/tg/news-sync.js
 //   и короткая ссылка в sait/functions/go/[key].js, чтобы реклама партнёра выходила хотя бы раз в пару недель
+// ПРАВИЛО (Евгений, 26.11.2026 22:49): клиент НЕ должен видеть связку с Евгением / Kalmykov Group — ни в тексте WhatsApp,
+// ни в ответе бота, ни на странице («от Kalmykov Group», «заявка от Калмыкова», «партнёрская ссылка с пометкой»).
+// Человек просто попадает к специалисту. Номер заявки, источник и «от Kalmykov Group» — только в карточке партнёру/админу и в таблице.
+// Новый партнёр: wat без упоминания Kalmykov Group, ответ бота — общий PL в tg/webhook.js, окошко имя/телефон — waform.js (подключается само)
 export const PARTNERS = {
   strahovka: {
     prefix: 'СТР', who: 'Анна', topic: 'страхование',
@@ -10,6 +14,12 @@ export const PARTNERS = {
     tg: 'https://t.me/+34695321898',         // Telegram Анны по номеру
     form: '1FAIpQLSeVLPgIln1kyJpIERR7NH7TIsKF0LGod8rjH-5-l6WhN6WjlQ', // таблица «Заявки — Страхование (Анна)»
     e: { num: '1324185143', ch: '1482698654', topic: '1744528285', client: '1273831132', src: '1373185980' },
+    wat: {
+      ru: 'Здравствуйте, Анна! Интересует страховка. Заявка {num}',
+      ua: 'Добрий день, Анно! Цікавить страховка. Заявка {num}',
+      en: 'Hello Anna! I am interested in insurance. Request {num}',
+      es: '¡Hola, Anna! Me interesa un seguro. Solicitud {num}',
+    },
   },
   yuristy: {
     prefix: 'ЮР', who: 'Алина', topic: 'юристы',
@@ -19,10 +29,10 @@ export const PARTNERS = {
     form: '1FAIpQLSdPyyyeAt_BfMmI7UjuDVwjWU4QUPRLzaP11EwRUl3ESOtZfw', // таблица «Заявки — Юристы (Алина, ProSpain)»
     e: { num: '1324185143', ch: '1482698654', topic: '1744528285', client: '1273831132', src: '1373185980' },
     wat: {
-      ru: 'Здравствуйте, Алина! Я от Kalmykov Group (kalmykovgroup.com), хочу бесплатную консультацию юриста. Заявка {num}',
-      ua: 'Добрий день, Аліно! Я від Kalmykov Group (kalmykovgroup.com), хочу безкоштовну консультацію юриста. Заявка {num}',
-      en: 'Hello Alina! I found you via Kalmykov Group (kalmykovgroup.com) and would like a free legal consultation. Request {num}',
-      es: '¡Hola, Alina! Vengo de Kalmykov Group (kalmykovgroup.com) y quiero una consulta gratuita con un abogado. Solicitud {num}',
+      ru: 'Здравствуйте, Алина! Хочу бесплатную консультацию юриста. Заявка {num}',
+      ua: 'Добрий день, Аліно! Хочу безкоштовну консультацію юриста. Заявка {num}',
+      en: 'Hello Alina! I would like a free legal consultation. Request {num}',
+      es: '¡Hola, Alina! Quiero una consulta gratuita con un abogado. Solicitud {num}',
     },
   },
 };
@@ -45,5 +55,5 @@ export async function logLead(key, num, channel, client, src) {
 export function waText(key, num, lang) {
   const p = PARTNERS[key];
   if (p.wat) return (p.wat[lang] || p.wat.ru).replace('{num}', num);
-  return `Здравствуйте, ${p.who}! Я от Kalmykov Group (kalmykovgroup.com), интересует ${p.topic}. Заявка ${num}`;
+  return `Здравствуйте, ${p.who}! Интересует ${p.topic}. Заявка ${num}`;
 }
