@@ -89,6 +89,13 @@ const PL = {
 async function partnerLead(env, m, key, src, lang) {
   lang = PL[lang] ? lang : 'ru';
   const p = PARTNERS[key]; const chat = m.chat.id; const f = m.from || {};
+  // 26.11.2026 22:45: пробные нажатия Евгения (его аккаунты) — без номера, таблицы и карточки партнёру, только тот же ответ клиенту
+  if (OWN.includes((f.username || '').toLowerCase()) || (env.ADMIN_USERNAME && f.username === env.ADMIN_USERNAME)) {
+    const [t0, b0] = PL[lang]('', p);
+    await tg(env, 'sendMessage', { chat_id: chat, text: t0, reply_markup: { inline_keyboard: [[{ text: b0, url: p.tg }]] } });
+    await tg(env, 'sendMessage', { chat_id: chat, text: 'ТЕСТ: это ваш аккаунт — заявку не создаю, партнёру не отправляю' });
+    return;
+  }
   const num = await nextNumber(env, key);
   const name = [f.first_name, f.last_name].filter(Boolean).join(' ');
   const who = name + (f.username ? ' @' + f.username : '');
