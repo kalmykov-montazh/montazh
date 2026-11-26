@@ -1,9 +1,26 @@
 // /p/<партнёр>-wa и /p/<партнёр>-tg — кнопки на страницах партнёров (22.11.2026).
 // WhatsApp: номер заявки, строка в таблицу, сразу чат партнёра с текстом «от Kalmykov Group, заявка …».
 // Telegram: через бот @kalmykov_spain_bot (в личку текст не подставить) — бот сам даёт номер, пишет партнёру и в таблицу.
+// 26.11.2026 (решение Евгения): при нажатии WhatsApp бот сразу шлёт партнёру в Telegram «заявка №, сейчас напишет в WhatsApp, время» —
+// если человек сотрёт подставленный текст, партнёр всё равно сопоставит его по времени. Копия — админу, как у Telegram-заявок.
 import { PARTNERS, nextNumber, logLead, waText } from '../../_kg/partners.js';
 const BOT = 'kalmykov_spain_bot';
-export async function onRequestGet({ params, request, env }) {
+
+async function notifyWa(env, key, num, lang) {
+  if (!env.TG_TOKEN || !env.BOT_KV) return;
+  const p = PARTNERS[key];
+  const time = new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
+  const card = `🆕 Заявка ${num} от Kalmykov Group\nТема: ${p.topic}${lang === 'ru' ? '' : '\nЯзык клиента: ' + lang.toUpperCase()}\nКлиент нажал WhatsApp в ${time} и сейчас напишет вам туда.\nЕсли номера заявки в его сообщении не будет — это он, сверяйте по времени`;
+  const send = (chat, text) => fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }),
+  }).catch(() => {});
+  const pchat = await env.BOT_KV.get('pchat3:' + key);
+  if (pchat) await send(pchat, card);
+  const admin = await env.BOT_KV.get('admin');
+  if (admin) await send(admin, card.replace(' и сейчас напишет вам туда', ' (уведомление партнёру ' + (pchat ? 'ушло' : 'НЕ ушло — партнёр не подключён к боту') + ')'));
+}
+
+export async function onRequestGet({ params, request, env, waitUntil }) {
   const [key, ch] = String(params.key).split('-');
   const p = PARTNERS[key];
   if (!p) return Response.redirect('https://kalmykovgroup.com/', 302);
@@ -12,5 +29,7 @@ export async function onRequestGet({ params, request, env }) {
   if (ch === 'tg') return Response.redirect(`https://t.me/${BOT}?start=p_${key}_${src}${['ua', 'en', 'es'].includes(lang) ? '_' + lang : ''}`, 302);
   const num = await nextNumber(env, key);
   await logLead(key, num, 'WhatsApp', '', lang === 'ru' ? src : src + '-' + lang);
+  const n = notifyWa(env, key, num, lang);
+  if (typeof waitUntil === 'function') waitUntil(n); else await n;
   return Response.redirect(`https://wa.me/${p.wa}?text=${encodeURIComponent(waText(key, num, lang))}`, 302);
 }
