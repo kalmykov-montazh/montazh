@@ -750,6 +750,7 @@ html{scroll-behavior:smooth}#razbor{scroll-margin-top:14px}
 @media(max-width:860px){.go3{grid-template-columns:1fr;gap:12px}}
 /* 26.11.2026 v3: заголовок по центру, «Все сервисы» ближе к правому краю */
 @media(min-width:601px){html body .trip .trip-h{display:grid!important;grid-template-columns:1fr auto 1fr!important;justify-content:stretch!important}html body .trip .trip-h h2#h-trip{grid-column:2}html body .trip .trip-h a.allsv{grid-column:3;justify-self:end;margin-right:7%}}
+html body .trip{padding-top:12px!important}html body .trip .trip-h{margin:0 0 12px!important;align-items:center!important}html body .trip .trip-h h2#h-trip,html body .trip .trip-h a.allsv{align-self:center;margin-top:0!important;margin-bottom:0!important}
 .tw6>.trip-g{grid-template-columns:repeat(3,1fr)!important}
 /* 26.11.2026 v2: «Все сервисы» справа от заголовка, яркая мигающая кнопка (Евгений) */
 .trip .trip-h{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:center!important;gap:14px!important;margin-bottom:10px!important;text-align:left!important}
