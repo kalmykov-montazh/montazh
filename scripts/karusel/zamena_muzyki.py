@@ -17,7 +17,7 @@ DRY = '--dry' in sys.argv
 TOLKO = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--tolko=')), '').lower()
 K = 'montazh:Брокер/Посты/Карусели'
 ZAD = 'montazh:Брокер/К публикации/_задания'
-BK = 'montazh:Брокер/работа/Рилсы каруселей — старая музыка (16.11.2026)' + (' — City Sunshine 25.11' if any(a.startswith('--tolko=') for a in sys.argv) else '')
+BK = 'montazh:Брокер/работа/Рилсы каруселей — старая музыка (16.11.2026)' + ((' — ' + next(a.split('=', 1)[1] for a in sys.argv if a.startswith('--tolko=')) + f' {datetime.date.today():%d.%m}') if any(a.startswith('--tolko=') for a in sys.argv) else '')
 API = 'https://backend.blotato.com/v2'
 KEY = open('key.txt', encoding='utf-8-sig').read().strip()
 NOW = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=20)
