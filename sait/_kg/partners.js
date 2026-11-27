@@ -15,8 +15,8 @@ export const PARTNERS = {
     form: '1FAIpQLSeVLPgIln1kyJpIERR7NH7TIsKF0LGod8rjH-5-l6WhN6WjlQ', // таблица «Заявки — Страхование (Анна)»
     e: { num: '1324185143', ch: '1482698654', topic: '1744528285', client: '1273831132', src: '1373185980' },
     wat: {
-      ru: 'Здравствуйте, Анна! Интересует страховка. Заявка {num}',
-      ua: 'Добрий день, Анно! Цікавить страховка. Заявка {num}',
+      ru: 'Здравствуйте, Ана! Интересует страховка. Заявка {num}',
+      ua: 'Здравствуйте, Ана! Интересует страховка. Заявка {num}',
       en: 'Hello Anna! I am interested in insurance. Request {num}',
       es: '¡Hola, Anna! Me interesa un seguro. Solicitud {num}',
     },
