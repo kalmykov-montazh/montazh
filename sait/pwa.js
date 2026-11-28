@@ -35,4 +35,4 @@
 })();
 
 /* 28.11.2026: новогоднее оформление (гирлянда, шары, снег) — грузится только когда включён праздник ny */
-(function(){if(document.body&&document.body.classList.contains("fest2-ny")){var s=document.createElement("script");s.src="/prazdniki/ny.js?v=1";document.body.appendChild(s)}})();
+(function(){if(document.body&&document.body.classList.contains("fest2-ny")){var s=document.createElement("script");s.src="/prazdniki/ny.js?v=2";document.body.appendChild(s)}})();
