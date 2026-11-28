@@ -34,6 +34,7 @@ var css=`
 .fcard.ny i svg{width:40px;height:40px;display:block}
 @media (min-width:601px){.fcard.ny{top:58px;bottom:auto}}
 @media (max-width:600px){.fcard.ny{position:relative;left:auto;transform:none;margin-top:18px}body .profile.nyh{padding-top:30px!important}.profile .nyg{top:-4px}.fcard.ny i svg{width:34px;height:34px}}
+.fcard.ny.nyst{position:relative;left:auto;top:auto;bottom:auto;transform:none;margin:22px auto 0;width:max-content;max-width:100%}
 @media (prefers-reduced-motion:reduce){.nyg .b,.nyball{animation:none}}
 `;
 var st=d.createElement('style');st.textContent=css;d.head.appendChild(st);
@@ -80,7 +81,7 @@ function garland(){
     }
   }
   /* шары висят в нижних точках дуг: через одну, кроме крайних, где кнопки языков и eSIM */
-  var spots=[];if(!MOB){for(var k=1;k<n-1;k+=2)spots.push(k);if(!spots.length)spots=[Math.floor(n/2)]}
+  var spots=[];if(!MOB&&cv.clientHeight>=170){for(var k=1;k<n-1;k+=2)spots.push(k);if(!spots.length)spots=[Math.floor(n/2)]}
   var BC=[['#e0162f','#ff6b6b'],['#c9a24b','#ffe29a'],['#0f6b46','#38c98a'],['#1f4fbf','#7fb2ff']];
   spots.forEach(function(k,ix){
     var x=(k+.5)*sw, y=top+sag, L=(MOB?14:22)+(ix%2)*(MOB?10:16), D=MOB?18:24+(ix%3)*4;
@@ -147,6 +148,10 @@ d.querySelectorAll('.go3 a').forEach(cap);
 /* ---------- открытка ---------- */
 function card(){var fc=d.querySelector('.fcard');if(!fc){return setTimeout(card,100)}
   fc.classList.add('ny');cap(fc);
+  function fit(){if(MOB)return;var h=d.querySelector('.profile h1'),pr=d.querySelector('.profile');if(!h||!pr)return;
+    if(fc.classList.contains('nyst')){fc.classList.remove('nyst');cv.appendChild(fc)}
+    if(fc.getBoundingClientRect().bottom>h.getBoundingClientRect().top-6){fc.classList.add('nyst');pr.insertAdjacentElement('afterend',fc)}}
+  fit();window.addEventListener('resize',function(){setTimeout(fit,250)});if(d.fonts)d.fonts.ready.then(fit);
   var ic=fc.querySelector('i');if(ic)ic.innerHTML='<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 30c6-2 10-7 12-14M6 22c7 1 12-2 16-8M30 8c-2 8 0 14 6 18M38 12c-4 6-3 12 2 18" stroke="#2f7d4a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M10 27l-3-1M12 24l-2-3M15 21l-3-1M17 18l-2-3M10 21l-1-3M14 18l-1-3M33 12l3-1M33 16l3 0M34 20l3 1M38 17l2-2M38 21l3 0" stroke="#3f9a5c" stroke-width="2" stroke-linecap="round"/><path d="M24 14v8" stroke="#c9a24b" stroke-width="1.5"/><rect x="21" y="20" width="6" height="4" rx="1" fill="#e8c46a"/><circle cx="24" cy="33" r="10" fill="url(#nyb1)"/><circle cx="20.5" cy="29.5" r="2.6" fill="#fff" opacity=".8"/><defs><radialGradient id="nyb1" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffe29a"/><stop offset=".55" stop-color="#c9a24b"/><stop offset="1" stop-color="#6b4f17"/></radialGradient></defs></svg>'}
 card();
 })();
