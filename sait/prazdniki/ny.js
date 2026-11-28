@@ -1,56 +1,32 @@
-/* Новогоднее оформление kalmykovgroup.com, v3 (28.11.2026) — в стиле открытки сайта обменки (v6):
-   светлая открытка с золотой рамкой, живая еловая ветка и заснеженный лес (фото Unsplash),
-   качающиеся шары, табличка, золотые цифры года, снег по сайту, снежные шапки на кнопках.
-   v2 (лампочки-гирлянда) — prazdniki/ny_v2.js. Включает праздничный скрипт страницы (fest=ny) через pwa.js */
+/* Новогоднее оформление kalmykovgroup.com, v4 (28.11.2026): БЕЗ отдельной открытки — услуги не сдвигаются.
+   Украшаем пустые места: фон страницы в снежинках, живые еловые ветки с шарами в свободных углах блоков,
+   снег по сайту, снежные шапки на трёх кнопках, шапка Санты на аватаре (из index.html).
+   v3 (открытка) — prazdniki/ny_v3.js, v2 (гирлянда) — ny_v2.js. Подключается из pwa.js (fest=ny) */
 (function(){
 if(window.__kgNY)return;window.__kgNY=1;
-var d=document,M=new Date().getMonth()+1,Y=new Date().getFullYear(),yr=(M===1?Y:Y+1);
-var UA=(d.documentElement.lang||'').indexOf('uk')===0||/^\/ua/.test(location.pathname);
+var d=document;
 var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 var mob=window.innerWidth<=700;
-var DD=new Date().getDate(),xm=(M===12&&DD>=24&&DD<=26),ny2=(M===1);
-var TX=UA?{h1:ny2?'З Новим роком!':xm?'Щасливого Різдва!':'З наступаючим!',h2:'Новим роком і Різдвом!',h3:'Нехай '+yr+' стане вашим роком в Іспанії',p1:'Теплих свят',p2:'з Валенсії!'}
-         :{h1:ny2?'С Новым годом!':xm?'Счастливого Рождества!':'С наступающим!',h2:'Новым годом и Рождеством!',h3:'Пусть '+yr+' станет вашим годом в Испании',p1:'Тёплых праздников',p2:'из Валенсии!'};
 var UF='https://images.unsplash.com/photo-';
-
+var flake=function(x,y,s,o){return '<g transform="translate('+x+' '+y+') scale('+s+')" opacity="'+o+'"><g stroke="%23b9cbe0" stroke-width="2" stroke-linecap="round" fill="none"><path d="M0-14V14M-12-7 12 7M-12 7 12-7"/><path d="M-4-11 0-7 4-11M-4 11 0 7 4 11M-13-2-9-4-10-9M13 2 9 4 10 9M-13 2-9 4-10 9M13-2 9-4 10-9"/></g></g>'};
+var tile='<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260" viewBox="0 0 260 260">'+flake(40,46,1,.9)+flake(170,30,.6,.75)+flake(210,150,1.15,.8)+flake(95,175,.7,.7)+flake(30,232,.55,.6)+flake(150,235,.45,.55)+'</svg>';
 var css=''+
 '.fcard{display:none!important}'+
-'.kg3{position:relative;margin:18px 0 6px;padding:24px 30px 118px;min-height:270px;border-radius:20px;overflow:hidden;isolation:isolate;'+
-'background:radial-gradient(60% 80% at 20% 10%,#fffefa 0%,rgba(255,254,250,0) 70%),linear-gradient(180deg,#fffaf0 0%,#fbf3e2 100%);'+
-'border:2px solid #d4af37;box-shadow:0 0 0 4px rgba(212,175,55,.22),0 14px 34px -14px rgba(0,0,0,.45)}'+
-'.kg3-fo{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:0;background:url('+UF+'1641919238084-448ec0bfd446?auto=format&fit=crop&w=1800&q=70) center 62%/cover no-repeat;'+
-'-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 55%);mask-image:linear-gradient(180deg,transparent 0,#000 55%)}'+
-'.kg3-fir{position:absolute;z-index:1;top:-6px;right:-4px;width:520px;height:260px;overflow:hidden;mix-blend-mode:multiply;pointer-events:none;'+
-'-webkit-mask-image:radial-gradient(130% 120% at 100% 0%,#000 48%,transparent 78%);mask-image:radial-gradient(130% 120% at 100% 0%,#000 48%,transparent 78%)}'+
-'.kg3-fir img{position:absolute;top:0;right:0;width:346px;height:519px;transform-origin:top right;transform:translateX(-519px) rotate(-90deg);max-width:none}'+
-'.kg3-txt{position:relative;z-index:4;max-width:50%}'+
-'.kg3-h1{display:block;font-family:Lobster,"Brush Script MT",cursive;font-weight:400;font-size:58px;line-height:1.02;color:#c1121f;text-shadow:0 2px 0 #fff,0 4px 0 #e2b85a,0 10px 18px rgba(120,20,20,.22)}'+
-'.kg3-h2{display:block;margin-top:10px;font-family:Lobster,"Brush Script MT",cursive;font-weight:400;font-size:32px;line-height:1.1;color:#17603a;text-shadow:0 2px 0 #fff,0 3px 6px rgba(0,60,20,.15)}'+
-'.kg3 .kg3-h3{display:block;margin-top:6px;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:700;font-size:26px;line-height:1.15;color:#7a5412}'+
-'.kg3-yr{position:absolute;z-index:3;right:28px;bottom:10px;font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:80px;line-height:1;letter-spacing:3px;'+
-'background:linear-gradient(180deg,#fff6c9 0%,#ffd75a 45%,#d9a12e 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #6b4a12) drop-shadow(0 6px 10px rgba(0,0,0,.45))}'+
-'.kg3-bz{position:absolute;z-index:3;top:0;right:0;width:520px;height:280px;pointer-events:none}'+
+'html,body{background-color:#eef2f7!important;background-image:url("data:image/svg+xml,'+tile.replace(/"/g,"'").replace(/</g,'%3C').replace(/>/g,'%3E')+'")!important;background-size:260px 260px!important}'+
+'.kg4-k{position:absolute;z-index:-1;top:-4px;right:-4px;width:520px;height:280px;pointer-events:none;transform-origin:100% 0}'+
+'.kg4-k.l{right:auto;left:-4px;transform-origin:0 0}'+
+'.kg4-pb{position:absolute;left:0;right:0;top:100%;height:60px;z-index:2;pointer-events:none}'+
+'.kg4-fir{position:absolute;top:0;right:0;width:520px;height:260px;overflow:hidden;mix-blend-mode:multiply;'+
+'-webkit-mask-image:radial-gradient(130% 120% at 100% 0%,#000 46%,transparent 76%);mask-image:radial-gradient(130% 120% at 100% 0%,#000 46%,transparent 76%)}'+
+'.kg4-fir img{position:absolute;top:0;right:0;width:346px;height:519px;transform-origin:top right;transform:translateX(-519px) rotate(-90deg);max-width:none}'+
+'.kg4-host{isolation:isolate}.kg4-host.kg4-st{position:relative}'+
 '.kg3-bb{position:absolute;transform-origin:50% 0;animation:kg3s 4s ease-in-out infinite alternate;filter:drop-shadow(0 6px 7px rgba(0,0,0,.35))}'+
 '@keyframes kg3s{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}'+
-'.kg3-pl{position:absolute;z-index:5;right:230px;top:84px;width:280px;text-align:center;transform-origin:50% -34px;animation:kg3p 5s ease-in-out infinite alternate;'+
-'padding:10px 14px 16px;border-radius:16px;background:radial-gradient(120% 90% at 50% 0%,#2d5bb0 0%,#173a7a 55%,#102a5c 100%);border:2px solid #f0c35a;box-shadow:inset 0 0 0 3px #102a5c,inset 0 0 0 4px rgba(255,213,0,.55),0 12px 24px -6px rgba(16,42,92,.65)}'+
-'.kg3-pl:before,.kg3-pl:after{content:"";position:absolute;top:-56px;width:1.5px;height:56px;background:linear-gradient(#a07a24,#f3d98e)}.kg3-pl:before{left:26px}.kg3-pl:after{right:26px}'+
-'@keyframes kg3p{from{transform:rotate(-1.8deg)}to{transform:rotate(1.8deg)}}'+
-'.kg3-pl em{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:700;line-height:1.05;letter-spacing:.3px;'+
-'background:linear-gradient(180deg,#fffbe6 0%,#ffe27a 40%,#ffc93c 70%,#f0a93a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0b1d44)}'+
-'.kg3-pl .a{font-size:27px;white-space:nowrap}.kg3-pl .c{font-size:25px;margin-top:1px}'+
-'.kg3-pl svg{display:block;width:150px;height:12px;margin:3px auto 0}'+
-'.kg3-pl .s1,.kg3-pl .s2{position:absolute;top:12px;color:#ffd500;font-size:13px;line-height:1;font-style:normal}.kg3-pl .s1{left:12px}.kg3-pl .s2{right:12px}'+
 '.kg3-snow{position:fixed;inset:0;width:100vw;height:100vh;z-index:45;pointer-events:none}'+
 '.nycap{position:absolute;left:14px;top:-8px;height:15px;z-index:5;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(40,60,90,.25))}'+
 '.go3 a .nycap{right:96px}.go3 a.g2 .nycap,.go3 a.g3 .nycap{right:40%}'+
-'@media (max-width:1100px){.kg3-txt{max-width:44%}.kg3-h1{font-size:46px}.kg3-h2{font-size:27px}.kg3 .kg3-h3{font-size:22px}.kg3-yr{font-size:66px}}'+
-'@media (max-width:700px){.kg3{padding:30px 16px 100px;min-height:0}.kg3-txt{max-width:100%}.kg3-h1{font-size:34px;white-space:nowrap}.kg3-h2{font-size:21px;margin-top:6px}.kg3 .kg3-h3{font-size:19px;max-width:78%}'+
-'.kg3-fo{height:120px}.kg3-yr{font-size:44px;right:12px;bottom:8px}.kg3-fir{transform:scale(.5);transform-origin:100% 0}.kg3-bz{transform:scale(.42);transform-origin:100% 0}.kg3-bz .b3,.kg3-bz .b4,.kg3-bz .b5{display:none}'+
-'.kg3-pl{position:relative;right:auto;top:auto;margin:14px 0 0;width:auto;max-width:250px;animation:none}.kg3-pl:before,.kg3-pl:after{display:none}.kg3-pl .a{font-size:23px}.kg3-pl .c{font-size:21px}}'+
-'@media (prefers-reduced-motion:reduce){.kg3-bb,.kg3-pl{animation:none}}';
+'@media (prefers-reduced-motion:reduce){.kg3-bb{animation:none}}';
 var st=d.createElement('style');st.textContent=css;d.head.appendChild(st);
-var lf=d.createElement('link');lf.rel='stylesheet';lf.href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Lobster&display=swap';d.head.appendChild(lf);
 
 function orn(id,cls,x,top,len,r,c,dur,delay){
  var h=len+6+r*2+4,w=r*2+8,cx=w/2;
@@ -64,23 +40,30 @@ function orn(id,cls,x,top,len,r,c,dur,delay){
  '<ellipse cx="'+(cx-r*.38)+'" cy="'+(len+6+r*.6)+'" rx="'+(r*.28)+'" ry="'+(r*.16)+'" fill="#fff" fill-opacity=".65" transform="rotate(-30 '+(cx-r*.38)+' '+(len+6+r*.6)+')"/></svg>'}
 var RED=['#ffb0b0','#d21f2f','#5c0710'],GOLD=['#fff3c4','#e0a93a','#6b4409'],SILV=['#ffffff','#e3e6ec','#7d8696'],BLUE=['#cfe0ff','#2c5fc0','#0b2257'];
 
-var card=d.createElement('section');card.className='kg3';card.setAttribute('aria-label',TX.h1);
-card.innerHTML='<div class="kg3-fo" aria-hidden="true"></div>'+
- '<div class="kg3-fir" aria-hidden="true"><img alt="" src="'+UF+'1737100932584-c57dcac311e2?auto=format&fit=crop&w=700&q=75"></div>'+
- '<div class="kg3-txt"><b class="kg3-h1">'+TX.h1+'</b><strong class="kg3-h2">'+TX.h2+'</strong><span class="kg3-h3">'+TX.h3+'</span></div>'+
- '<div class="kg3-yr" aria-hidden="true">'+yr+'</div>'+
- '<div class="kg3-bz" aria-hidden="true">'+
-  orn('kg3a','b1',488,30,30,19,RED,4.2,0)+
-  orn('kg3b','b2',426,36,80,16,GOLD,3.6,-1.3)+
-  orn('kg3c','b3',366,26,48,14,SILV,4.6,-2.1)+
-  orn('kg3d','b4',312,20,20,12,BLUE,5,-0.7)+
-  orn('kg3e','b5',160,16,8,13,RED,4.4,-1.8)+
- '</div>'+
- '<div class="kg3-pl"><i class="s1">✦</i><i class="s2">✦</i><em class="a">'+TX.p1+'</em><em class="c">'+TX.p2+'</em>'+
- '<svg viewBox="0 0 150 12" aria-hidden="true"><path d="M4 8 C40 1, 90 1, 146 6" stroke="#ffd500" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M20 10 C60 5, 100 5, 132 9" stroke="#ffd500" stroke-opacity=".55" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg></div>';
-var go=d.querySelector('.go3'),pr=d.querySelector('.profile');
-if(go)go.parentNode.insertBefore(card,go);else if(pr)pr.insertAdjacentElement('afterend',card);
-if(mob)card.querySelector('.kg3-txt').appendChild(card.querySelector('.kg3-pl'));
+
+/* ветка с шарами в угол блока: el — блок, s — масштаб, left — левый угол (зеркально), n — сколько шаров */
+var K=0;
+function fir(el,s,left,n){if(!el||el.querySelector(':scope>.kg4-k'))return;
+ el.classList.add('kg4-host');if(getComputedStyle(el).position==='static')el.classList.add('kg4-st');
+ var k=d.createElement('div');k.className='kg4-k'+(left?' l':'');k.setAttribute('aria-hidden','true');
+ k.style.transform=left?'translateX('+(520*s)+'px) scale('+(-s)+','+s+')':'scale('+s+')';
+ var B=[['b1',488,30,30,19,RED,4.2,0],['b2',426,36,80,16,GOLD,3.6,-1.3],['b3',366,26,48,14,SILV,4.6,-2.1],['b4',312,20,20,12,BLUE,5,-.7]];
+ var h='<div class="kg4-fir"><img alt="" loading="lazy" src="'+UF+'1737100932584-c57dcac311e2?auto=format&fit=crop&w=700&q=75"></div>';
+ for(var i=0;i<(n||3);i++){var b=B[i];K++;h+=orn('kg4o'+K,b[0],b[1],b[2],b[3],b[4],b[5],b[6],b[7])}
+ k.innerHTML=h;el.insertBefore(k,el.firstChild)}
+
+function q(s){return d.querySelector(s)}
+var pr=q('.profile');
+/* профиль: шары свисают с нижнего края карточки в пустую полосу над тремя кнопками (широкий экран) */
+if(pr&&window.innerWidth>=1000){pr.classList.add('kg4-host');var pb=d.createElement('div');pb.className='kg4-pb';pb.setAttribute('aria-hidden','true');
+ var w=pr.offsetWidth,PB=[[.40,6,9,GOLD,4.4,-.5],[.47,18,11,RED,3.8,-1.6],[.53,4,8,SILV,4.9,-2.4],[.86,10,10,BLUE,4.1,-1],[.92,22,12,RED,3.6,-2],[.97,6,9,GOLD,4.6,-.3]],hh='';
+ for(var j=0;j<PB.length;j++){var b=PB[j];K++;hh+=orn('kg4p'+K,'',Math.round(w*b[0]),-2,b[1],b[2],b[3],b[4],b[5])}
+ pb.innerHTML=hh;pr.appendChild(pb)}
+/* светлые блоки ниже: живые ветки с шарами в свободных углах */
+if(!mob)fir(q('.bonus'),.42,0,3);
+/* «Скоро»: справа от карточек пусто — ветка от заголовка свисает туда */
+d.querySelectorAll('section.head').forEach(function(h){var n=h.nextElementSibling;if(!mob&&n&&n.classList.contains('soon'))fir(h,.5,0,3)});
+var nb=d.querySelectorAll('.newsbox');if(!mob&&nb[0])fir(nb[0],.38,1,2);
 
 /* снежные шапки на трёх больших кнопках */
 var NS='http://www.w3.org/2000/svg';
