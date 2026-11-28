@@ -59,6 +59,10 @@ def partners(lang):
                  'eSIM data for Spain and 200+ countries' if en else 'eSIM con datos para España y más de 200 países'),
         'esim2': ('Airalo', 'https://airalo.tpk.ro/VEBEeOcy?erid=2VtzqveQanB',
                   'The best-known eSIM store: Spain or all of Europe' if en else 'La tienda de eSIM más conocida: España o toda Europa'),
+        'booking': ('Booking.com', 'https://booking.tpk.ro/' + ('NT81xF6A' if en else 'UiQARjKq'),
+                    'Hotels and apartments, often with free cancellation — book in the same visit' if en else 'Hoteles y apartamentos, muchos con cancelación gratuita'),
+        'tours2': ('Viator', 'https://viator.tpk.ro/' + ('UFudzZpf' if en else 'VGcVd3bS'),
+                   'Tours and day trips from Tripadvisor\'s booking site' if en else 'Tours y excursiones de la plataforma de Tripadvisor'),
         'tours': ('GetYourGuide', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b',
                   'Tours, tickets and day trips with free cancellation' if en else 'Tours, entradas y excursiones con cancelación gratuita'),
         'claim': ('Compensair', 'https://compensair.tpk.ro/lAi8i3Do?erid=2VtzqvygRSf',
@@ -72,7 +76,8 @@ def partners(lang):
     }
 # ── 25.11.2026: на /en/ и /es/ — только ссылки проектов Travelpayouts EN (605856) и ES (605857) ──────
 # (правило Евгения 24.11: русские ссылки на EN/ES не ставим). Ссылки русского проекта заменяются после сборки.
-# GetYourGuide в EN/ES закрыт → Klook. Trip.com, Welcome Pickups, Economybookings, приложение Aviasales
+# 28.11.2026: EN/ES проекты открыты (44 программы) — GetYourGuide, Trip.com, Economybookings переведены на EN/ES,
+# добавлены Booking и Viator (партнёры 'booking', 'tours2'). Welcome Pickups и приложение Aviasales
 # пока из русского проекта: в EN/ES их нет или нужна готовая ссылка бренда — заменить, когда откроются
 # (файл проекта «Travelpayouts — проекты EN и ES»).
 RELINK = {
@@ -82,14 +87,18 @@ RELINK = {
          'kiwitaxi.tpk.ro/nmvjy52X': 'kiwitaxi.tpk.ro/11m18X2U', 'kiwitaxi.tpk.ro/hZWgyn6u': 'kiwitaxi.tpk.ro/11m18X2U',
          'kiwitaxi.tpk.ro/zHLRijVY': 'kiwitaxi.tpk.ro/11m18X2U', 'kiwitaxi.tpk.ro/gqeFYqIK': 'kiwitaxi.tpk.ro/11m18X2U',
          'compensair.tpk.ro/lAi8i3Do': 'compensair.tpk.ro/yNP2m9JU',
-         'getyourguide.tpk.ro/YzOdxjGC': 'klook.tpk.ro/lyyMwM9o'},
+         'getyourguide.tpk.ro/YzOdxjGC': 'getyourguide.tpk.ro/NcNMhyj4',
+         'trip.tpk.ro/uSJdIAwK': 'trip.tpk.ro/Tx49R9gG', 'trip.tpk.ro/h7bJ0rc1': 'trip.tpk.ro/Tx49R9gG',
+         'economybookings.tpk.ro/P0O35S8l': 'economybookings.tpk.ro/M9vBR2H3'},
   'es': {'yesim.tpk.ro/PINKVK34': 'yesim.tpk.ro/yAGmI4AL',
          'airalo.tpk.ro/VEBEeOcy': 'airalo.tpk.ro/TzviVL3v', 'airalo.tpk.ro/EhQQaywr': 'airalo.tpk.ro/TzviVL3v',
          'kiwitaxi.tpk.ro/MxN3zjHJ': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/tFXbV8DW': 'kiwitaxi.tpk.ro/4SiOYekY',
          'kiwitaxi.tpk.ro/nmvjy52X': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/hZWgyn6u': 'kiwitaxi.tpk.ro/4SiOYekY',
          'kiwitaxi.tpk.ro/zHLRijVY': 'kiwitaxi.tpk.ro/4SiOYekY', 'kiwitaxi.tpk.ro/gqeFYqIK': 'kiwitaxi.tpk.ro/4SiOYekY',
          'compensair.tpk.ro/lAi8i3Do': 'compensair.tpk.ro/2RyQeKBg',
-         'getyourguide.tpk.ro/YzOdxjGC': 'klook.tpk.ro/ft6zyxhP'},
+         'getyourguide.tpk.ro/YzOdxjGC': 'getyourguide.tpk.ro/Aois9paS',
+         'trip.tpk.ro/uSJdIAwK': 'trip.tpk.ro/vyUr1Cnr', 'trip.tpk.ro/h7bJ0rc1': 'trip.tpk.ro/vyUr1Cnr',
+         'economybookings.tpk.ro/P0O35S8l': 'economybookings.tpk.ro/lkDQClB0'},
 }
 
 def relink_all():
@@ -101,13 +110,11 @@ def relink_all():
             for a, b in m.items():
                 # erid относится к старой ссылке — убираем его вместе с ней
                 s = _re.sub(r'https://' + _re.escape(a) + r'(\?erid=[A-Za-z0-9]+)?', 'https://' + b, s)
-            if 'klook.tpk.ro' in s:
-                s = s.replace('GetYourGuide', 'Klook')
             if s != o:
                 f.write_text(s, encoding='utf-8'); n += 1
     return n
 
-CTA_ALIAS = {'esim': ['esim', 'esim2'], 'transfer': ['transfer', 'pickup'], 'car': ['car', 'car2'],
+CTA_ALIAS = {'hotels': ['booking', 'hotels'], 'tours': ['tours', 'tours2'], 'esim': ['esim', 'esim2'], 'transfer': ['transfer', 'pickup'], 'car': ['car', 'car2'],
              'car_vlc': ['car_vlc', 'car2']}
 
 # ── тексты интерфейса ─────────────────────────────────────────────────────────────────────────
