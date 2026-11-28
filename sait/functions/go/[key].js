@@ -23,6 +23,9 @@ const SERVICES = {
   strahovka: 'https://kalmykovgroup.com/strahovka/',
   yuristy: 'https://kalmykovgroup.com/yuristy/',   // 26.11.2026: юристы-партнёры (Алина, ProSpain)
   poezdki: 'https://kalmykovgroup.com/poezdki/',
+  // 28.11.2026: Simbye eSIM через Awin (20%, промокод KALMYKOV −15%, засчитывается и без клика), HelloSafe — страховка в поездку (Awin)
+  simbye: 'https://www.awin1.com/cread.php?awinmid=107814&awinaffid=3169689&clickref=go&ued=https%3A%2F%2Fsimbye.com%2Fdiscount%2FKALMYKOV',
+  'strahovka-poezdka': 'https://www.awin1.com/cread.php?awinmid=128757&awinaffid=3169689&clickref=go',
   // 22.11.2026: платные гайды — своя ссылка на каждый язык, счётчик переходов go:gaid-<язык> в KV.
   // Пока гайды не продаются (до автономо) — ведут на страницы «скоро». Со страницей оплаты — заменить адрес здесь;
   // в платёжке тоже держать отдельный товар/цену на каждый язык, чтобы продажи считались по языкам.

@@ -24,6 +24,7 @@ eSIM — это сим-карта без пластика. Её покупают
 
 ## Где купить eSIM
 
+- [Simbye](https://www.awin1.com/cread.php?awinmid=107814&awinaffid=3169689&clickref=ru-esim-statya&ued=https%3A%2F%2Fsimbye.com%2Fdiscount%2FKALMYKOV%3Fredirect%3D%2Fru) — eSIM для 190+ стран, сайт на русском. По нашему промокоду **KALMYKOV** скидка 15% на все пакеты, по ссылке ставится сама
 - [Yesim](https://yesim.tpk.ro/PINKVK34?erid=2VtzqvYUdeo) — пакеты для Испании и для 200+ стран, есть приложение
 - [Airalo](https://airalo.tpk.ro/VEBEeOcy?erid=2VtzqveQanB) — самый известный магазин eSIM: пакеты на неделю, месяц, по одной стране или по всей Европе
 
