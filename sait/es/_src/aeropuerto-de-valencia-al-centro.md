@@ -2,7 +2,7 @@ title: Cómo llegar del aeropuerto de Valencia al centro: metro, autobús, taxi 
 description: Metro líneas 3 y 5, autobús 150, taxi y traslado con precio cerrado: cuánto tarda, cuánto cuesta y qué elegir al aterrizar en Valencia
 date: 2026-11-22
 tema: Transporte
-cta: transfer, car_vlc, esim
+cta: transfer, car_vlc, esim, hotels
 alt_ru: kak-dobratsya-iz-aeroporta-valensii-v-tsentr
 alt_en: valencia-airport-to-city-centre
 ---

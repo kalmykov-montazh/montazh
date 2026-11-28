@@ -40,6 +40,34 @@ def gocity(lang):
             'City pass for Barcelona or Madrid: museums and tours on one ticket' if en else
             'Pase turístico de Barcelona o Madrid: museos y tours con una sola entrada')
 
+# 28.11.2026 (суббота, ЧАСТЬ Г): акции Travelpayouts Tools → Promo codes, ссылки проектов EN/ES.
+# До даты конца — промо-ссылка и подпись со скидкой, потом сама возвращается обычная ссылка и подпись.
+YESIM_SALE_END = '2027-02-28'      # Yesim −20%, 11.11.2026–28.02.2027
+def yesim(lang):
+    en = lang == 'en'
+    if TODAY <= YESIM_SALE_END:
+        return ('Yesim — 20% off' if en else 'Yesim — 20 % de descuento',
+                'https://yesim.tpk.ro/ryGZk5gU' if en else 'https://yesim.tpk.ro/laKWgO1o',
+                ('eSIM data for Spain and 200+ countries. 20% off until 28 Feb 2027, '
+                 'the code is shown after you click') if en else
+                ('eSIM con datos para España y más de 200 países. 20 % de descuento hasta el 28 de febrero de 2027, '
+                 'el código aparece al hacer clic'))
+    return ('Yesim', 'https://yesim.tpk.ro/PINKVK34?erid=2VtzqvYUdeo',
+            'eSIM data for Spain and 200+ countries' if en else 'eSIM con datos para España y más de 200 países')
+
+BOOKING_SALE_END = '2027-01-06'    # Booking.com Late Escape Deals от −15%, бронь до 07.01.2027 09:59 CET
+def booking(lang):
+    en = lang == 'en'
+    if TODAY <= BOOKING_SALE_END:
+        return ('Booking.com — Late Escape Deals' if en else 'Booking.com — Ofertas Late Escape',
+                'https://booking.tpk.ro/vxhWYW6W' if en else 'https://booking.tpk.ro/GqE9VXhx',
+                ('From 15% off at hotels with the Late Escape Deal label, stays until 7 Jan 2027. '
+                 'The discount is applied automatically') if en else
+                ('Desde un 15 % de descuento en alojamientos con la etiqueta Late Escape Deal, estancias hasta el 7 de enero de 2027. '
+                 'El descuento se aplica solo'))
+    return ('Booking.com', 'https://booking.tpk.ro/' + ('NT81xF6A' if en else 'UiQARjKq'),
+            'Hotels and apartments, often with free cancellation — book in the same visit' if en else 'Hoteles y apartamentos, muchos con cancelación gratuita')
+
 def partners(lang):
     en = lang == 'en'
     return {
@@ -55,12 +83,10 @@ def partners(lang):
                      'Fixed price, driver meets you with a name sign' if en else 'Precio fijo, el conductor te espera con un cartel'),
         'pickup': ('Welcome Pickups', 'https://tpk.ro/JMVdf3FU?erid=2VtzqvbScDV',
                    'English-speaking driver waiting at arrivals' if en else 'Conductor esperando en la zona de llegadas'),
-        'esim': ('Yesim', 'https://yesim.tpk.ro/PINKVK34?erid=2VtzqvYUdeo',
-                 'eSIM data for Spain and 200+ countries' if en else 'eSIM con datos para España y más de 200 países'),
+        'esim': yesim(lang),   # 28.11.2026: до 28.02.2027 — акция −20%
         'esim2': ('Airalo', 'https://airalo.tpk.ro/VEBEeOcy?erid=2VtzqveQanB',
                   'The best-known eSIM store: Spain or all of Europe' if en else 'La tienda de eSIM más conocida: España o toda Europa'),
-        'booking': ('Booking.com', 'https://booking.tpk.ro/' + ('NT81xF6A' if en else 'UiQARjKq'),
-                    'Hotels and apartments, often with free cancellation — book in the same visit' if en else 'Hoteles y apartamentos, muchos con cancelación gratuita'),
+        'booking': booking(lang),   # 28.11.2026: до 06.01.2027 — Late Escape Deals
         'tours2': ('Viator', 'https://viator.tpk.ro/' + ('UFudzZpf' if en else 'VGcVd3bS'),
                    'Tours and day trips from Tripadvisor\'s booking site' if en else 'Tours y excursiones de la plataforma de Tripadvisor'),
         'tours': ('GetYourGuide', 'https://getyourguide.tpk.ro/YzOdxjGC?erid=2VtzqwNw26b',

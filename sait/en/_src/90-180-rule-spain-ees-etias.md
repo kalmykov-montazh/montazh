@@ -2,7 +2,7 @@ title: The 90/180 rule for UK and US visitors to Spain: EES, ETIAS and how to co
 description: How long British and American tourists can stay in Spain without a visa, how the 90/180 rule is counted, what the new EES border system changes and the latest on ETIAS
 date: 2026-11-22
 tema: Documents
-cta: flights, hotels
+cta: flights, hotels, esim
 ---
 British, American, Canadian and Australian citizens can visit Spain without a visa for short stays. The key limit is the 90/180 rule — and since 2026 it is checked electronically.
 

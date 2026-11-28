@@ -3,7 +3,7 @@ description: Direct Alsa bus, the C-6 bus plus TRAM line 1, taxis and pre-booked
 date: 2026-11-23
 tema: Transport
 kind: guide
-cta: transfer, car, hotels
+cta: transfer, car, hotels, esim
 ---
 Benidorm is about 50 km north of Alicante-Elche Airport, a 40–50 minute drive. The cheapest way there is the direct Alsa bus, the most comfortable is a taxi or a transfer booked in advance, and the tram only makes sense if you are stopping in Alicante first.
 

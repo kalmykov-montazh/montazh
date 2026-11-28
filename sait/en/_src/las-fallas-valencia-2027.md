@@ -2,7 +2,7 @@ title: Las Fallas 2027 in Valencia: dates, what to see and how to plan your trip
 description: When Fallas 2027 takes place, the key days (mascletà, the flower offering, the Cremà), where to stay and how to get around the city during the festival
 date: 2026-11-22
 tema: Travel
-cta: hotels, flights, transfer
+cta: hotels, flights, transfer, esim
 alt_es: fallas-2027-donde-alojarse
 ---
 Las Fallas is Valencia's biggest festival and one of the most spectacular in Europe. Every year in March the city fills with giant sculptures, fireworks and parades, and on the last night almost all of them are burned.

@@ -2,7 +2,7 @@ title: Primeros pasos al llegar a España: empadronamiento, NIE, cuenta bancaria
 description: Qué trámites hacer en las primeras semanas en España y en qué orden: empadronarse, NIE y TIE, cuenta bancaria, número de teléfono y tarjeta sanitaria
 date: 2026-11-22
 tema: Documentos
-cta: esim, transfer
+cta: esim, transfer, hotels
 ---
 Los primeros trámites en España se encadenan: uno te pide el anterior. Este es el orden que suele funcionar mejor.
 

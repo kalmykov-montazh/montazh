@@ -2,7 +2,7 @@ title: Valencia Airport to the city centre: metro, bus, taxi or private transfer
 description: Metro lines 3 and 5, bus 150, taxis and fixed-price transfers — how long each takes, what it costs and which one to choose when you land in Valencia
 date: 2026-11-22
 tema: Transport
-cta: transfer, car_vlc, esim
+cta: transfer, car_vlc, esim, hotels
 alt_ru: kak-dobratsya-iz-aeroporta-valensii-v-tsentr
 alt_es: aeropuerto-de-valencia-al-centro
 ---
