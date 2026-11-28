@@ -1,4 +1,5 @@
 формат: ключ файла (ДД.ММ тема) | адрес статьи на сайте | полная (есть источники и «что делать») или коротко
+28.11 Завтра выборы что взять | https://kalmykovgroup.com/novosti/2026-11-28-zavtra-vybory-chto-vzyat-s-soboy-i-skolko-chasov-dadut-na-ra | полная
 28.11 В Валенсии началось Рождество | https://kalmykovgroup.com/novosti/2026-11-28-v-kontse-noyabrya-valensiya-budto-pereklyuchaetsya-v-etu-pya | коротко
 27.11 Чёрная пятница 6 из 100 | https://kalmykovgroup.com/novosti/2026-11-27-chernaya-pyatnitsa-a-nastoyaschih-skidok-vsego-6-iz-100 | полная
 27.11 eSIM для поездок скидка 20 | https://kalmykovgroup.com/novosti/2026-11-27-na-prazdniki-za-granitsu-kak-ne-otdat-polpoezdki-za-mobilnyy | полная
@@ -38,4 +39,3 @@
 12.11 Аренда итог голосования | https://kalmykovgroup.com/novosti/2026-11-12-potolok-arendy-2-ostaetsya-bessrochnyh-dogovorov-ne-budet | коротко
 12.11 Аренда плюс 7 процентов | https://kalmykovgroup.com/novosti/2026-11-12-arenda-v-ispanii-za-god-podorozhala-pochti-na-7 | коротко
 12.11 Ипотека плюс 85 евро | https://kalmykovgroup.com/novosti/2026-11-12-esli-u-vas-ipoteka-s-plavayuschey-stavkoy-i-peresmotr-vypada | коротко
-11.11 Аренда решится в четверг | https://kalmykovgroup.com/novosti/2026-11-11-v-chetverg-12-noyabrya-reshitsya-naskolko-vam-smogut-podnyat | коротко
